@@ -1,0 +1,11 @@
+1. Add blob support. [PARTIALLY DONE]
+2. Add connection parameter buffer support for connections.
+3. Insure that the correct SQL dialect is being properly observed throughout
+   the library.
+4. Add an exhausted? method to the ResultSet class. [DONE]
+5. Add parameter count to the Statement class. [DONE]
+6. Add column details to the ResultSet class. [DONE]
+7. Add a row class that represents a fetched row of data.
+8. Add array support.
+9. Switch Database constructor to take only file specification. Have the
+   connect object take a user name and password.
