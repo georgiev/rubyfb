@@ -25,4 +25,4 @@ end
 dir_config("firebird", firebird_include, firebird_lib)
 
 # Generate the Makefile.
-create_makefile("fireruby")
+create_makefile("rubyfb_lib")

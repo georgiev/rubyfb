@@ -273,7 +273,7 @@ module ActiveRecord
       end
 
       def adapter_name # :nodoc:
-        'Firebird'
+        'Rubyfb'
       end
 
       def supports_migrations? # :nodoc:
