@@ -9,7 +9,7 @@
 # This module contains all of the classes and definitions relating to the
 # FireRuby extension for the Ruby language.
 #
-module FireRuby
+module Rubyfb
    #
    # This class provides the exception type used by the FireRuby library.
    #

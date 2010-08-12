@@ -1,2 +1,6 @@
-v0.5.2 Use Echoe as build system
+v0.5.2 ==
+Use Echoe as build system
+By default release as  "source only" gem
+Add binary build/release rake tasks - binpkg, binrelease
+
 v0.5.1 initial version

@@ -4,6 +4,7 @@ e = Echoe.new('rubyfb', '0.5.2') do |p|
   p.url            = "http://rubyforge.org/projects/rubyfb"
   p.author         = "George Georgiev"
   p.email          = "georgiev@heatbs.com"
+  p.rdoc_pattern   = ["{examples,ext,lib}/*.rb", "CHANGELOG", "README", "LICENSE"]
 
   unless (ARGV & ["binpkg", "binrelease"]).empty?
     p.platform=Gem::Platform::CURRENT
