@@ -6,7 +6,7 @@ e = Echoe.new('rubyfb', '0.5.2') do |p|
   p.email          = "georgiev@heatbs.com"
   p.rdoc_pattern   = ["{examples,ext,lib}/*.rb", "CHANGELOG", "README", "LICENSE"]
 
-  unless (ARGV & ["binpkg", "binrelease"]).empty?
+  if ARGV.include? "binpkg"
     p.platform=Gem::Platform::CURRENT
     p.eval = Proc.new {
       self.extensions=nil
@@ -17,4 +17,3 @@ end
 e.clean_pattern = e.clean_pattern - e.clean_pattern.grep(/^lib/)
 
 task :binpkg => [:compile, :repackage]
-task :binrelease => [:compile, :release]
