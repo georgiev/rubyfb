@@ -1,3 +1,7 @@
+v0.5.1 =
+Initial rubyfb release
+To use rubyfb adapter in RoR set your database adpter to "rubyfb"
+
 = FireRuby Version 0.4.1
 FireRuby is an extension for the Ruby programming language that provides access
 to the Firebird open source RDBMS. The FireRuby library is release under the
