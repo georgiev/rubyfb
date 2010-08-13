@@ -262,6 +262,7 @@ VALUE fetchResultSetEntry(VALUE self)
    Data_Get_Struct(self, ResultsHandle, results);
    if(results->handle != 0)
    {
+		VALUE array,number;
 		value = results->procedure_output_fetch_state;
 		if(value < 0) {
 			value = isc_dsql_fetch(status, &results->handle, results->dialect,
@@ -270,8 +271,8 @@ VALUE fetchResultSetEntry(VALUE self)
 			/* move procedure_output_fetch_state ahead - fetch only one row */
 			results->procedure_output_fetch_state = 100;
 		}
-		VALUE array  = Qnil,
-				number = Qnil;
+		array  = Qnil;
+		number = Qnil;
 		switch(value)
 		{
 			case 0 :

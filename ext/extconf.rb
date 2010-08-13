@@ -12,10 +12,12 @@ if PLATFORM.include?("darwin")
    firebird_lib="/Library/Frameworks/Firebird.framework/Libraries"
 elsif PLATFORM.include?("win32")
    $LDFLAGS = $LDFLAGS + " fbclient_ms.lib"
-   $CFLAGS  = $CFLAGS + " -DOS_WIN32"
+   $CFLAGS  = "-MT #{$CFLAGS}".gsub!(/-MD\s*/, '') + " -DOS_WIN32"
    dir_config("win32")
    dir_config("winsdk")
    dir_config("dotnet")
+   firebird_include="../mswin32fb"
+   firebird_lib="../mswin32fb"
 elsif PLATFORM.include?("linux")
    $LDFLAGS = $LDFLAGS + " -lfbclient -lpthread"
    $CFLAGS  = $CFLAGS + " -DOS_UNIX"

@@ -5,6 +5,7 @@ e = Echoe.new('rubyfb', '0.5.2') do |p|
   p.author         = "George Georgiev"
   p.email          = "georgiev@heatbs.com"
   p.rdoc_pattern   = ["{examples,ext,lib}/*.rb", "CHANGELOG", "README", "LICENSE"]
+  p.need_tar_gz    = !PLATFORM.include?("win32")
 
   if ARGV.include? "binpkg"
     p.platform=Gem::Platform::CURRENT
