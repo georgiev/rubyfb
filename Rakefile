@@ -16,5 +16,6 @@ e = Echoe.new('rubyfb', '0.5.2') do |p|
   end
 end
 e.clean_pattern = e.clean_pattern - e.clean_pattern.grep(/^lib/)
+e.clean_pattern = e.clean_pattern - e.clean_pattern.grep(/^mswin32fb/)
 
 task :binpkg => [:compile, :repackage]

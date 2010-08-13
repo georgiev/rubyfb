@@ -43,13 +43,15 @@ ext/Transaction.h
 ext/TypeMap.c
 ext/TypeMap.h
 ext/extconf.rb
-ext/mkmf.bat
 lib/SQLType.rb
 lib/active_record/connection_adapters/rubyfb_adapter.rb
 lib/mkdoc
 lib/rubyfb.rb
 lib/rubyfb_lib.so
 lib/src.rb
+mswin32fb/fbclient_ms.lib
+mswin32fb/ibase.h
+mswin32fb/iberror.h
 test/AddRemoveUserTest.rb
 test/BackupRestoreTest.rb
 test/BlobTest.rb
