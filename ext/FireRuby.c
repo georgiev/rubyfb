@@ -206,7 +206,7 @@ VALUE getColumnType(const XSQLVAR *column)
  */
 void Init_rubyfb_lib(void)
 {
-   VALUE module = rb_define_module("FireRuby"),
+   VALUE module = rb_define_module("Rubyfb"),
          array  = rb_ary_new(),
          hash   = rb_hash_new();
 

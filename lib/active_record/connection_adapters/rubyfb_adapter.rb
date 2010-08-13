@@ -1,7 +1,7 @@
 # Author: Ken Kunz <kennethkunz@gmail.com>
 require 'active_record/connection_adapters/abstract_adapter'
 
-module FireRuby # :nodoc: all
+module Rubyfb # :nodoc: all
   NON_EXISTENT_DOMAIN_ERROR = "335544569"
   class Database
     def self.db_string_for(config)
@@ -25,7 +25,7 @@ module ActiveRecord
     def self.rubyfb_connection(config) # :nodoc:
       require_library_or_gem 'rubyfb'
       config.symbolize_keys!
-      db = FireRuby::Database.new_from_config(config)
+      db = Rubyfb::Database.new_from_config(config)
       connection_params = config.values_at(:username, :password)
       connection = db.connect(*connection_params)
       ConnectionAdapters::RubyfbAdapter.new(connection, logger, connection_params)
@@ -46,7 +46,7 @@ module ActiveRecord
       VARCHAR_MAX_LENGTH = 32_765
 
       def initialize(connection, name, domain, type, sub_type, length, precision, scale, default_source, null_flag)
-        @firebird_type = FireRuby::SQLType.to_base_type(type, sub_type).to_s
+        @firebird_type = Rubyfb::SQLType.to_base_type(type, sub_type).to_s
 
         super(name.downcase, nil, @firebird_type, !null_flag)
         
@@ -118,11 +118,6 @@ module ActiveRecord
         end
     end
 
-    # The Firebird adapter relies on the FireRuby[http://rubyforge.org/projects/fireruby/]
-    # extension, version 0.4.0 or later (available as a gem or from
-    # RubyForge[http://rubyforge.org/projects/fireruby/]). FireRuby works with
-    # Firebird 1.5.x on Linux, OS X and Win32 platforms.
-    #
     # == Usage Notes
     #
     # === Sequence (Generator) Names
@@ -374,7 +369,7 @@ module ActiveRecord
 
       def execute(sql, name = nil, &block) # :nodoc:
         exec_result = execute_statement(sql, name, &block)
-        if exec_result.instance_of?(FireRuby::ResultSet)
+        if exec_result.instance_of?(Rubyfb::ResultSet)
           exec_result.close
           exec_result = nil
         end
@@ -409,7 +404,7 @@ module ActiveRecord
       # called directly; used by ActiveRecord to get the next primary key value
       # when inserting a new database record (see #prefetch_primary_key?).
       def next_sequence_value(sequence_name)
-        FireRuby::Generator.new(sequence_name, @connection).next(1)
+        Rubyfb::Generator.new(sequence_name, @connection).next(1)
       end
 
       # Inserts the given fixture into the table. Overridden to properly handle blobs.
@@ -430,7 +425,7 @@ module ActiveRecord
           value = value.to_yaml if col.text? && klass.serialized_attributes[col.name]
           value = value.read if value.respond_to?(:read)
           next if value.nil?  || (value == '')
-          s = FireRuby::Statement.new(@connection, @transaction, "UPDATE #{table_name} set #{col.name} = ? WHERE #{klass.primary_key} = #{id}", 3)       
+          s = Rubyfb::Statement.new(@connection, @transaction, "UPDATE #{table_name} set #{col.name} = ? WHERE #{klass.primary_key} = #{id}", 3)       
           s.execute_for([value.to_s])
           s.close
         end
@@ -449,7 +444,7 @@ module ActiveRecord
         charset = select_rows(sql).first[0].rstrip
         disconnect!
         @connection.database.drop(*@connection_params)
-        FireRuby::Database.create(@connection.database.file,
+        Rubyfb::Database.create(@connection.database.file,
           @connection_params[0], @connection_params[1], 4096, charset)
       end
 
@@ -662,7 +657,7 @@ module ActiveRecord
             row.each do |column, value|
               fields << fb_to_ar_case(column) if row.number == 1
 
-              if FireRuby::Blob === value
+              if Rubyfb::Blob === value
                 temp = value.to_s
                 value.close
                 value = temp
@@ -746,20 +741,20 @@ module ActiveRecord
         end
 
         def copy_sequence_value(from, to)
-          sequence_value = FireRuby::Generator.new(default_sequence_name(from), @connection).last
+          sequence_value = Rubyfb::Generator.new(default_sequence_name(from), @connection).last
           execute_statement("SET GENERATOR #{default_sequence_name(to)} TO #{sequence_value}")
         end
 
         def sequence_exists?(sequence_name)
-          FireRuby::Generator.exists?(sequence_name, @connection)
+          Rubyfb::Generator.exists?(sequence_name, @connection)
         end
 
         def create_sequence(sequence_name)
-          FireRuby::Generator.create(sequence_name.to_s, @connection)
+          Rubyfb::Generator.create(sequence_name.to_s, @connection)
         end
 
         def drop_sequence(sequence_name)
-          FireRuby::Generator.new(sequence_name.to_s, @connection).drop
+          Rubyfb::Generator.new(sequence_name.to_s, @connection).drop
         end
 
         def create_boolean_domain
@@ -785,7 +780,7 @@ module ActiveRecord
         end
 
         def non_existent_domain_error?
-          $!.message.include? FireRuby::NON_EXISTENT_DOMAIN_ERROR
+          $!.message.include? Rubyfb::NON_EXISTENT_DOMAIN_ERROR
         end
 
         # Maps uppercase Firebird column names to lowercase for ActiveRecord;
