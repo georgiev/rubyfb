@@ -18,7 +18,7 @@
 # The Initial Developer of the Original Code is Peter Wood. All Rights
 # Reserved.
 
-module FireRuby
+module Rubyfb
    # This class is used to represent SQL table column tables.
    class SQLType
       # A definition for a base SQL type.
