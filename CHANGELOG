@@ -1,3 +1,13 @@
+v0.5.3 ==
+add new class ProcedureCall - representing firebird stored procedure
+add prepare_call() function to the Rubyfb::Connection class - returning ProcedureCall object
+add execute_procedure(procedure_name, parameter_values) function to the RubyfbAdapter class
+Windows build fixes
+
+!!!WARNING!!!
+rename top module to Rubyfb - this breaks the "drop in" compatibility with FireRuby,
+but simple search and replace should do the work
+
 v0.5.2 ==
 Use Echoe as build system
 By default release as  "source only" gem
