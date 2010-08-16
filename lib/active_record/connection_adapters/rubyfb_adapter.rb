@@ -20,31 +20,14 @@ module Rubyfb # :nodoc: all
   end
 
   class ProcedureCall
-    class SQLProcessor < ActiveRecord::Base
-      def self.bind_sql_params(sql_array)
+    class SQLParser < ActiveRecord::Base
+      def self.bind_params(sql_array)
         sanitize_sql_array(sql_array)
       end
     end
-    attr_reader :connection, :procedure_name
 
-    def initialize(connection, procedure_name)
-      @procedure_name=procedure_name
-      @connection=connection
-      @params = connection.select_values(SQLProcessor.bind_sql_params([
-        "SELECT RDB$PARAMETER_NAME
-        FROM RDB$PROCEDURE_PARAMETERS
-        WHERE RDB$PROCEDURE_NAME=? and RDB$PARAMETER_TYPE = 0
-        ORDER BY RDB$PARAMETER_NUMBER", procedure_name
-      ])).collect{|p| p.strip.downcase.intern}
-
-      pstr = @params.empty? ? nil : "(" + @params.collect{|p| '?'}.join(',') + ")"
-      @sql = "execute procedure #{procedure_name}#{pstr};"
-    end
-
-    def execute(values={})
-      connection.select_all(
-        SQLProcessor.bind_sql_params([@sql] + @params.collect{|p| values[p]})
-      )[0]
+    def sql_value_list(values)
+      SQLParser.bind_params([param_names.collect{|p| '?'}.join(',')] + param_names.collect{|p| values[p]})
     end
   end
 end
@@ -627,8 +610,8 @@ module ActiveRecord
         end
       end
 
-      def prepare_call(procedure_name)
-        Rubyfb::ProcedureCall.new(self, procedure_name)
+      def execute_procedure(procedure_name, values={})
+        @connection.prepare_call(procedure_name).execute(values, @transaction)
       end
 
       private
@@ -830,4 +813,3 @@ module ActiveRecord
     end
   end
 end
-

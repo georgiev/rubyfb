@@ -43,6 +43,8 @@ ext/Transaction.h
 ext/TypeMap.c
 ext/TypeMap.h
 ext/extconf.rb
+lib/Connection.rb
+lib/ProcedureCall.rb
 lib/SQLType.rb
 lib/active_record/connection_adapters/rubyfb_adapter.rb
 lib/mkdoc
