@@ -39,6 +39,9 @@ module ActiveRecord
       config.symbolize_keys!
       db = Rubyfb::Database.new_from_config(config)
       connection_params = config.values_at(:username, :password)
+      if config[:sql_role_name]
+        connection_params << {Rubyfb::Connection::SQL_ROLE_NAME=>config[:sql_role_name]}
+      end
       connection = db.connect(*connection_params)
       ConnectionAdapters::RubyfbAdapter.new(connection, logger, connection_params)
     end
@@ -268,6 +271,8 @@ module ActiveRecord
     # <tt>:charset</tt>::
     #   Specifies the character set to be used by the connection. Refer to
     #   Firebird documentation for valid options.
+    # <tt>:sql_role_name</tt>::
+    #   Specifies the SQL role name used by the connection.
     class RubyfbAdapter < AbstractAdapter
       TEMP_COLUMN_NAME = 'AR$TEMP_COLUMN'
 
