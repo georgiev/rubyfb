@@ -1,13 +1,14 @@
 v0.5.3 ==
+rename top module to Rubyfb
+!!!WARNING!!!
+this change breaks the "drop in" compatibility with FireRuby if FireRuby module name 
+was explicitly used. Simple search and replace should do the work
+
 RubyfbAdapter - add support for :sql_role_name connection option
 Add new class ProcedureCall - representing firebird stored procedure
 Add prepare_call() function to the Rubyfb::Connection class - returning ProcedureCall object
 Add execute_procedure(procedure_name, parameter_values) function to the RubyfbAdapter class
 Windows build fixes
-
-!!!WARNING!!!
-rename top module to Rubyfb - this breaks the "drop in" compatibility with FireRuby,
-but simple search and replace should do the work
 
 v0.5.2 ==
 Use Echoe as build system
