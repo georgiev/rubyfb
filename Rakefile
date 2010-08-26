@@ -1,5 +1,5 @@
 require 'echoe'
-e = Echoe.new('rubyfb', '0.5.3') do |p|
+e = Echoe.new('rubyfb', '0.5.4') do |p|
   p.description    = "Firebird SQL access library"
   p.url            = "http://rubyforge.org/projects/rubyfb"
   p.author         = "George Georgiev"

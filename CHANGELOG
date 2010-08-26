@@ -1,3 +1,6 @@
+v0.5.4 ==
+add configurable boolen domain and boolean name match patterns
+
 v0.5.3 ==
 rename top module to Rubyfb
 !!!WARNING!!!

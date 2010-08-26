@@ -66,7 +66,7 @@ module ActiveRecord
         super(name.downcase, nil, @firebird_type, !null_flag)
         
         @limit = decide_limit(length)
-        @domain, @sub_type, @precision, @scale = domain, sub_type, precision, scale.abs
+        @domain, @sub_type, @precision, @scale = domain, sub_type, precision, (scale.nil? ? 0 : scale.abs)
         @type = simplified_type(@firebird_type)
         @default = parse_default(default_source) if default_source
         @default = type_cast(decide_default(connection)) if @default
@@ -124,7 +124,7 @@ module ActiveRecord
             when /blob/i
               @subtype == 1 ? :text : :binary
             else
-              if @domain =~ /boolean/i
+              if @domain =~ RubyfbAdapter.boolean_domain[:domain_pattern] || name =~ RubyfbAdapter.boolean_domain[:name_pattern]
                 :boolean
               else
                 super
@@ -276,7 +276,7 @@ module ActiveRecord
     class RubyfbAdapter < AbstractAdapter
       TEMP_COLUMN_NAME = 'AR$TEMP_COLUMN'
 
-      @@boolean_domain = { :name => "d_boolean", :type => "smallint", :true => 1, :false => 0 }
+      @@boolean_domain = { :name => "d_boolean", :type => "smallint", :true => 1, :false => 0, :domain_pattern=>/boolean/i, :name_pattern=>/^is_/i }
       cattr_accessor :boolean_domain
 
       def initialize(connection, logger, connection_params = nil)
