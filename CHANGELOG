@@ -1,5 +1,7 @@
 v0.5.4 ==
 add configurable boolen domain and boolean name match patterns
+fix scale handling for view columns
+extconf.rb - replace PLATFORM with RUBY_PLATFORM
 
 v0.5.3 ==
 rename top module to Rubyfb

@@ -1,16 +1,16 @@
 #!/usr/bin/env ruby
 
-ENV['ARCHFLAGS']='-arch '+`arch`.strip if PLATFORM.include?("darwin")
+ENV['ARCHFLAGS']='-arch '+`arch`.strip if RUBY_PLATFORM.include?("darwin")
 
 require 'mkmf'
 
 # Add the framework link for Mac OS X.
-if PLATFORM.include?("darwin")
+if RUBY_PLATFORM.include?("darwin")
    $LDFLAGS = $LDFLAGS + " -framework Firebird"
    $CFLAGS  = $CFLAGS + " -DOS_UNIX"
    firebird_include="/Library/Frameworks/Firebird.framework/Headers"
    firebird_lib="/Library/Frameworks/Firebird.framework/Libraries"
-elsif PLATFORM.include?("win32")
+elsif RUBY_PLATFORM.include?("win32")
    $LDFLAGS = $LDFLAGS + " fbclient_ms.lib"
    $CFLAGS  = "-MT #{$CFLAGS}".gsub!(/-MD\s*/, '') + " -DOS_WIN32"
    dir_config("win32")
@@ -18,7 +18,7 @@ elsif PLATFORM.include?("win32")
    dir_config("dotnet")
    firebird_include="../mswin32fb"
    firebird_lib="../mswin32fb"
-elsif PLATFORM.include?("linux")
+elsif RUBY_PLATFORM.include?("linux")
    $LDFLAGS = $LDFLAGS + " -lfbclient -lpthread"
    $CFLAGS  = $CFLAGS + " -DOS_UNIX"
 end

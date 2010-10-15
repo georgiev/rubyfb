@@ -164,9 +164,15 @@ module ActiveRecord
     #
     #  CREATE DOMAIN BOOLEAN AS CHAR(1) CHECK (VALUE IN ('T', 'F'));
     #
-    # ...you can add the following line to your <tt>environment.rb</tt> file:
+    # ...you can add the following lines to your <tt>environment.rb</tt> file:
     #
-    #  ActiveRecord::ConnectionAdapters::RubyfbAdapter.boolean_domain = { :true => 'T', :false => 'F' }
+    #  ActiveRecord::ConnectionAdapters::RubyfbAdapter.boolean_domain[:true] = 'T'
+    #  ActiveRecord::ConnectionAdapters::RubyfbAdapter.boolean_domain[:false] = 'F'
+    #
+    #  Boolean columns are detected by name and domain name patterns configurable by:
+    #
+    #  ActiveRecord::ConnectionAdapters::RubyfbAdapter.boolean_domain[:domain_pattern], default = /boolean/i
+    #  ActiveRecord::ConnectionAdapters::RubyfbAdapter.boolean_domain[:name_pattern], default = /^is_/i
     #
     # === BLOB Elements
     # The Firebird adapter currently provides only limited support for +BLOB+
