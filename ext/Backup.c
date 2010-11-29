@@ -602,7 +602,8 @@ void createBackupBuffer(VALUE from, VALUE to, VALUE options, char **buffer,
    ID    id        = rb_intern("key?");
    VALUE names     = rb_funcall(to, rb_intern("keys"), 0),
          sizes     = rb_funcall(to, rb_intern("values"), 0),
-         count     = rb_funcall(names, rb_intern("size"), 0);
+         count     = rb_funcall(names, rb_intern("size"), 0),
+         tmp_str   = Qnil;
    char  *position = NULL;
    short number,
          flags     = 0,
@@ -621,17 +622,18 @@ void createBackupBuffer(VALUE from, VALUE to, VALUE options, char **buffer,
 
    /* Calculate the length needed for the buffer. */
    *length = 2;
-   *length += strlen(STR2CSTR(from)) + 3;
+   *length += strlen(StringValuePtr(from)) + 3;
 
    /* Count file name and length sizes. */
    for(i = 0; i < size; i++)
    {
-      *length += strlen(STR2CSTR(rb_ary_entry(names, i))) + 3;
+      tmp_str = rb_ary_entry(names, i);
+      *length += strlen(StringValuePtr(tmp_str)) + 3;
       if(i != size - 1)
       {
          VALUE num = rb_funcall(rb_ary_entry(sizes, i), rb_intern("to_s"), 0);
 
-         *length += strlen(STR2CSTR(num)) + 3;
+         *length += strlen(StringValuePtr(num)) + 3;
       }
    }
 
@@ -668,9 +670,9 @@ void createBackupBuffer(VALUE from, VALUE to, VALUE options, char **buffer,
    *position++ = isc_action_svc_backup;
 
    *position++ = isc_spb_dbname;
-   number      = strlen(STR2CSTR(from));
+   number      = strlen(StringValuePtr(from));
    ADD_SPB_LENGTH(position, number);
-   memcpy(position, STR2CSTR(from), number);
+   memcpy(position, StringValuePtr(from), number);
    position += number;
 
    for(i = 0; i < size; i++)
@@ -678,9 +680,9 @@ void createBackupBuffer(VALUE from, VALUE to, VALUE options, char **buffer,
       VALUE name = rb_ary_entry(names, i);
 
       *position++ = isc_spb_bkp_file;
-      number      = strlen(STR2CSTR(name));
+      number      = strlen(StringValuePtr(name));
       ADD_SPB_LENGTH(position, number);
-      memcpy(position, STR2CSTR(name), number);
+      memcpy(position, StringValuePtr(name), number);
       position += number;
 
       if(i != size - 1)
@@ -689,9 +691,9 @@ void createBackupBuffer(VALUE from, VALUE to, VALUE options, char **buffer,
 
          max         = rb_funcall(max, rb_intern("to_s"), 0);
          *position++ = isc_spb_bkp_length;
-         number      = strlen(STR2CSTR(max));
+         number      = strlen(StringValuePtr(max));
          ADD_SPB_LENGTH(position, number);
-         memcpy(position, STR2CSTR(max), number);
+         memcpy(position, StringValuePtr(max), number);
          position += number;
       }
    }

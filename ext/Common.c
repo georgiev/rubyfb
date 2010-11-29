@@ -48,7 +48,7 @@ VALUE forbidObjectCopy(VALUE copy, VALUE original)
    array[1] = rb_funcall(value, rb_intern("name"), 0);
    message = rb_funcall(message, rb_intern("gsub"), 2, array);
    
-   rb_fireruby_raise(NULL, STR2CSTR(message));
+   rb_fireruby_raise(NULL, StringValuePtr(message));
    
    return(Qnil);
 }

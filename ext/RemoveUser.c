@@ -168,13 +168,15 @@ VALUE executeRemoveUser(VALUE self, VALUE manager)
  */
 void createRemoveUserBuffer(VALUE self, char **buffer, short *length)
 {
-   VALUE value   = Qnil;
+   VALUE value   = Qnil,
+         tmp_str = Qnil;
    char  *offset = NULL;
    int   number  = 0;
    
    /* Calculate the required buffer length. */
    *length = 1;
-   *length += strlen(STR2CSTR(rb_iv_get(self, "@user_name"))) + 3;
+   tmp_str = rb_iv_get(self, "@user_name");
+   *length += strlen(StringValuePtr(tmp_str)) + 3;
    
    /* Create and populate the buffer. */
    offset = *buffer = ALLOC_N(char, *length);
@@ -189,9 +191,9 @@ void createRemoveUserBuffer(VALUE self, char **buffer, short *length)
    
    *offset++ = isc_spb_sec_username;
    value     = rb_iv_get(self, "@user_name");
-   number    = strlen(STR2CSTR(value));
+   number    = strlen(StringValuePtr(value));
    ADD_SPB_LENGTH(offset, number);
-   memcpy(offset, STR2CSTR(value), number);
+   memcpy(offset, StringValuePtr(value), number);
    offset    += number;
 }
 

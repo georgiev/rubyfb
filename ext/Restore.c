@@ -717,8 +717,8 @@ void createRestoreBuffer(VALUE file, VALUE database, VALUE options,
 
    /* Determine the length of the buffer. */
    *length = 7;
-   *length += strlen(STR2CSTR(file)) + 3;
-   *length += strlen(STR2CSTR(database)) + 3;
+   *length += strlen(StringValuePtr(file)) + 3;
+   *length += strlen(StringValuePtr(database)) + 3;
    if(cache != Qnil)
    {
       *length += 5;
@@ -743,16 +743,16 @@ void createRestoreBuffer(VALUE file, VALUE database, VALUE options,
 
    *offset++ = isc_action_svc_restore;
 
-   number    = strlen(STR2CSTR(file));
+   number    = strlen(StringValuePtr(file));
    *offset++ = isc_spb_bkp_file;
    ADD_SPB_LENGTH(offset, number);
-   memcpy(offset, STR2CSTR(file), number);
+   memcpy(offset, StringValuePtr(file), number);
    offset    += number;
 
-   number    = strlen(STR2CSTR(database));
+   number    = strlen(StringValuePtr(database));
    *offset++ = isc_spb_dbname;
    ADD_SPB_LENGTH(offset, number);
-   memcpy(offset, STR2CSTR(database), number);
+   memcpy(offset, StringValuePtr(database), number);
    offset    += number;
 
    if(cache != Qnil)

@@ -133,8 +133,8 @@ static VALUE initializeRow(VALUE self, VALUE results, VALUE data, VALUE number)
             index = INT2NUM(i);
             name  = rb_funcall(results, rb_intern("column_name"), 1, index);
             alias = rb_funcall(results, rb_intern("column_alias"), 1, index);
-            strcpy(row->columns[i].name, STR2CSTR(name));
-            strcpy(row->columns[i].alias, STR2CSTR(alias));
+            strcpy(row->columns[i].name, StringValuePtr(name));
+            strcpy(row->columns[i].alias, StringValuePtr(alias));
             items = rb_ary_entry(data, i);
             row->columns[i].value = rb_ary_entry(items, 0);
             row->columns[i].type  = rb_ary_entry(items, 1);
@@ -265,7 +265,7 @@ static VALUE getColumnValue(VALUE self, VALUE index)
             done = 0;
       VALUE flag = getFireRubySetting("ALIAS_KEYS");
       
-      strcpy(name, STR2CSTR(index));
+      strcpy(name, StringValuePtr(index));
       for(i = 0; i < row->size && done == 0; i++)
       {
          int match;
@@ -447,7 +447,7 @@ VALUE fetchRowValue(int size, VALUE *parameters, VALUE self)
          if(size == 1)
          {
             rb_raise(rb_eIndexError, "Column identifier '%s' not found in row.",
-                     STR2CSTR(parameters[0]));
+                     StringValuePtr(parameters[0]));
          }
          value = parameters[1];
       }
@@ -477,7 +477,7 @@ VALUE hasColumnKey(VALUE self, VALUE name)
    VALUE     flag = getFireRubySetting("ALIAS_KEYS");
    
    Data_Get_Struct(self, RowHandle, row);
-   strcpy(text, STR2CSTR(name));
+   strcpy(text, StringValuePtr(name));
    for(i = 0; i < row->size && result == Qfalse; i++)
    {
       int match;
@@ -521,7 +521,7 @@ VALUE hasColumnName(VALUE self, VALUE name)
    int       i;
    
    Data_Get_Struct(self, RowHandle, row);
-   strcpy(text, STR2CSTR(name));
+   strcpy(text, StringValuePtr(name));
    for(i = 0; i < row->size && result == Qfalse; i++)
    {
       if(strcmp(text, row->columns[i].name) == 0)
@@ -553,7 +553,7 @@ VALUE hasColumnAlias(VALUE self, VALUE name)
    int       i;
    
    Data_Get_Struct(self, RowHandle, row);
-   strcpy(text, STR2CSTR(name));
+   strcpy(text, StringValuePtr(name));
    for(i = 0; i < row->size && result == Qfalse; i++)
    {
       if(strcmp(text, row->columns[i].alias) == 0)

@@ -227,7 +227,7 @@ void rb_fireruby_raise(ISC_STATUS *status, const char *message)
 {
    VALUE text = decodeException(status, message);
    
-   rb_raise(cFireRubyException, STR2CSTR(text));
+   rb_raise(cFireRubyException, StringValuePtr(text));
 }
 
 

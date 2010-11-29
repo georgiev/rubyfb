@@ -106,7 +106,8 @@ static VALUE initializeConnection(int argc, VALUE *argv, VALUE self)
                     *dpb     = NULL;
    VALUE            user     = Qnil,
                     password = Qnil,
-                    options  = Qnil;
+                    options  = Qnil,
+                    tmp_str  = Qnil;
 
    if(argc < 1)
    {
@@ -118,7 +119,10 @@ static VALUE initializeConnection(int argc, VALUE *argv, VALUE self)
    {
       rb_fireruby_raise(NULL, "Invalid database specified for connection.");
    }
-   file = STR2CSTR(rb_iv_get(argv[0], "@file"));
+
+   tmp_str = rb_iv_get(argv[0], "@file");
+   file = StringValuePtr(tmp_str);
+
    Data_Get_Struct(self, ConnectionHandle, connection);
 
    /* Extract parameters. */
@@ -300,7 +304,7 @@ static VALUE connectionToString(VALUE self)
             file     = rb_iv_get(database, "@file");
       char  text[256];
 
-      sprintf(text, "%s@%s (OPEN)", STR2CSTR(user), STR2CSTR(file));
+      sprintf(text, "%s@%s (OPEN)", StringValuePtr(user), StringValuePtr(file));
       result = rb_str_new2(text);
    }
 

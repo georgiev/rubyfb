@@ -70,7 +70,7 @@ void getClassName(VALUE object, char *name)
    VALUE klass  = rb_funcall(object, rb_intern("class"), 0),
          string = rb_funcall(klass, rb_intern("name"), 0);
 
-   strcpy(name, STR2CSTR(string));
+   strcpy(name, StringValuePtr(string));
 }
 
 

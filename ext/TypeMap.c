@@ -755,13 +755,17 @@ VALUE toDateTime(VALUE value)
  */
 VALUE rescueConvert(VALUE arguments, VALUE error)
 {
-   VALUE message;
+   VALUE message,
+         tmp_str1 = Qnil,
+         tmp_str2 = Qnil;
    char  text[512];
 
+   tmp_str1 = rb_ary_entry(arguments, 1);
+   tmp_str2 = rb_ary_entry(arguments, 2);
    sprintf(text, "Error converting input column %d from a %s to a %s.",
            FIX2INT(rb_ary_entry(arguments, 0)),
-           STR2CSTR(rb_ary_entry(arguments, 1)),
-           STR2CSTR(rb_ary_entry(arguments, 2)));
+           StringValuePtr(tmp_str1),
+           StringValuePtr(tmp_str2));
    message = rb_str_new2(text);
 
    return(rb_funcall(rb_eException, rb_intern("exception"), 1, &message));
@@ -792,7 +796,7 @@ void storeBlob(VALUE info,
    ISC_QUAD        *blobId = (ISC_QUAD *)field->sqldata;
    VALUE           number  = rb_funcall(info, rb_intern("length"), 0);
    long            length  = 0;
-   char            *data   = STR2CSTR(info);
+   char            *data   = StringValuePtr(info);
 
    length = TYPE(number) == T_FIXNUM ? FIX2INT(number) : NUM2INT(number);
    field->sqltype = SQL_BLOB;
@@ -877,7 +881,7 @@ void populateDateField(VALUE value, XSQLVAR *field)
    if(TYPE(value) != T_ARRAY)
    {
       VALUE message = rb_funcall(value, rb_intern("message"), 0);
-      rb_fireruby_raise(NULL, STR2CSTR(message));
+      rb_fireruby_raise(NULL, StringValuePtr(message));
    }
    datetime.tm_year = FIX2INT(rb_ary_entry(value, 0));
    datetime.tm_mon  = FIX2INT(rb_ary_entry(value, 1));
@@ -1107,7 +1111,7 @@ void populateTextField(VALUE value, XSQLVAR *field)
       actual = rb_funcall(value, rb_intern("to_s"), 0);
    }
 
-   text   = STR2CSTR(actual);
+   text   = StringValuePtr(actual);
    length = strlen(text) > field->sqllen ? field->sqllen : strlen(text);
 
    if((field->sqltype & ~1) == SQL_TEXT)
@@ -1142,7 +1146,7 @@ void populateTimeField(VALUE value, XSQLVAR *field)
    if(TYPE(value) != T_ARRAY)
    {
       VALUE message = rb_funcall(value, rb_intern("message"), 0);
-      rb_fireruby_raise(NULL, STR2CSTR(message));
+      rb_fireruby_raise(NULL, StringValuePtr(message));
    }
    datetime.tm_hour = FIX2INT(rb_ary_entry(value, 3));
    datetime.tm_min  = FIX2INT(rb_ary_entry(value, 4));
@@ -1169,7 +1173,7 @@ void populateTimestampField(VALUE value, XSQLVAR *field)
    if(TYPE(value) != T_ARRAY)
    {
       VALUE message = rb_funcall(value, rb_intern("message"), 0);
-      rb_fireruby_raise(NULL, STR2CSTR(message));
+      rb_fireruby_raise(NULL, StringValuePtr(message));
    }
    datetime.tm_year = FIX2INT(rb_ary_entry(value, 0));
    datetime.tm_mon  = FIX2INT(rb_ary_entry(value, 1));

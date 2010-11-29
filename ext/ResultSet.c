@@ -169,7 +169,7 @@ VALUE initializeResultSet(VALUE self, VALUE connection, VALUE transaction,
    Data_Get_Struct(connection, ConnectionHandle, cHandle);
    Data_Get_Struct(transaction, TransactionHandle, tHandle);
    Data_Get_Struct(self, ResultsHandle, results);
-   prepare(&cHandle->handle, &tHandle->handle, STR2CSTR(sql), &results->handle,
+   prepare(&cHandle->handle, &tHandle->handle, StringValuePtr(sql), &results->handle,
            setting, &type, &inputs, &outputs);
            
    if(type != isc_info_sql_stmt_select &&
@@ -188,7 +188,7 @@ VALUE initializeResultSet(VALUE self, VALUE connection, VALUE transaction,
    results->dialect = setting;
    
    /* UNCOMMENT FOR DEBUGGING PURPOSES! */
-   /*strcpy(results->sql, STR2CSTR(sql));*/
+   /*strcpy(results->sql, StringValuePtr(sql));*/
    
    /* Check if input parameters are needed. */
    if(inputs > 0)

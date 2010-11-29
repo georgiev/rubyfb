@@ -195,7 +195,8 @@ static VALUE connectToDatabase(int argc, VALUE *argv, VALUE self)
 static VALUE createDatabase(int argc, VALUE *argv, VALUE unused)
 {
    VALUE         database    = Qnil,
-                 set         = Qnil;
+                 set         = Qnil,
+                 tmp_str     = Qnil;
    char          sql[512]    = "",
                  *text       = NULL;
    int           value       = 1024;
@@ -223,17 +224,20 @@ static VALUE createDatabase(int argc, VALUE *argv, VALUE unused)
    }
    
    /* Prepare the SQL statement. */
-   sprintf(sql, "CREATE DATABASE '%s'",
-           STR2CSTR(rb_funcall(argv[0], rb_intern("to_s"), 0)));
-   text = STR2CSTR(rb_funcall(argv[1], rb_intern("to_s"), 0));
+   tmp_str = rb_funcall(argv[0], rb_intern("to_s"), 0);
+   sprintf(sql, "CREATE DATABASE '%s'", StringValuePtr(tmp_str));
+
+   tmp_str = rb_funcall(argv[1], rb_intern("to_s"), 0);
+   text = StringValuePtr(tmp_str);
    if(strlen(text) > 0)
    {
       strcat(sql, " USER '");
       strcat(sql, text);
       strcat(sql, "'");
    }
-   
-   text = STR2CSTR(rb_funcall(argv[2], rb_intern("to_s"), 0));
+
+   tmp_str = rb_funcall(argv[2], rb_intern("to_s"), 0);   
+   text = StringValuePtr(tmp_str);
    if(strlen(text) > 0)
    {
       strcat(sql, " PASSWORD '");
@@ -254,7 +258,7 @@ static VALUE createDatabase(int argc, VALUE *argv, VALUE unused)
       char *text = NULL;
       
       set  = rb_funcall(argv[4], rb_intern("to_s"), 0);
-      text = STR2CSTR(set);
+      text = StringValuePtr(set);
       if(strlen(text) > 0)
       {
          strcat(sql, " DEFAULT CHARACTER SET ");

@@ -176,7 +176,7 @@ static VALUE getLastGeneratorValue(VALUE self)
 
    Data_Get_Struct(self, GeneratorHandle, generator);
 
-   number = getGeneratorValue(STR2CSTR(name), 0, generator->connection);
+   number = getGeneratorValue(StringValuePtr(name), 0, generator->connection);
 
    return(INT2NUM(number));
 }
@@ -206,7 +206,7 @@ static VALUE getNextGeneratorValue(VALUE self, VALUE step)
       rb_fireruby_raise(NULL, "Invalid generator step value.");
    }
 
-   number = getGeneratorValue(STR2CSTR(name), FIX2INT(step),
+   number = getGeneratorValue(StringValuePtr(name), FIX2INT(step),
                               generator->connection);
 
    return(INT2NUM(number));
@@ -230,7 +230,7 @@ static VALUE dropGenerator(VALUE self)
    name = rb_iv_get(self, "@name");
 
    /* Drop the generator. */
-   deleteGenerator(STR2CSTR(name), generator->connection);
+   deleteGenerator(StringValuePtr(name), generator->connection);
 
    return(self);
 }
@@ -267,7 +267,7 @@ static VALUE doesGeneratorExist(VALUE klass, VALUE name, VALUE connection)
       rb_fireruby_raise(NULL, "Connection is closed.");
    }
 
-   if(checkForGenerator(STR2CSTR(name), &handle->handle))
+   if(checkForGenerator(StringValuePtr(name), &handle->handle))
    {
       exists = Qtrue;
    }
@@ -310,7 +310,7 @@ static VALUE createGenerator(VALUE klass, VALUE name, VALUE connection)
    Data_Get_Struct(connection, ConnectionHandle, handle);
    if(handle->handle != 0)
    {
-      installGenerator(STR2CSTR(name), &handle->handle);
+      installGenerator(StringValuePtr(name), &handle->handle);
       result = rb_generator_new(name, connection);
    }
    else

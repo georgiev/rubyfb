@@ -234,14 +234,16 @@ VALUE getStatementType(VALUE self)
    ConnectionHandle  *connection  = NULL;
    TransactionHandle *transaction = NULL;
    int               outputs      = 0;
+   VALUE             tmp_str      = Qnil;
    
    Data_Get_Struct(self, StatementHandle, statement);
    Data_Get_Struct(rb_iv_get(self, "@connection"), ConnectionHandle, connection);
    Data_Get_Struct(rb_iv_get(self, "@transaction"), TransactionHandle, transaction);
    if(statement->handle == 0)
    {
+      tmp_str = rb_iv_get(self, "@sql");
       prepare(&connection->handle, &transaction->handle,
-              STR2CSTR(rb_iv_get(self, "@sql")), &statement->handle,
+              StringValuePtr(tmp_str), &statement->handle,
               statement->dialect, &statement->type, &statement->inputs,
               &outputs);
    }

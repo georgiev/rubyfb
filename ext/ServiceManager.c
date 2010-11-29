@@ -113,8 +113,8 @@ VALUE connectServiceManager(VALUE self, VALUE user, VALUE password)
    }
 
    /* Calculate the size of the service parameter buffer. */
-   length += strlen(STR2CSTR(user)) + 2;
-   length += strlen(STR2CSTR(password)) + 2;
+   length += strlen(StringValuePtr(user)) + 2;
+   length += strlen(StringValuePtr(password)) + 2;
 
    /* Create the service parameter buffer. */
    position = buffer = ALLOC_N(char, length);
@@ -129,21 +129,21 @@ VALUE connectServiceManager(VALUE self, VALUE user, VALUE password)
    *position++ = isc_spb_version;
    *position++ = isc_spb_current_version;
 
-   text        = STR2CSTR(user);
+   text        = StringValuePtr(user);
    size        = strlen(text);
    *position++ = isc_spb_user_name;
    *position++ = size;
    strncpy(position, text, size);
    position    += size;
 
-   text        = STR2CSTR(password);
+   text        = StringValuePtr(password);
    size        = strlen(text);
    *position++ = isc_spb_password;
    *position++ = size;
    strncpy(position, text, size);
 
    /* Create the service name. */
-   size    = strlen(STR2CSTR(host)) + 13;
+   size    = strlen(StringValuePtr(host)) + 13;
    service = ALLOC_N(char, size);
    if(service == NULL)
    {
@@ -152,7 +152,7 @@ VALUE connectServiceManager(VALUE self, VALUE user, VALUE password)
                "Memory allocation failure service manager service name.");
    }
    memset(service, 0, size);
-   sprintf(service, "%s:service_mgr", STR2CSTR(host));
+   sprintf(service, "%s:service_mgr", StringValuePtr(host));
 
    /* Make the attachment call. */
    if(isc_service_attach(status, 0, service, &manager->handle, length,

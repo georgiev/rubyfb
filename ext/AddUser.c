@@ -356,34 +356,39 @@ void createAddUserBuffer(VALUE self, char **buffer, short *length)
    VALUE value   = Qnil,
          first   = Qnil,
          middle  = Qnil,
-         last    = Qnil;
+         last    = Qnil,
+         tmp_str = Qnil;
    char  *offset = NULL;
    int   number  = 0;
    
    /* Calculate the required buffer length. */
    *length = 1;
-   *length += strlen(STR2CSTR(rb_iv_get(self, "@user_name"))) + 3;
-   *length += strlen(STR2CSTR(rb_iv_get(self, "@password"))) + 3;
+
+   tmp_str = rb_iv_get(self, "@user_name");
+   *length += strlen(StringValuePtr(tmp_str)) + 3;
+
+   tmp_str = rb_iv_get(self, "@password");
+   *length += strlen(StringValuePtr(tmp_str)) + 3;
    
    value = rb_iv_get(self, "@first_name");
    if(value != Qnil)
    {
       first   = rb_funcall(value, rb_intern("to_s"), 0);
-      *length += strlen(STR2CSTR(first)) + 3;
+      *length += strlen(StringValuePtr(first)) + 3;
    }
    
    value = rb_iv_get(self, "@middle_name");
    if(value != Qnil)
    {
       middle  = rb_funcall(value, rb_intern("to_s"), 0);
-      *length += strlen(STR2CSTR(middle)) + 3;
+      *length += strlen(StringValuePtr(middle)) + 3;
    }
    
    value = rb_iv_get(self, "@last_name");
    if(value != Qnil)
    {
       last    = rb_funcall(value, rb_intern("to_s"), 0);
-      *length += strlen(STR2CSTR(last)) + 3;
+      *length += strlen(StringValuePtr(last)) + 3;
    }
    
    /* Create and populate the buffer. */
@@ -399,42 +404,42 @@ void createAddUserBuffer(VALUE self, char **buffer, short *length)
    
    *offset++ = isc_spb_sec_username;
    value     = rb_iv_get(self, "@user_name");
-   number    = strlen(STR2CSTR(value));
+   number    = strlen(StringValuePtr(value));
    ADD_SPB_LENGTH(offset, number);
-   memcpy(offset, STR2CSTR(value), number);
+   memcpy(offset, StringValuePtr(value), number);
    offset    += number;
    
    *offset++ = isc_spb_sec_password;
    value     = rb_iv_get(self, "@password");
-   number    = strlen(STR2CSTR(value));
+   number    = strlen(StringValuePtr(value));
    ADD_SPB_LENGTH(offset, number);
-   memcpy(offset, STR2CSTR(value), number);
+   memcpy(offset, StringValuePtr(value), number);
    offset    += number;
    
    if(first != Qnil)
    {
       *offset++ = isc_spb_sec_firstname;
-      number    = strlen(STR2CSTR(first));
+      number    = strlen(StringValuePtr(first));
       ADD_SPB_LENGTH(offset, number);
-      memcpy(offset, STR2CSTR(first), number);
+      memcpy(offset, StringValuePtr(first), number);
       offset    += number;
    }
    
    if(middle != Qnil)
    {
       *offset++ = isc_spb_sec_middlename;
-      number    = strlen(STR2CSTR(middle));
+      number    = strlen(StringValuePtr(middle));
       ADD_SPB_LENGTH(offset, number);
-      memcpy(offset, STR2CSTR(middle), number);
+      memcpy(offset, StringValuePtr(middle), number);
       offset    += number;
    }
    
    if(last != Qnil)
    {
       *offset++ = isc_spb_sec_lastname;
-      number    = strlen(STR2CSTR(last));
+      number    = strlen(StringValuePtr(last));
       ADD_SPB_LENGTH(offset, number);
-      memcpy(offset, STR2CSTR(last), number);
+      memcpy(offset, StringValuePtr(last), number);
       offset    += number;
    }
 }

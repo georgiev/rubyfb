@@ -1,11 +1,11 @@
 require 'echoe'
-e = Echoe.new('rubyfb', '0.5.4') do |p|
+e = Echoe.new('rubyfb', '0.5.5') do |p|
   p.description    = "Firebird SQL access library"
   p.url            = "http://rubyforge.org/projects/rubyfb"
   p.author         = "George Georgiev"
   p.email          = "georgiev@heatbs.com"
   p.rdoc_pattern   = ["{examples,ext,lib}/*.rb", "CHANGELOG", "README", "LICENSE"]
-  p.need_tar_gz    = !PLATFORM.include?("win32")
+  p.need_tar_gz    = !RUBY_PLATFORM.include?("win32")
 
   if ARGV.include? "binpkg"
     p.platform=Gem::Platform::CURRENT

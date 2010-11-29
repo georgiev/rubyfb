@@ -1,3 +1,6 @@
+v0.5.5 ==
+Ruby 1.9 compatibility
+
 v0.5.4 ==
 add configurable boolen domain and boolean name match patterns
 fix scale handling for view columns
