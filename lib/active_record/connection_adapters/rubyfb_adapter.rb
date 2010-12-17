@@ -1,5 +1,6 @@
 # Author: Ken Kunz <kennethkunz@gmail.com>
 require 'active_record/connection_adapters/abstract_adapter'
+require 'arel/visitors/rubyfb'
 
 module Rubyfb # :nodoc: all
   NON_EXISTENT_DOMAIN_ERROR = "335544569"
@@ -476,6 +477,16 @@ module ActiveRecord
         select_rows(sql, name).collect { |row| row[0].rstrip.downcase }
       end
 
+      def table_exists?(table_name)
+        super(table_name.to_s.downcase)
+      end
+
+      def primary_key(table_name)
+        if pk_row = index_metadata(table_name, true).to_a.first
+      		pk_row[2].rstrip.downcase
+ 	    	end
+      end
+
       def indexes(table_name, name = nil) # :nodoc:
         index_metadata(table_name, false, name).inject([]) do |indexes, row|
           if indexes.empty? or indexes.last.name != row[0]
@@ -694,12 +705,6 @@ module ActiveRecord
             rows << array_row
           end
           return fields, rows 
-        end
-
-        def primary_key(table_name)
-          if pk_row = index_metadata(table_name, true).to_a.first
-            pk_row[2].rstrip.downcase
-          end
         end
 
         def index_metadata(table_name, pk, name = nil)

@@ -47,6 +47,7 @@ lib/Connection.rb
 lib/ProcedureCall.rb
 lib/SQLType.rb
 lib/active_record/connection_adapters/rubyfb_adapter.rb
+lib/arel/visitors/rubyfb.rb
 lib/mkdoc
 lib/rubyfb.rb
 lib/rubyfb_lib.so

@@ -555,9 +555,9 @@ VALUE getConstant(const char *name, VALUE module)
 {
    VALUE owner = module,
          constants,
-         string,
          exists,
-         entry;
+         entry,
+         symbol = ID2SYM(rb_intern(name));
 
    /* Check that we've got somewhere to look. */
    if(owner == Qnil)
@@ -565,14 +565,10 @@ VALUE getConstant(const char *name, VALUE module)
       owner = rb_cModule;
    }
    constants = rb_funcall(owner, rb_intern("constants"), 0),
-   string    = rb_str_new2(name),
-   exists    = rb_funcall(constants, rb_intern("include?"), 1, string);
+   exists    = rb_funcall(constants, rb_intern("include?"), 1, symbol);
 
    if(exists != Qfalse)
    {
-      ID    id     = rb_intern(name);
-      VALUE symbol = ID2SYM(id);
-
       entry = rb_funcall(owner, rb_intern("const_get"), 1, symbol);
    }
 
