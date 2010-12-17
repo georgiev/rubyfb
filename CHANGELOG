@@ -1,5 +1,8 @@
 v0.5.5 ==
 Ruby 1.9 compatibility
+Initial Rails 3 support
+!!!WARNING!!!
+Rails 3 support uses derived tables (Firebird server >= 2.0)
 
 v0.5.4 ==
 add configurable boolen domain and boolean name match patterns
