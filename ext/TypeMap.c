@@ -553,26 +553,30 @@ VALUE createSafeTime(const struct tm *datetime)
  */
 VALUE getConstant(const char *name, VALUE module)
 {
-   VALUE owner = module,
-         constants,
-         exists,
-         entry,
-         symbol = ID2SYM(rb_intern(name));
+  VALUE owner = module,
+    constants,
+    exists,
+    entry = Qnil,
+    symbol = ID2SYM(rb_intern(name));
 
-   /* Check that we've got somewhere to look. */
-   if(owner == Qnil)
-   {
-      owner = rb_cModule;
-   }
-   constants = rb_funcall(owner, rb_intern("constants"), 0),
-   exists    = rb_funcall(constants, rb_intern("include?"), 1, symbol);
+  /* Check that we've got somewhere to look. */
+  if(owner == Qnil)
+  {
+    owner = rb_cModule;
+  }
 
-   if(exists != Qfalse)
-   {
-      entry = rb_funcall(owner, rb_intern("const_get"), 1, symbol);
-   }
-
-   return(entry);
+  constants = rb_funcall(owner, rb_intern("constants"), 0),
+  exists = rb_funcall(constants, rb_intern("include?"), 1, symbol);
+  if(exists == Qfalse)
+  {
+    /* 1.8 style lookup */
+    exists = rb_funcall(constants, rb_intern("include?"), 1, rb_str_new2(name));
+  }
+  if(exists != Qfalse)
+  {
+    entry = rb_funcall(owner, rb_intern("const_get"), 1, symbol);
+  }
+  return(entry);
 }
 
 

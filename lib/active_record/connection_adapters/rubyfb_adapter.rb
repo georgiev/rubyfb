@@ -1,6 +1,8 @@
 # Author: Ken Kunz <kennethkunz@gmail.com>
 require 'active_record/connection_adapters/abstract_adapter'
-require 'arel/visitors/rubyfb'
+if defined?(Arel) then
+  require 'arel/visitors/rubyfb'
+end
 
 module Rubyfb # :nodoc: all
   NON_EXISTENT_DOMAIN_ERROR = "335544569"
