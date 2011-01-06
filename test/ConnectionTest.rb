@@ -1,11 +1,11 @@
 #!/usr/bin/env ruby
 
-require 'TestSetup'
+require './TestSetup'
 require 'test/unit'
 require 'rubygems'
-require 'fireruby'
+require 'rubyfb'
 
-include FireRuby
+include Rubyfb
 
 class ConnectionTest < Test::Unit::TestCase
    CURDIR  = "#{Dir.getwd}"
@@ -79,17 +79,17 @@ class ConnectionTest < Test::Unit::TestCase
       @connections.push(@database.connect(DB_USER_NAME, DB_PASSWORD))
       tx    = @connections[0].start_transaction
       total = 0
-      @connections[0].execute("SELECT RDB$FIELD_NAME FROM RDB$FIELDS", tx) do |row|
+      @connections[0].execute("SELECT * FROM RDB$DATABASE", tx) do |row|
          total = total + 1
       end
-      assert(total == 88)
+      assert(total == 1)
       tx.commit
 
       total = 0      
-      @connections[0].execute_immediate("SELECT RDB$FIELD_NAME FROM RDB$FIELDS") do |row|
+      @connections[0].execute_immediate("SELECT * FROM RDB$DATABASE") do |row|
          total = total + 1
       end
-      assert(total == 88)
+      assert(total == 1)
    end
 
    def test04

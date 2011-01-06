@@ -1,11 +1,11 @@
 #!/usr/bin/env ruby
 
-require 'TestSetup'
+require './TestSetup'
 require 'test/unit'
 require 'rubygems'
-require 'fireruby'
+require 'rubyfb'
 
-include FireRuby
+include Rubyfb
 
 class DatabaseTest < Test::Unit::TestCase
    CURDIR      = "#{Dir.getwd}"

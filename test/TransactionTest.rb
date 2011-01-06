@@ -1,11 +1,11 @@
 #!/usr/bin/env ruby
 
-require 'TestSetup'
+require './TestSetup'
 require 'test/unit'
 require 'rubygems'
-require 'fireruby'
+require 'rubyfb'
 
-include FireRuby
+include Rubyfb
 
 class TransactionTest < Test::Unit::TestCase
    CURDIR  = "#{Dir.getwd}"
@@ -94,7 +94,7 @@ class TransactionTest < Test::Unit::TestCase
       sql = []
       sql.push("UPDATE RDB$EXCEPTIONS SET RDB$MESSAGE = 'WoooHooo'"\
                "WHERE RDB$EXCEPTION_NAME = 'Lalala'")
-      sql.push("SELECT RDB$FIELD_NAME FROM RDB$FIELDS")
+      sql.push("SELECT * FROM RDB$DATABASE")
       @transactions.push(Transaction.new(@connections[0]))
       
       assert(@transactions[0].execute(sql[0]) == 0)
@@ -107,6 +107,6 @@ class TransactionTest < Test::Unit::TestCase
       @transactions[0].execute(sql[1]) do |row|
          total += 1
       end
-      assert(total == 88)
+      assert(total == 1)
    end
 end

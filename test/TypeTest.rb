@@ -1,12 +1,12 @@
 #!/usr/bin/env ruby
 
-require 'TestSetup'
+require './TestSetup'
 require 'test/unit'
 require 'rubygems'
-require 'fireruby'
+require 'rubyfb'
 require 'date'
 
-include FireRuby
+include Rubyfb
 
 class TypeTest < Test::Unit::TestCase
    CURDIR      = "#{Dir.getwd}"

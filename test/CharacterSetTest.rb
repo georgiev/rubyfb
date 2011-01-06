@@ -1,11 +1,12 @@
 #!/usr/bin/env ruby
+# encoding: windows-1251
 
-require 'TestSetup'
+require './TestSetup'
 require 'test/unit'
 require 'rubygems'
-require 'fireruby'
+require 'rubyfb'
 
-include FireRuby
+include Rubyfb
 
 class CharacterSetTest < Test::Unit::TestCase
    CURDIR   = "#{Dir.getwd}"
@@ -39,10 +40,10 @@ class CharacterSetTest < Test::Unit::TestCase
    end
 
    def test02
-      text = "•?‰Œ˜"
       db   = Database.new(DB_FILE, CHAR_SET)
 
       begin
+         win1251_str = 'Êèğèëè÷êà'
          db.connect("SYSDBA", "masterkey") do |cxn|
             cxn.start_transaction do |tr|
                cxn.execute("CREATE TABLE SAMPLE_TABLE(SAMPLE_FIELD VARCHAR(100))",tr)
@@ -56,8 +57,8 @@ class CharacterSetTest < Test::Unit::TestCase
                end
             end
          end
-      rescue => error
-         assert("Character set unit test failure.", false)
+#      rescue => error
+#         assert("Character set unit test failure.", false)
       end
    end
 end
