@@ -3,6 +3,9 @@ Ruby 1.9 compatibility
 Initial Rails 3 support
 !!!WARNING!!!
 Rails 3 support uses derived tables (Firebird server >= 2.0)
+!!!WARNING!!!
+DevKit build support (see https://github.com/oneclick/rubyinstaller/wiki/Development-Kit) thanks to Alex Vangelov
+updated test suite
 
 v0.5.4 ==
 add configurable boolen domain and boolean name match patterns
