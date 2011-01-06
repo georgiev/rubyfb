@@ -34,14 +34,7 @@
 #include "ResultSet.h"
 #include "Statement.h"
 #include "FireRuby.h"
-
-#ifdef OS_UNIX
-   #include <inttypes.h>
-#else
-   typedef short     int16_t;
-   typedef long      int32_t;
-   typedef long long int64_t;
-#endif
+#include "rfbint.h"
 
 /* Function prototypes. */
 VALUE createDate(const struct tm *);

@@ -30,13 +30,7 @@
 #include "Statement.h"
 #include "Transaction.h"
 #include "DataArea.h"
-#ifdef OS_UNIX
-   #include <inttypes.h>
-#else
-   typedef short     int16_t;
-   typedef long      int32_t;
-   typedef long long int64_t;
-#endif
+#include "rfbint.h"
 
 /* Function prototypes. */
 static VALUE allocateGenerator(VALUE);

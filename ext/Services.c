@@ -25,6 +25,7 @@
 
 #include "Services.h"
 #include "FireRubyException.h"
+#include "rfbsleep.h"
 #ifdef OS_UNIX
    #include <unistd.h>
 #endif
@@ -116,7 +117,7 @@ VALUE queryService(isc_svc_handle *handle)
       /* Snooze if we're not done. */
       if(!done)
       {
-         sleep(1);
+         rfb_sleep(1);
       }
    }
 

@@ -18,6 +18,11 @@ elsif RUBY_PLATFORM.include?("win32")
    dir_config("dotnet")
    firebird_include="../mswin32fb"
    firebird_lib="../mswin32fb"
+elsif RUBY_PLATFORM.include?("mingw32")
+   $LIBS = $LIBS + " ../mswin32fb/fbclient_mingw.def -lfbclient_mingw"
+   $DLDFLAGS = "--enable-stdcall-fixup,"+$DLDFLAGS
+   firebird_include="../mswin32fb"
+   firebird_lib="../mswin32fb"
 elsif RUBY_PLATFORM.include?("linux")
    $LDFLAGS = $LDFLAGS + " -lfbclient -lpthread"
    $CFLAGS  = $CFLAGS + " -DOS_UNIX"
