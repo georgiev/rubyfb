@@ -12,7 +12,7 @@ module Rubyfb # :nodoc: all
         raise ArgumentError, "No database specified. Missing argument: database."
       end
       host_string = config.values_at(:host, :service, :port).compact.first(2).join("/") if config[:host]
-      [host_string, config[:database]].join(":")
+      [host_string, config[:database]].compact.join(":")
     end
 
     def self.new_from_config(config)
