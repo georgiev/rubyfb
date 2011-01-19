@@ -773,6 +773,26 @@ module Rubyfb
       
       
       #
+      # This method fetches the scale associated with a specified column for a
+      # ResultSet object.  Firebird implements some floating point types with
+      # integral storage and a negative scale.  For example, depending on
+      # your platform
+      #
+      #    SELECT 1.003 FROM RDB$DATABASE
+      #
+      # may return a ResultSet, the first and only column of which has
+      # a base type of :BIGINT but a scale of -3.  (Fetches of the actual
+      # value will correctly return a ruby Float.)
+      #
+      # ==== Parameters
+      # column::  A reference to the column number to fetch the details for.
+      #           Column numbers start at zero.
+      #
+      def column_scale(column)
+      end
+
+
+      #
       # This method fetches the table name associated with a specified column
       # for a ResultSet object.
       #
@@ -909,6 +929,19 @@ module Rubyfb
       #          column in the row is at offset zero.
       #
       def column_alias(index)
+      end
+
+
+      #
+      # This method fetches the scale associated with a specified column
+      # within a row of data.  See the documentation of
+      # ResultSet#column_scale for details.
+      #
+      # ==== Parameters
+      # column::  A reference to the column number to fetch the details for.
+      #           Column numbers start at zero.
+      #
+      def column_scale(column)
       end
       
       
