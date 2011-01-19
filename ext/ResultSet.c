@@ -47,6 +47,7 @@ static VALUE getResultSetDialect(VALUE);
 static VALUE getResultSetColumnCount(VALUE);
 static VALUE getResultSetColumnName(VALUE, VALUE);
 static VALUE getResultSetColumnAlias(VALUE, VALUE);
+static VALUE getResultSetColumnScale(VALUE, VALUE);
 static VALUE getResultSetColumnTable(VALUE, VALUE);
 static VALUE getResultSetColumnType(VALUE, VALUE);
 static VALUE eachResultSetRow(VALUE);
@@ -507,6 +508,41 @@ static VALUE getResultSetColumnAlias(VALUE self, VALUE column)
    return(alias);
 }
 
+/**
+ * This function provides the column_scale method for the ResultSet class.
+ *
+ * @param  self    A reference to the ResultSet object to retrieve the column
+ *                 alias from.
+ * @param  column  An offset to the column to retrieve the scale of.
+ *
+ * @return  An Integer representing the sqlscale of the column, or nil if an
+ *          invalid column was specified.
+ *
+ */
+static VALUE getResultSetColumnScale(VALUE self, VALUE column)
+{
+	 VALUE         scale    = Qnil;
+   ResultsHandle *results = NULL;
+
+   Data_Get_Struct(self, ResultsHandle, results);
+   if(results != NULL)
+   {
+      int offset = 0;
+
+      offset = (TYPE(column) == T_FIXNUM ? FIX2INT(column) : NUM2INT(column));
+      if(offset >= 0 && offset < results->output->sqld)
+      {
+         XSQLVAR *var = results->output->sqlvar;
+         int     index;
+
+         for(index = 0; index < offset; index++, var++);
+         scale = INT2FIX(var->sqlscale);
+      }
+   }
+
+   return(scale);
+}
+
 
 /**
  * This function provides the column_table method for the ResultSet class.
@@ -803,6 +839,7 @@ void Init_ResultSet(VALUE module)
    rb_define_method(cResultSet, "each", eachResultSetRow, 0);
    rb_define_method(cResultSet, "column_name", getResultSetColumnName, 1);
    rb_define_method(cResultSet, "column_alias", getResultSetColumnAlias, 1);
+   rb_define_method(cResultSet, "column_scale", getResultSetColumnScale, 1);
    rb_define_method(cResultSet, "column_table", getResultSetColumnTable, 1);
    rb_define_method(cResultSet, "column_count", getResultSetColumnCount, 0);
    rb_define_method(cResultSet, "exhausted?", isResultSetExhausted, 0);
