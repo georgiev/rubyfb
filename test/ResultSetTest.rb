@@ -159,4 +159,17 @@ class ResultSetTest < Test::Unit::TestCase
          results.close if results != nil
       end
    end
+   def test05
+      results = @transactions[0].execute(<<-EOSQL)
+                SELECT CAST(5.01 AS DECIMAL(6,5)) AS "COL01",
+                       2.2                        AS "COL02",
+                       CAST(3 AS INTEGER)         AS "COL03"
+                  FROM RDB$DATABASE
+                EOSQL
+      assert_equal(-5, results.column_scale(0))
+      assert_equal(-1, results.column_scale(1))
+      assert_equal(0, results.column_scale(2))
+   ensure
+      results.close if results
+   end
 end
