@@ -202,7 +202,7 @@ class RowTest < Test::Unit::TestCase
    end
 
    def test04
-      results = @transactions[0].execute(<<-EOSQL)
+      results = @transaction.execute(<<-EOSQL)
                 SELECT CAST(5.01 AS DECIMAL(6,5)) AS "COL01",
                        2.2                        AS "COL02",
                        CAST(3 AS INTEGER)         AS "COL03"
