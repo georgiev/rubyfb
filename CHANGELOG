@@ -1,6 +1,6 @@
 v0.5.6 ==
 Fix rubyforge issue #28860 - rubyfb_adapter.rb and local files as proposed by Leonid Myravjev (asm)
-Merge pilcrow-scale branch - introduce column_scale() methods in ResultSet/Row classes
+Merge pilcrow-scale branch - introduce column_scale() methods in ResultSet/Row classes thanks to Mike Pomraning (pilcrow)
 Drop old unit test suite
 
 v0.5.5 ==
