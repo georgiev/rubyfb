@@ -37,7 +37,8 @@
       char  name[32],
             alias[32];
       VALUE value,
-            type;
+            type,
+            scale;
    } ColumnHandle;
    
    typedef struct

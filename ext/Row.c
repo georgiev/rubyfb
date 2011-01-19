@@ -36,6 +36,7 @@ static VALUE columnsInRow(VALUE);
 static VALUE getRowNumber(VALUE);
 static VALUE getColumnName(VALUE, VALUE);
 static VALUE getColumnAlias(VALUE, VALUE);
+static VALUE getColumnScale(VALUE, VALUE);
 static VALUE getColumnValue(VALUE, VALUE);
 static VALUE eachColumn(VALUE);
 static VALUE eachColumnKey(VALUE);
@@ -128,6 +129,7 @@ static VALUE initializeRow(VALUE self, VALUE results, VALUE data, VALUE number)
             VALUE index,
                   name,
                   alias,
+                  scale,
                   items;
                   
             index = INT2NUM(i);
@@ -138,6 +140,7 @@ static VALUE initializeRow(VALUE self, VALUE results, VALUE data, VALUE number)
             items = rb_ary_entry(data, i);
             row->columns[i].value = rb_ary_entry(items, 0);
             row->columns[i].type  = rb_ary_entry(items, 1);
+            row->columns[i].scale = rb_funcall(results, rb_intern("column_scale"), 1, index);
             
             if(TYPE(rb_ary_entry(items, 1)) == T_NIL)
             {
@@ -707,25 +710,65 @@ VALUE getColumnBaseType(VALUE self, VALUE index)
    if(TYPE(index) == T_FIXNUM)
    {
       RowHandle *row   = NULL;
-      
+
       Data_Get_Struct(self, RowHandle, row);
       if(row != NULL)
       {
          int offset = FIX2INT(index);
-         
+
          /* Correct negative index values. */
          if(offset < 0)
          {
             offset = row->size + offset;
          }
-         
+
          if(offset >= 0 && offset < row->size)
          {
             result = row->columns[offset].type;
          }
       }
    }
-   
+
+   return(result);
+}
+
+/**
+ * This function provides the column_scale method for the Row class.
+ *
+ * @param  self    A reference to the Row object to retrieve the column
+ *                 alias from.
+ * @param  column  An offset to the column to retrieve the scale of.
+ *
+ * @return  An Integer representing the scale of the column, or nil if an
+ *          invalid column was specified.
+ *
+ */
+static VALUE getColumnScale(VALUE self, VALUE index)
+{
+   VALUE result = Qnil;
+
+   if(TYPE(index) == T_FIXNUM)
+   {
+      RowHandle *row   = NULL;
+
+      Data_Get_Struct(self, RowHandle, row);
+      if(row != NULL)
+      {
+         int offset = FIX2INT(index);
+
+         /* Correct negative index values. */
+         if(offset < 0)
+         {
+            offset = row->size + offset;
+         }
+
+         if(offset >= 0 && offset < row->size)
+         {
+            result = row->columns[offset].scale;
+         }
+      }
+   }
+
    return(result);
 }
 
@@ -936,6 +979,7 @@ void Init_Row(VALUE module)
    rb_define_method(cRow, "column_count", columnsInRow, 0);
    rb_define_method(cRow, "column_name", getColumnName, 1);
    rb_define_method(cRow, "column_alias", getColumnAlias, 1);
+   rb_define_method(cRow, "column_scale", getColumnScale, 1);
    rb_define_method(cRow, "each", eachColumn, 0);
    rb_define_method(cRow, "each_key", eachColumnKey, 0);
    rb_define_method(cRow, "each_value", eachColumnValue, 0);
