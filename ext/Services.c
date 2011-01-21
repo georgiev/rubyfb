@@ -54,7 +54,7 @@ VALUE queryService(isc_svc_handle *handle)
    /* Query the service until it has completed. */
    while(!done)
    {
-      ISC_STATUS status[20];
+      ISC_STATUS status[ISC_STATUS_LENGTH];
       char       *output   = NULL,
                  *offset   = NULL,
                  *log      = NULL,

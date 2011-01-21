@@ -644,7 +644,7 @@ VALUE executeRestore(VALUE self, VALUE manager)
    ManagerHandle *handle = NULL;
    char          *buffer = NULL;
    short         length  = 0;
-   ISC_STATUS    status[20];
+   ISC_STATUS    status[ISC_STATUS_LENGTH];
 
    /* Check that the service manager is connected. */
    Data_Get_Struct(manager, ManagerHandle, handle);

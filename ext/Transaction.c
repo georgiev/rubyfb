@@ -149,7 +149,7 @@ static VALUE commitTransaction(VALUE self)
    /* Commit the transaction. */
    if(transaction->handle != 0)
    {
-      ISC_STATUS status[20];
+      ISC_STATUS status[ISC_STATUS_LENGTH];
       
       if(isc_commit_transaction(status, &transaction->handle) != 0)
       {
@@ -191,7 +191,7 @@ static VALUE rollbackTransaction(VALUE self)
    /* Roll back the transaction. */
    if(transaction->handle != 0)
    {
-      ISC_STATUS status[20];
+      ISC_STATUS status[ISC_STATUS_LENGTH];
       
       if(isc_rollback_transaction(status, &transaction->handle) != 0)
       {
@@ -550,7 +550,7 @@ void startTransaction(TransactionHandle *transaction,
    /* Check that theres been no errors and that we have a connection list. */
    if(teb != NULL)
    {
-      ISC_STATUS status[20];
+      ISC_STATUS status[ISC_STATUS_LENGTH];
       
       /* Attempt a transaction start. */
       if(isc_start_multiple(status, &transaction->handle, length, teb) != 0)
@@ -585,7 +585,7 @@ void transactionFree(void *transaction)
       
       if(handle->handle != 0)
       {
-         ISC_STATUS status[20];
+         ISC_STATUS status[ISC_STATUS_LENGTH];
          
          isc_rollback_transaction(status, &handle->handle);
       }

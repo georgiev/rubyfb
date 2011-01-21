@@ -46,7 +46,7 @@ XSQLDA *allocateOutXSQLDA(int size, isc_stmt_handle *statement, short dialect)
 
    if(area != NULL)
    {
-      ISC_STATUS status[20];
+      ISC_STATUS status[ISC_STATUS_LENGTH];
 
       area->sqln    = size;
       area->version = SQLDA_VERSION1;
@@ -89,7 +89,7 @@ XSQLDA *allocateInXSQLDA(int size, isc_stmt_handle *statement, short dialect)
 
    if(area != NULL)
    {
-      ISC_STATUS status[20];
+      ISC_STATUS status[ISC_STATUS_LENGTH];
 
       area->sqln    = size;
       area->version = SQLDA_VERSION1;

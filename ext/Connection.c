@@ -100,7 +100,7 @@ static VALUE allocateConnection(VALUE klass)
 static VALUE initializeConnection(int argc, VALUE *argv, VALUE self)
 {
    ConnectionHandle *connection = NULL;
-   ISC_STATUS       status[20];
+   ISC_STATUS       status[ISC_STATUS_LENGTH];
    short            length   = 0;
    char             *file    = NULL,
                     *dpb     = NULL;
@@ -215,7 +215,7 @@ static VALUE closeConnection(VALUE self)
    {
       VALUE      transactions = rb_iv_get(self, "@transactions"),
                  transaction  = Qnil;
-      ISC_STATUS status[20];
+      ISC_STATUS status[ISC_STATUS_LENGTH];
 
       /* Roll back an outstanding transactions. */
       while((transaction = rb_ary_pop(transactions)) != Qnil)
@@ -721,7 +721,7 @@ void connectionFree(void *connection)
 
       if(handle->handle != 0)
       {
-         ISC_STATUS status[20];
+         ISC_STATUS status[ISC_STATUS_LENGTH];
 
          isc_detach_database(status, &handle->handle);
       }

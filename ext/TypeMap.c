@@ -784,7 +784,7 @@ void storeBlob(VALUE info,
                ConnectionHandle *connection,
                TransactionHandle *transaction)
 {
-   ISC_STATUS      status[20];
+   ISC_STATUS      status[ISC_STATUS_LENGTH];
    isc_blob_handle handle  = 0;
    ISC_QUAD        *blobId = (ISC_QUAD *)field->sqldata;
    VALUE           number  = rb_funcall(info, rb_intern("length"), 0);

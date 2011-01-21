@@ -257,7 +257,7 @@ VALUE fetchResultSetEntry(VALUE self)
 {
    VALUE         row      = Qnil;
    ResultsHandle *results = NULL;
-   ISC_STATUS    status[20],
+   ISC_STATUS    status[ISC_STATUS_LENGTH],
                  value;
    
    Data_Get_Struct(self, ResultsHandle, results);
@@ -310,7 +310,7 @@ VALUE closeResultSet(VALUE self)
    Data_Get_Struct(self, ResultsHandle, results);
    if(results->handle != 0)
    {
-      ISC_STATUS status[20];
+      ISC_STATUS status[ISC_STATUS_LENGTH];
       
       if(isc_dsql_free_statement(status, &results->handle, DSQL_drop))
       {
@@ -760,7 +760,7 @@ void resultSetFree(void *handle)
       
       if(results->handle != 0)
       {
-         ISC_STATUS status[20];
+         ISC_STATUS status[ISC_STATUS_LENGTH];
          
          /* UNCOMMENT FOR DEBUG PURPOSES! */
          /*fprintf(stderr, "Releasing statement handle for...\n%s\n", results->sql);*/
@@ -788,7 +788,7 @@ void cleanupHandle(isc_stmt_handle *handle)
 {
    if(*handle != 0)
    {
-      ISC_STATUS status[20];
+      ISC_STATUS status[ISC_STATUS_LENGTH];
          
       /* UNCOMMENT FOR DEBUG PURPOSES! */
       /*fprintf(stderr, "Cleaning up a statement handle.\n");*/

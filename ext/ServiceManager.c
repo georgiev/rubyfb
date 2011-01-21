@@ -104,7 +104,7 @@ VALUE connectServiceManager(VALUE self, VALUE user, VALUE password)
    short         length    = 2,
                  size      = 0;
    VALUE         host      = rb_iv_get(self, "@host");
-   ISC_STATUS    status[20];
+   ISC_STATUS    status[ISC_STATUS_LENGTH];
 
    Data_Get_Struct(self, ManagerHandle, manager);
    if(manager->handle != 0)
@@ -186,7 +186,7 @@ VALUE disconnectServiceManager(VALUE self)
    Data_Get_Struct(self, ManagerHandle, manager);
    if(manager->handle != 0)
    {
-      ISC_STATUS status[20];
+      ISC_STATUS status[ISC_STATUS_LENGTH];
 
       if(isc_service_detach(status, &manager->handle))
       {
@@ -268,7 +268,7 @@ void serviceManagerFree(void *manager)
 
       if(handle->handle != 0)
       {
-         ISC_STATUS status[20];
+         ISC_STATUS status[ISC_STATUS_LENGTH];
 
          isc_service_detach(status, &handle->handle);
       }

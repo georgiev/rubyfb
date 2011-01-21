@@ -141,7 +141,7 @@ static VALUE closeBlob(VALUE self)
    Data_Get_Struct(self, BlobHandle, blob);
    if(blob->handle != 0)
    {
-      ISC_STATUS status[20];
+      ISC_STATUS status[ISC_STATUS_LENGTH];
       
       if(isc_close_blob(status, &blob->handle) != 0)
       {
@@ -213,7 +213,7 @@ BlobHandle *openBlob(ISC_QUAD blobId,
    
    if(blob != NULL)
    {
-      ISC_STATUS status[20];
+      ISC_STATUS status[ISC_STATUS_LENGTH];
       
       /* Extract the blob details and open it. */
       blob->handle = 0;
@@ -290,7 +290,7 @@ char *loadBlobData(BlobHandle *blob)
    {
       if((data = ALLOC_N(char, blob->size)) != NULL)
       {
-         ISC_STATUS status[20],
+         ISC_STATUS status[ISC_STATUS_LENGTH],
                     result = 0;
          int        offset = 0;
 
@@ -350,7 +350,7 @@ char *loadBlobSegment(BlobHandle *blob, unsigned short *length)
       
       if((data = ALLOC_N(char, size)) != NULL)
       {
-         ISC_STATUS     status[20],
+         ISC_STATUS     status[ISC_STATUS_LENGTH],
                         result;
                     
          result = isc_get_segment(status, &blob->handle, length, size, data);
@@ -392,7 +392,7 @@ void blobFree(void *blob)
 
       if(handle->handle != 0)
       {
-         ISC_STATUS status[20];
+         ISC_STATUS status[ISC_STATUS_LENGTH];
          
          isc_close_blob(status, &handle->handle);
       }

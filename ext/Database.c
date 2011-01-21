@@ -202,7 +202,7 @@ static VALUE createDatabase(int argc, VALUE *argv, VALUE unused)
    int           value       = 1024;
    isc_db_handle connection  = 0;
    isc_tr_handle transaction = 0;
-   ISC_STATUS    status[20];
+   ISC_STATUS    status[ISC_STATUS_LENGTH];
    
    /* Check that sufficient parameters have been provided. */
    if(argc < 3)
@@ -306,7 +306,7 @@ static VALUE dropDatabase(VALUE self, VALUE user, VALUE password)
 {
    VALUE            connection = rb_connection_new(self, user, password, Qnil);
    ConnectionHandle *cHandle   = NULL;
-   ISC_STATUS       status[20];
+   ISC_STATUS       status[ISC_STATUS_LENGTH];
    
    Data_Get_Struct(connection, ConnectionHandle, cHandle);
    if(isc_drop_database(status, &cHandle->handle) != 0)

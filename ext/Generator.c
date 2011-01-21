@@ -333,7 +333,7 @@ int checkForGenerator(const char *name, isc_db_handle *connection)
 {
    int             result    = -1;
    isc_stmt_handle statement = 0;
-   ISC_STATUS      status[20];
+   ISC_STATUS      status[ISC_STATUS_LENGTH];
 
    if(isc_dsql_allocate_statement(status, connection, &statement) == 0)
    {
@@ -424,7 +424,7 @@ int installGenerator(const char *name, isc_db_handle *connection)
 {
    int             result    = -1;
    isc_stmt_handle statement = 0;
-   ISC_STATUS      status[20];
+   ISC_STATUS      status[ISC_STATUS_LENGTH];
 
    if(isc_dsql_allocate_statement(status, connection, &statement) == 0)
    {
@@ -486,7 +486,7 @@ int deleteGenerator(const char *name, isc_db_handle *connection)
 {
    int             result    = -1;
    isc_stmt_handle statement = 0;
-   ISC_STATUS      status[20];
+   ISC_STATUS      status[ISC_STATUS_LENGTH];
 
    if(isc_dsql_allocate_statement(status, connection, &statement) == 0)
    {
@@ -582,7 +582,7 @@ XSQLDA *createStorage(void)
 int32_t getGeneratorValue(const char *name, int step, isc_db_handle *connection)
 {
    int32_t       result      = 0;
-   ISC_STATUS    status[20];
+   ISC_STATUS    status[ISC_STATUS_LENGTH];
    isc_tr_handle transaction = 0;
    XSQLDA        *da         = createStorage();
 

@@ -537,7 +537,7 @@ VALUE executeBackup(VALUE self, VALUE manager)
    ManagerHandle *handle   = NULL;
    short         length    = 0;
    char          *buffer   = NULL;
-   ISC_STATUS    status[20];
+   ISC_STATUS    status[ISC_STATUS_LENGTH];
 
    /* Check that the service manager is connected. */
    Data_Get_Struct(manager, ManagerHandle, handle);

@@ -423,7 +423,7 @@ VALUE closeStatement(VALUE self)
    Data_Get_Struct(self, StatementHandle, statement);
    if(statement->handle != 0)
    {
-      ISC_STATUS status[20];
+      ISC_STATUS status[ISC_STATUS_LENGTH];
       
       if(isc_dsql_free_statement(status, &statement->handle, DSQL_drop))
       {
@@ -463,7 +463,7 @@ void prepare(isc_db_handle *connection, isc_tr_handle *transaction,
              char *sql, isc_stmt_handle *statement, short dialect,
              int *type, int *inputs, int *outputs)
 {
-   ISC_STATUS status[20];
+   ISC_STATUS status[ISC_STATUS_LENGTH];
    XSQLDA     *da    = NULL;
    char       list[] = {isc_info_sql_stmt_type},
               info[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -531,7 +531,7 @@ void prepare(isc_db_handle *connection, isc_tr_handle *transaction,
 void execute_2(isc_tr_handle *transaction, isc_stmt_handle *statement,
              short dialect, XSQLDA *parameters, int type, long *affected, XSQLDA *output)
 {
-  ISC_STATUS status[20];
+  ISC_STATUS status[ISC_STATUS_LENGTH];
 	ISC_STATUS execute_result;
 	
 	if(output) {
@@ -717,7 +717,7 @@ void statementFree(void *handle)
       
       if(statement->handle != 0)
       {
-         ISC_STATUS status[20];
+         ISC_STATUS status[ISC_STATUS_LENGTH];
          
          isc_dsql_free_statement(status, &statement->handle, DSQL_drop);
       }
