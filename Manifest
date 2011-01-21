@@ -79,4 +79,3 @@ test/StatementTest.rb
 test/TestSetup.rb
 test/TransactionTest.rb
 test/TypeTest.rb
-test/UnitTest.rb
