@@ -45,7 +45,7 @@
    /* Function prototypes. */
    void Init_FireRubyException(VALUE);
    VALUE rb_fireruby_exception_new(const char *);
-   void rb_fireruby_raise(ISC_STATUS *, const char *);
+   void rb_fireruby_raise(const ISC_STATUS *, const char *);
    void firerubyExceptionFree(void *);
    
 #endif /* FIRERUBY_FIRE_RUBY_EXCEPTION_H */

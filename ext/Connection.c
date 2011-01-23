@@ -100,7 +100,7 @@ static VALUE allocateConnection(VALUE klass)
 static VALUE initializeConnection(int argc, VALUE *argv, VALUE self)
 {
    ConnectionHandle *connection = NULL;
-   ISC_STATUS       status[ISC_STATUS_LENGTH];
+   ISC_STATUS       status[ISC_STATUS_LENGTH], attach_result;
    short            length   = 0;
    char             *file    = NULL,
                     *dpb     = NULL;
@@ -141,14 +141,13 @@ static VALUE initializeConnection(int argc, VALUE *argv, VALUE self)
 
    /* Open the connection connection. */
    dpb = createDPB(user, password, options, &length);
-   if(isc_attach_database(status, strlen(file), file, &connection->handle,
-                          length, dpb) != 0)
-   {
+   attach_result = isc_attach_database(status, strlen(file), file, &connection->handle, length, dpb);
+   free(dpb);
+
+   if(attach_result != 0) {
       /* Generate an error. */
-      free(dpb);
       rb_fireruby_raise(status, "Error opening database connection.");
    }
-   free(dpb);
 
    /* Store connection attributes. */
    rb_iv_set(self, "@database", argv[0]);
