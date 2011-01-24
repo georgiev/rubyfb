@@ -529,7 +529,7 @@ VALUE createTime(VALUE dt)
  */
 VALUE createSafeTime(const struct tm *datetime)
 {
-   VALUE dt = Data_Wrap_Struct(rb_cObject, NULL, NULL, datetime);
+   VALUE dt = Data_Wrap_Struct(rb_cObject, NULL, NULL, (void*)datetime);
    return rb_rescue(createTime, dt, createDateTime, dt);
 }
 
