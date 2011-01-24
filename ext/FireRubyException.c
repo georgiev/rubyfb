@@ -28,7 +28,6 @@
 #include "time.h"
 
 /* Function prototypes. */
-static VALUE allocateFireRubyException(VALUE);
 static VALUE initializeFireRubyException(VALUE, VALUE);
 static VALUE getFireRubyExceptionSQLCode(VALUE);
 static VALUE getFireRubyExceptionDBCode(VALUE);
@@ -36,36 +35,6 @@ static VALUE getFireRubyExceptionMessage(VALUE);
 
 /* Globals. */
 VALUE cFireRubyException;
-
-
-/**
- * This function integrates with the Ruby language to allow for the allocation
- * of new FireRubyException objects.
- *
- * @param  klass  A reference to the FireRubyException Class object.
- *
- * @return  An instance of the FireRubyException class.
- *
- */
-static VALUE allocateFireRubyException(VALUE klass)
-{
-   VALUE           instance;
-   ExceptionHandle *exception = ALLOC(ExceptionHandle);
-   
-   if(exception != NULL)
-   {
-      exception->when = (long)time(NULL);
-      instance = Data_Wrap_Struct(klass, NULL, firerubyExceptionFree,
-                                  exception);
-   }
-   else
-   {
-      rb_raise(rb_eNoMemError,
-               "Memory allocation failure creating a FireRubyException object.");
-   }
-   
-   return(instance);
-}
 
 
 /**
@@ -205,11 +174,7 @@ VALUE decodeException(const ISC_STATUS *status, const char *prefix)
  */
 VALUE rb_fireruby_exception_new(const char *message)
 {
-   VALUE exception = allocateFireRubyException(cFireRubyException);
-   
-   initializeFireRubyException(exception, rb_str_new2(message));
-   
-   return(exception);
+  return rb_funcall(cFireRubyException, rb_intern("new"), 1, rb_str_new2(message));
 }
 
 
@@ -224,27 +189,8 @@ VALUE rb_fireruby_exception_new(const char *message)
  */
 void rb_fireruby_raise(const ISC_STATUS *status, const char *message)
 {
-   VALUE text = decodeException(status, message);
-   
-   rb_raise(cFireRubyException, StringValuePtr(text));
-}
-
-
-/**
- * This function integrates with the Ruby garbage collector to insure that the
- * resources associated with a FireRubyException object are completely released
- * when an object of this type is collected.
- *
- * @param  exception  A pointer to the ExceptionHandle structure associated
- *                    with a FireRubyException object that is being collected.
- *
- */
-void firerubyExceptionFree(void *exception)
-{
-   if(exception != NULL)
-   {
-      free((ExceptionHandle *)exception);
-   }
+  VALUE text = decodeException(status, message);
+  rb_raise(cFireRubyException, "%s", StringValuePtr(text));
 }
 
 
@@ -257,9 +203,7 @@ void firerubyExceptionFree(void *exception)
  */
 void Init_FireRubyException(VALUE module)
 {
-   cFireRubyException = rb_define_class_under(module, "FireRubyException",
-                                              rb_eStandardError);
-   rb_define_alloc_func(cFireRubyException, allocateFireRubyException);
+   cFireRubyException = rb_define_class_under(module, "FireRubyException", rb_eStandardError);
    rb_define_method(cFireRubyException, "initialize", initializeFireRubyException, 1);
    rb_define_method(cFireRubyException, "sql_code", getFireRubyExceptionSQLCode, 0);
    rb_define_method(cFireRubyException, "db_code", getFireRubyExceptionDBCode, 0);
