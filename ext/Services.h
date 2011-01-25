@@ -25,7 +25,7 @@
 #ifndef FIRERUBY_SERVICES_H
 #define FIRERUBY_SERVICES_H
 
-   /* Includes. */
+/* Includes. */
    #ifndef IBASE_H_INCLUDED
       #include "ibase.h"
       #define IBASE_H_INCLUDED
@@ -36,7 +36,7 @@
       #define RUBY_H_INCLUDED
    #endif
 
-   /* Function prototypes. */
-   VALUE queryService(isc_svc_handle *);
+/* Function prototypes. */
+VALUE queryService(isc_svc_handle *);
 
 #endif /* FIRERUBY_SERVICES_H */

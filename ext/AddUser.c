@@ -59,64 +59,57 @@ VALUE cAddUser;
  * @return  A reference to the newly initialized AddUser object.
  *
  */
-VALUE initializeAddUser(int argc, VALUE *argv, VALUE self)
-{
-   VALUE username = Qnil,
-         password = Qnil,
-         first    = Qnil,
-         middle   = Qnil,
-         last     = Qnil,
-         value    = Qnil;
-   int   length   = 0;
-         
-   /* Check that sufficient parameters have been supplied. */
-   if(argc < 2)
-   {
-      rb_raise(rb_eArgError, "Wrong number of arguments (%d for %d).", argc, 2);
-   }
-   
-   username = rb_funcall(argv[0], rb_intern("to_s"), 0);
-   password = rb_funcall(argv[1], rb_intern("to_s"), 0);
-   if(argc > 2)
-   {
-      first= rb_funcall(argv[2], rb_intern("to_s"), 0);
-      if(argc > 3)
-      {
-         middle = rb_funcall(argv[3], rb_intern("to_s"), 0);
-         if(argc > 4)
-         {
-            last = rb_funcall(argv[4], rb_intern("to_s"), 0);
-         }
-      }
-   }
-   
-   /* Check that the parameters are valid. */
-   value  = rb_funcall(username, rb_intern("length"), 0);
-   length = TYPE(value) == T_FIXNUM ? FIX2INT(value) : NUM2INT(value);
-   if(length < 1 || length > 31)
-   {
-      rb_fireruby_raise(NULL,
-                        "Invalid user name specified. A user name must not be "\
-                        "blank and may have no more than 31 characters.");
-   }
+VALUE initializeAddUser(int argc, VALUE *argv, VALUE self) {
+  VALUE username = Qnil,
+        password = Qnil,
+        first    = Qnil,
+        middle   = Qnil,
+        last     = Qnil,
+        value    = Qnil;
+  int length   = 0;
 
-   value  = rb_funcall(password, rb_intern("length"), 0);
-   length = TYPE(value) == T_FIXNUM ? FIX2INT(value) : NUM2INT(value);
-   if(length < 1 || length > 31)
-   {
-      rb_fireruby_raise(NULL,
-                        "Invalid password specified. A user password must not "\
-                        "be blank and may have no more than 31 characters.");
-   }
-   
-   /* Assign class values. */
-   rb_iv_set(self, "@user_name", username);
-   rb_iv_set(self, "@password", password);
-   rb_iv_set(self, "@first_name", first);
-   rb_iv_set(self, "@middle_name", middle);
-   rb_iv_set(self, "@last_name", last);
-   
-   return(self);
+  /* Check that sufficient parameters have been supplied. */
+  if(argc < 2) {
+    rb_raise(rb_eArgError, "Wrong number of arguments (%d for %d).", argc, 2);
+  }
+
+  username = rb_funcall(argv[0], rb_intern("to_s"), 0);
+  password = rb_funcall(argv[1], rb_intern("to_s"), 0);
+  if(argc > 2) {
+    first= rb_funcall(argv[2], rb_intern("to_s"), 0);
+    if(argc > 3) {
+      middle = rb_funcall(argv[3], rb_intern("to_s"), 0);
+      if(argc > 4) {
+        last = rb_funcall(argv[4], rb_intern("to_s"), 0);
+      }
+    }
+  }
+
+  /* Check that the parameters are valid. */
+  value  = rb_funcall(username, rb_intern("length"), 0);
+  length = TYPE(value) == T_FIXNUM ? FIX2INT(value) : NUM2INT(value);
+  if(length < 1 || length > 31) {
+    rb_fireruby_raise(NULL,
+                      "Invalid user name specified. A user name must not be " \
+                      "blank and may have no more than 31 characters.");
+  }
+
+  value  = rb_funcall(password, rb_intern("length"), 0);
+  length = TYPE(value) == T_FIXNUM ? FIX2INT(value) : NUM2INT(value);
+  if(length < 1 || length > 31) {
+    rb_fireruby_raise(NULL,
+                      "Invalid password specified. A user password must not " \
+                      "be blank and may have no more than 31 characters.");
+  }
+
+  /* Assign class values. */
+  rb_iv_set(self, "@user_name", username);
+  rb_iv_set(self, "@password", password);
+  rb_iv_set(self, "@first_name", first);
+  rb_iv_set(self, "@middle_name", middle);
+  rb_iv_set(self, "@last_name", last);
+
+  return(self);
 }
 
 
@@ -129,9 +122,8 @@ VALUE initializeAddUser(int argc, VALUE *argv, VALUE self)
  * @return  A reference to the attribute value for the object.
  *
  */
-VALUE getUserName(VALUE self)
-{
-   return(rb_iv_get(self, "@user_name"));
+VALUE getUserName(VALUE self) {
+  return(rb_iv_get(self, "@user_name"));
 }
 
 
@@ -144,22 +136,20 @@ VALUE getUserName(VALUE self)
  * @return  A reference to the newly update AddUser object.
  *
  */
-VALUE setUserName(VALUE self, VALUE setting)
-{
-   VALUE actual = rb_funcall(setting, rb_intern("to_s"), 0),
-         value  = rb_funcall(actual, rb_intern("length"), 0);
-   int   length = 0;
-   
-   length = TYPE(value) == T_FIXNUM ? FIX2INT(value) : NUM2INT(value);
-   if(length < 1 || length > 31)
-   {
-      rb_fireruby_raise(NULL,
-                        "Invalid user name specified. A user name must not be "\
-                        "blank and may have no more than 31 characters.");
-   }
-   rb_iv_set(self, "@user_name", actual);
-   
-   return(self);
+VALUE setUserName(VALUE self, VALUE setting) {
+  VALUE actual = rb_funcall(setting, rb_intern("to_s"), 0),
+        value  = rb_funcall(actual, rb_intern("length"), 0);
+  int length = 0;
+
+  length = TYPE(value) == T_FIXNUM ? FIX2INT(value) : NUM2INT(value);
+  if(length < 1 || length > 31) {
+    rb_fireruby_raise(NULL,
+                      "Invalid user name specified. A user name must not be " \
+                      "blank and may have no more than 31 characters.");
+  }
+  rb_iv_set(self, "@user_name", actual);
+
+  return(self);
 }
 
 
@@ -172,9 +162,8 @@ VALUE setUserName(VALUE self, VALUE setting)
  * @return  A reference to the attribute value for the object.
  *
  */
-VALUE getUserPassword(VALUE self)
-{
-   return(rb_iv_get(self, "@password"));
+VALUE getUserPassword(VALUE self) {
+  return(rb_iv_get(self, "@password"));
 }
 
 
@@ -187,22 +176,20 @@ VALUE getUserPassword(VALUE self)
  * @return  A reference to the newly update AddUser object.
  *
  */
-VALUE setUserPassword(VALUE self, VALUE setting)
-{
-   VALUE actual = rb_funcall(setting, rb_intern("to_s"), 0),
-         value  = rb_funcall(actual, rb_intern("length"), 0);
-   int   length = 0;
-   
-   length = TYPE(value) == T_FIXNUM ? FIX2INT(value) : NUM2INT(value);
-   if(length < 1 || length > 31)
-   {
-      rb_fireruby_raise(NULL,
-                        "Invalid password specified. A user password must not "\
-                        "be blank and may have no more than 31 characters.");
-   }
-   rb_iv_set(self, "@password", actual);
-   
-   return(self);
+VALUE setUserPassword(VALUE self, VALUE setting) {
+  VALUE actual = rb_funcall(setting, rb_intern("to_s"), 0),
+        value  = rb_funcall(actual, rb_intern("length"), 0);
+  int length = 0;
+
+  length = TYPE(value) == T_FIXNUM ? FIX2INT(value) : NUM2INT(value);
+  if(length < 1 || length > 31) {
+    rb_fireruby_raise(NULL,
+                      "Invalid password specified. A user password must not " \
+                      "be blank and may have no more than 31 characters.");
+  }
+  rb_iv_set(self, "@password", actual);
+
+  return(self);
 }
 
 
@@ -215,9 +202,8 @@ VALUE setUserPassword(VALUE self, VALUE setting)
  * @return  A reference to the attribute value for the object.
  *
  */
-VALUE getUserFirstName(VALUE self)
-{
-   return(rb_iv_get(self, "@first_name"));
+VALUE getUserFirstName(VALUE self) {
+  return(rb_iv_get(self, "@first_name"));
 }
 
 
@@ -231,10 +217,9 @@ VALUE getUserFirstName(VALUE self)
  * @return  A reference to the newly update AddUser object.
  *
  */
-VALUE setUserFirstName(VALUE self, VALUE setting)
-{
-   rb_iv_set(self, "@first_name", setting);
-   return(self);
+VALUE setUserFirstName(VALUE self, VALUE setting) {
+  rb_iv_set(self, "@first_name", setting);
+  return(self);
 }
 
 
@@ -247,9 +232,8 @@ VALUE setUserFirstName(VALUE self, VALUE setting)
  * @return  A reference to the attribute value for the object.
  *
  */
-VALUE getUserMiddleName(VALUE self)
-{
-   return(rb_iv_get(self, "@middle_name"));
+VALUE getUserMiddleName(VALUE self) {
+  return(rb_iv_get(self, "@middle_name"));
 }
 
 
@@ -263,10 +247,9 @@ VALUE getUserMiddleName(VALUE self)
  * @return  A reference to the newly update AddUser object.
  *
  */
-VALUE setUserMiddleName(VALUE self, VALUE setting)
-{
-   rb_iv_set(self, "@middle_name", setting);
-   return(self);
+VALUE setUserMiddleName(VALUE self, VALUE setting) {
+  rb_iv_set(self, "@middle_name", setting);
+  return(self);
 }
 
 
@@ -279,9 +262,8 @@ VALUE setUserMiddleName(VALUE self, VALUE setting)
  * @return  A reference to the attribute value for the object.
  *
  */
-VALUE getUserLastName(VALUE self)
-{
-   return(rb_iv_get(self, "@last_name"));
+VALUE getUserLastName(VALUE self) {
+  return(rb_iv_get(self, "@last_name"));
 }
 
 
@@ -295,10 +277,9 @@ VALUE getUserLastName(VALUE self)
  * @return  A reference to the newly update AddUser object.
  *
  */
-VALUE setUserLastName(VALUE self, VALUE setting)
-{
-   rb_iv_set(self, "@last_name", setting);
-   return(self);
+VALUE setUserLastName(VALUE self, VALUE setting) {
+  rb_iv_set(self, "@last_name", setting);
+  return(self);
 }
 
 
@@ -312,32 +293,29 @@ VALUE setUserLastName(VALUE self, VALUE setting)
  * @return  A reference to the AddUser object executed.
  *
  */
-VALUE executeAddUser(VALUE self, VALUE manager)
-{
-   ManagerHandle *handle = NULL;
-   char          *buffer  = NULL;
-   short         length   = 0;
-   ISC_STATUS    status[ISC_STATUS_LENGTH];
+VALUE executeAddUser(VALUE self, VALUE manager) {
+  ManagerHandle *handle = NULL;
+  char          *buffer  = NULL;
+  short length   = 0;
+  ISC_STATUS status[ISC_STATUS_LENGTH];
 
-   /* Check that the service manager is connected. */
-   Data_Get_Struct(manager, ManagerHandle, handle);
-   if(handle->handle == 0)
-   {
-      rb_fireruby_raise(NULL,
-                        "Add user error. Service manager not connected.");
-   }
+  /* Check that the service manager is connected. */
+  Data_Get_Struct(manager, ManagerHandle, handle);
+  if(handle->handle == 0) {
+    rb_fireruby_raise(NULL,
+                      "Add user error. Service manager not connected.");
+  }
 
-   createAddUserBuffer(self, &buffer, &length);
+  createAddUserBuffer(self, &buffer, &length);
 
-   /* Start the service request. */
-   if(isc_service_start(status, &handle->handle, NULL, length, buffer))
-   {
-      free(buffer);
-      rb_fireruby_raise(status, "Error adding user.");
-   }
-   free(buffer);
+  /* Start the service request. */
+  if(isc_service_start(status, &handle->handle, NULL, length, buffer)) {
+    free(buffer);
+    rb_fireruby_raise(status, "Error adding user.");
+  }
+  free(buffer);
 
-   return(self);
+  return(self);
 }
 
 
@@ -351,97 +329,89 @@ VALUE executeAddUser(VALUE self, VALUE manager)
  *                 of the buffer.
  *
  */
-void createAddUserBuffer(VALUE self, char **buffer, short *length)
-{
-   VALUE value   = Qnil,
-         first   = Qnil,
-         middle  = Qnil,
-         last    = Qnil,
-         tmp_str = Qnil;
-   char  *offset = NULL;
-   int   number  = 0;
-   
-   /* Calculate the required buffer length. */
-   *length = 1;
+void createAddUserBuffer(VALUE self, char **buffer, short *length) {
+  VALUE value   = Qnil,
+        first   = Qnil,
+        middle  = Qnil,
+        last    = Qnil,
+        tmp_str = Qnil;
+  char  *offset = NULL;
+  int number  = 0;
 
-   tmp_str = rb_iv_get(self, "@user_name");
-   *length += strlen(StringValuePtr(tmp_str)) + 3;
+  /* Calculate the required buffer length. */
+  *length = 1;
 
-   tmp_str = rb_iv_get(self, "@password");
-   *length += strlen(StringValuePtr(tmp_str)) + 3;
-   
-   value = rb_iv_get(self, "@first_name");
-   if(value != Qnil)
-   {
-      first   = rb_funcall(value, rb_intern("to_s"), 0);
-      *length += strlen(StringValuePtr(first)) + 3;
-   }
-   
-   value = rb_iv_get(self, "@middle_name");
-   if(value != Qnil)
-   {
-      middle  = rb_funcall(value, rb_intern("to_s"), 0);
-      *length += strlen(StringValuePtr(middle)) + 3;
-   }
-   
-   value = rb_iv_get(self, "@last_name");
-   if(value != Qnil)
-   {
-      last    = rb_funcall(value, rb_intern("to_s"), 0);
-      *length += strlen(StringValuePtr(last)) + 3;
-   }
-   
-   /* Create and populate the buffer. */
-   offset = *buffer = ALLOC_N(char, *length);
-   if(*buffer == NULL)
-   {
-      rb_raise(rb_eNoMemError,
-               "Memory allocation error preparing to add user.");
-   }
-   memset(*buffer, 0, *length);
+  tmp_str = rb_iv_get(self, "@user_name");
+  *length += strlen(StringValuePtr(tmp_str)) + 3;
 
-   *offset++ = isc_action_svc_add_user;
-   
-   *offset++ = isc_spb_sec_username;
-   value     = rb_iv_get(self, "@user_name");
-   number    = strlen(StringValuePtr(value));
-   ADD_SPB_LENGTH(offset, number);
-   memcpy(offset, StringValuePtr(value), number);
-   offset    += number;
-   
-   *offset++ = isc_spb_sec_password;
-   value     = rb_iv_get(self, "@password");
-   number    = strlen(StringValuePtr(value));
-   ADD_SPB_LENGTH(offset, number);
-   memcpy(offset, StringValuePtr(value), number);
-   offset    += number;
-   
-   if(first != Qnil)
-   {
-      *offset++ = isc_spb_sec_firstname;
-      number    = strlen(StringValuePtr(first));
-      ADD_SPB_LENGTH(offset, number);
-      memcpy(offset, StringValuePtr(first), number);
-      offset    += number;
-   }
-   
-   if(middle != Qnil)
-   {
-      *offset++ = isc_spb_sec_middlename;
-      number    = strlen(StringValuePtr(middle));
-      ADD_SPB_LENGTH(offset, number);
-      memcpy(offset, StringValuePtr(middle), number);
-      offset    += number;
-   }
-   
-   if(last != Qnil)
-   {
-      *offset++ = isc_spb_sec_lastname;
-      number    = strlen(StringValuePtr(last));
-      ADD_SPB_LENGTH(offset, number);
-      memcpy(offset, StringValuePtr(last), number);
-      offset    += number;
-   }
+  tmp_str = rb_iv_get(self, "@password");
+  *length += strlen(StringValuePtr(tmp_str)) + 3;
+
+  value = rb_iv_get(self, "@first_name");
+  if(value != Qnil) {
+    first   = rb_funcall(value, rb_intern("to_s"), 0);
+    *length += strlen(StringValuePtr(first)) + 3;
+  }
+
+  value = rb_iv_get(self, "@middle_name");
+  if(value != Qnil) {
+    middle  = rb_funcall(value, rb_intern("to_s"), 0);
+    *length += strlen(StringValuePtr(middle)) + 3;
+  }
+
+  value = rb_iv_get(self, "@last_name");
+  if(value != Qnil) {
+    last    = rb_funcall(value, rb_intern("to_s"), 0);
+    *length += strlen(StringValuePtr(last)) + 3;
+  }
+
+  /* Create and populate the buffer. */
+  offset = *buffer = ALLOC_N(char, *length);
+  if(*buffer == NULL) {
+    rb_raise(rb_eNoMemError,
+             "Memory allocation error preparing to add user.");
+  }
+  memset(*buffer, 0, *length);
+
+  *offset++ = isc_action_svc_add_user;
+
+  *offset++ = isc_spb_sec_username;
+  value     = rb_iv_get(self, "@user_name");
+  number    = strlen(StringValuePtr(value));
+  ADD_SPB_LENGTH(offset, number);
+  memcpy(offset, StringValuePtr(value), number);
+  offset    += number;
+
+  *offset++ = isc_spb_sec_password;
+  value     = rb_iv_get(self, "@password");
+  number    = strlen(StringValuePtr(value));
+  ADD_SPB_LENGTH(offset, number);
+  memcpy(offset, StringValuePtr(value), number);
+  offset    += number;
+
+  if(first != Qnil) {
+    *offset++ = isc_spb_sec_firstname;
+    number    = strlen(StringValuePtr(first));
+    ADD_SPB_LENGTH(offset, number);
+    memcpy(offset, StringValuePtr(first), number);
+    offset    += number;
+  }
+
+  if(middle != Qnil) {
+    *offset++ = isc_spb_sec_middlename;
+    number    = strlen(StringValuePtr(middle));
+    ADD_SPB_LENGTH(offset, number);
+    memcpy(offset, StringValuePtr(middle), number);
+    offset    += number;
+  }
+
+  if(last != Qnil) {
+    *offset++ = isc_spb_sec_lastname;
+    number    = strlen(StringValuePtr(last));
+    ADD_SPB_LENGTH(offset, number);
+    memcpy(offset, StringValuePtr(last), number);
+    offset    += number;
+  }
 }
 
 
@@ -451,19 +421,18 @@ void createAddUserBuffer(VALUE self, char **buffer, short *length)
  * @param  module  The module to create the new class definition under.
  *
  */
-void Init_AddUser(VALUE module)
-{
-   cAddUser = rb_define_class_under(module, "AddUser", rb_cObject);
-   rb_define_method(cAddUser, "initialize", initializeAddUser, -1);
-   rb_define_method(cAddUser, "user_name", getUserName, 0);
-   rb_define_method(cAddUser, "user_name=", setUserName, 1);
-   rb_define_method(cAddUser, "password", getUserPassword, 0);
-   rb_define_method(cAddUser, "password=", setUserPassword, 1);
-   rb_define_method(cAddUser, "first_name", getUserFirstName, 0);
-   rb_define_method(cAddUser, "first_name=", setUserFirstName, 1);
-   rb_define_method(cAddUser, "middle_name", getUserMiddleName, 0);
-   rb_define_method(cAddUser, "middle_name=", setUserMiddleName, 1);
-   rb_define_method(cAddUser, "last_name", getUserLastName, 0);
-   rb_define_method(cAddUser, "last_name=", setUserLastName, 1);
-   rb_define_method(cAddUser, "execute", executeAddUser, 1);
+void Init_AddUser(VALUE module) {
+  cAddUser = rb_define_class_under(module, "AddUser", rb_cObject);
+  rb_define_method(cAddUser, "initialize", initializeAddUser, -1);
+  rb_define_method(cAddUser, "user_name", getUserName, 0);
+  rb_define_method(cAddUser, "user_name=", setUserName, 1);
+  rb_define_method(cAddUser, "password", getUserPassword, 0);
+  rb_define_method(cAddUser, "password=", setUserPassword, 1);
+  rb_define_method(cAddUser, "first_name", getUserFirstName, 0);
+  rb_define_method(cAddUser, "first_name=", setUserFirstName, 1);
+  rb_define_method(cAddUser, "middle_name", getUserMiddleName, 0);
+  rb_define_method(cAddUser, "middle_name=", setUserMiddleName, 1);
+  rb_define_method(cAddUser, "last_name", getUserLastName, 0);
+  rb_define_method(cAddUser, "last_name=", setUserLastName, 1);
+  rb_define_method(cAddUser, "execute", executeAddUser, 1);
 }

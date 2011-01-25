@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
  * Generator.c
  *------------------------------------------------------------------------------
-/**
+   /**
  * Copyright © Peter Wood, 2005
  *
  * The contents of this file are subject to the Mozilla Public License Version
@@ -61,24 +61,20 @@ VALUE cGenerator;
  * @return  A reference to the newly allocated Generator object.
  *
  */
-static VALUE allocateGenerator(VALUE klass)
-{
-   VALUE           instance   = Qnil;
-   GeneratorHandle *generator = ALLOC(GeneratorHandle);
+static VALUE allocateGenerator(VALUE klass) {
+  VALUE instance   = Qnil;
+  GeneratorHandle *generator = ALLOC(GeneratorHandle);
 
-   if(generator != NULL)
-   {
-      generator->connection = NULL;
-      instance              = Data_Wrap_Struct(klass, NULL, generatorFree,
-                                               generator);
-   }
-   else
-   {
-      rb_raise(rb_eNoMemError,
-               "Memory allocation failure allocating a generator.");
-   }
+  if(generator != NULL) {
+    generator->connection = NULL;
+    instance              = Data_Wrap_Struct(klass, NULL, generatorFree,
+                                             generator);
+  } else {
+    rb_raise(rb_eNoMemError,
+             "Memory allocation failure allocating a generator.");
+  }
 
-   return(instance);
+  return(instance);
 }
 
 
@@ -96,30 +92,27 @@ static VALUE allocateGenerator(VALUE klass)
  */
 static VALUE initializeGenerator(VALUE self,
                                  VALUE name,
-                                 VALUE connection)
-{
-   GeneratorHandle  *generator = NULL;
-   ConnectionHandle *handle    = NULL;
+                                 VALUE connection) {
+  GeneratorHandle  *generator = NULL;
+  ConnectionHandle *handle    = NULL;
 
-   if(TYPE(name) != T_STRING)
-   {
-      rb_fireruby_raise(NULL, "Invalid generator name specified.");
-   }
+  if(TYPE(name) != T_STRING) {
+    rb_fireruby_raise(NULL, "Invalid generator name specified.");
+  }
 
-   if(TYPE(connection) != T_DATA &&
-      RDATA(connection)->dfree != (RUBY_DATA_FUNC)connectionFree)
-   {
-      rb_fireruby_raise(NULL, "Invalid connection specified for generator.");
-   }
+  if(TYPE(connection) != T_DATA &&
+     RDATA(connection)->dfree != (RUBY_DATA_FUNC)connectionFree) {
+    rb_fireruby_raise(NULL, "Invalid connection specified for generator.");
+  }
 
-   rb_iv_set(self, "@name", name);
-   rb_iv_set(self, "@connection", connection);
+  rb_iv_set(self, "@name", name);
+  rb_iv_set(self, "@connection", connection);
 
-   Data_Get_Struct(connection, ConnectionHandle, handle);
-   Data_Get_Struct(self, GeneratorHandle, generator);
-   generator->connection = &handle->handle;
+  Data_Get_Struct(connection, ConnectionHandle, handle);
+  Data_Get_Struct(self, GeneratorHandle, generator);
+  generator->connection = &handle->handle;
 
-   return(self);
+  return(self);
 }
 
 
@@ -132,9 +125,8 @@ static VALUE initializeGenerator(VALUE self,
  * @return  A reference to a String containing the Generator name.
  *
  */
-static VALUE getGeneratorName(VALUE self)
-{
-   return(rb_iv_get(self, "@name"));
+static VALUE getGeneratorName(VALUE self) {
+  return(rb_iv_get(self, "@name"));
 }
 
 
@@ -148,9 +140,8 @@ static VALUE getGeneratorName(VALUE self)
  * @return  A reference to the Connection object for the generator.
  *
  */
-static VALUE getGeneratorConnection(VALUE self)
-{
-   return(rb_iv_get(self, "@connection"));
+static VALUE getGeneratorConnection(VALUE self) {
+  return(rb_iv_get(self, "@connection"));
 }
 
 
@@ -162,17 +153,16 @@ static VALUE getGeneratorConnection(VALUE self)
  * @return  A reference to the last value retrieved from the generator.
  *
  */
-static VALUE getLastGeneratorValue(VALUE self)
-{
-   VALUE            name       = rb_iv_get(self, "@name");
-   GeneratorHandle  *generator = NULL;
-   int32_t          number     = 0;
+static VALUE getLastGeneratorValue(VALUE self) {
+  VALUE name       = rb_iv_get(self, "@name");
+  GeneratorHandle  *generator = NULL;
+  int32_t number     = 0;
 
-   Data_Get_Struct(self, GeneratorHandle, generator);
+  Data_Get_Struct(self, GeneratorHandle, generator);
 
-   number = getGeneratorValue(StringValuePtr(name), 0, generator->connection);
+  number = getGeneratorValue(StringValuePtr(name), 0, generator->connection);
 
-   return(INT2NUM(number));
+  return(INT2NUM(number));
 }
 
 
@@ -186,24 +176,22 @@ static VALUE getLastGeneratorValue(VALUE self)
  * @return  A reference to an integer containing the next generator value.
  *
  */
-static VALUE getNextGeneratorValue(VALUE self, VALUE step)
-{
-   VALUE            name       = rb_iv_get(self, "@name");
-   GeneratorHandle  *generator = NULL;
-   int32_t          number     = 0;
+static VALUE getNextGeneratorValue(VALUE self, VALUE step) {
+  VALUE name       = rb_iv_get(self, "@name");
+  GeneratorHandle  *generator = NULL;
+  int32_t number     = 0;
 
-   Data_Get_Struct(self, GeneratorHandle, generator);
+  Data_Get_Struct(self, GeneratorHandle, generator);
 
-   /* Check the step type. */
-   if(TYPE(step) != T_FIXNUM)
-   {
-      rb_fireruby_raise(NULL, "Invalid generator step value.");
-   }
+  /* Check the step type. */
+  if(TYPE(step) != T_FIXNUM) {
+    rb_fireruby_raise(NULL, "Invalid generator step value.");
+  }
 
-   number = getGeneratorValue(StringValuePtr(name), FIX2INT(step),
-                              generator->connection);
+  number = getGeneratorValue(StringValuePtr(name), FIX2INT(step),
+                             generator->connection);
 
-   return(INT2NUM(number));
+  return(INT2NUM(number));
 }
 
 
@@ -215,18 +203,17 @@ static VALUE getNextGeneratorValue(VALUE self, VALUE step)
  * @return  A reference to the Generator object dropped.
  *
  */
-static VALUE dropGenerator(VALUE self)
-{
-   GeneratorHandle *generator = NULL;
-   VALUE           name;
+static VALUE dropGenerator(VALUE self) {
+  GeneratorHandle *generator = NULL;
+  VALUE name;
 
-   Data_Get_Struct(self, GeneratorHandle, generator);
-   name = rb_iv_get(self, "@name");
+  Data_Get_Struct(self, GeneratorHandle, generator);
+  name = rb_iv_get(self, "@name");
 
-   /* Drop the generator. */
-   deleteGenerator(StringValuePtr(name), generator->connection);
+  /* Drop the generator. */
+  deleteGenerator(StringValuePtr(name), generator->connection);
 
-   return(self);
+  return(self);
 }
 
 
@@ -243,30 +230,26 @@ static VALUE dropGenerator(VALUE self)
  *          otherwise.
  *
  */
-static VALUE doesGeneratorExist(VALUE klass, VALUE name, VALUE connection)
-{
-   VALUE            exists     = Qfalse;
-   ConnectionHandle *handle    = NULL;
+static VALUE doesGeneratorExist(VALUE klass, VALUE name, VALUE connection) {
+  VALUE exists     = Qfalse;
+  ConnectionHandle *handle    = NULL;
 
-   if(TYPE(connection) != T_DATA ||
-      RDATA(connection)->dfree != (RUBY_DATA_FUNC)connectionFree)
-   {
-      rb_fireruby_raise(NULL, "Invalid connection specified.");
-   }
+  if(TYPE(connection) != T_DATA ||
+     RDATA(connection)->dfree != (RUBY_DATA_FUNC)connectionFree) {
+    rb_fireruby_raise(NULL, "Invalid connection specified.");
+  }
 
-   Data_Get_Struct(connection, ConnectionHandle, handle);
+  Data_Get_Struct(connection, ConnectionHandle, handle);
 
-   if(handle->handle == 0)
-   {
-      rb_fireruby_raise(NULL, "Connection is closed.");
-   }
+  if(handle->handle == 0) {
+    rb_fireruby_raise(NULL, "Connection is closed.");
+  }
 
-   if(checkForGenerator(StringValuePtr(name), &handle->handle))
-   {
-      exists = Qtrue;
-   }
+  if(checkForGenerator(StringValuePtr(name), &handle->handle)) {
+    exists = Qtrue;
+  }
 
-   return(exists);
+  return(exists);
 }
 
 
@@ -284,36 +267,30 @@ static VALUE doesGeneratorExist(VALUE klass, VALUE name, VALUE connection)
  * @return  A reference to a Generator object.
  *
  */
-static VALUE createGenerator(VALUE klass, VALUE name, VALUE connection)
-{
-   VALUE            result  = Qnil;
-   ConnectionHandle *handle = NULL;
+static VALUE createGenerator(VALUE klass, VALUE name, VALUE connection) {
+  VALUE result  = Qnil;
+  ConnectionHandle *handle = NULL;
 
-   if(TYPE(name) != T_STRING)
-   {
-      rb_fireruby_raise(NULL, "Invalid generator name specified.");
-   }
+  if(TYPE(name) != T_STRING) {
+    rb_fireruby_raise(NULL, "Invalid generator name specified.");
+  }
 
-   if(TYPE(connection) != T_DATA &&
-      RDATA(connection)->dfree != (RUBY_DATA_FUNC)connectionFree)
-   {
-      rb_fireruby_raise(NULL,
-                        "Invalid connection specified for generator creation.");
-   }
+  if(TYPE(connection) != T_DATA &&
+     RDATA(connection)->dfree != (RUBY_DATA_FUNC)connectionFree) {
+    rb_fireruby_raise(NULL,
+                      "Invalid connection specified for generator creation.");
+  }
 
-   Data_Get_Struct(connection, ConnectionHandle, handle);
-   if(handle->handle != 0)
-   {
-      installGenerator(StringValuePtr(name), &handle->handle);
-      result = rb_generator_new(name, connection);
-   }
-   else
-   {
-      rb_fireruby_raise(NULL,
-                        "Closed connection specified for generator creation.");
-   }
+  Data_Get_Struct(connection, ConnectionHandle, handle);
+  if(handle->handle != 0) {
+    installGenerator(StringValuePtr(name), &handle->handle);
+    result = rb_generator_new(name, connection);
+  } else {
+    rb_fireruby_raise(NULL,
+                      "Closed connection specified for generator creation.");
+  }
 
-   return(result);
+  return(result);
 }
 
 
@@ -329,83 +306,65 @@ static VALUE createGenerator(VALUE klass, VALUE name, VALUE connection)
  *          exist or -1 if there was an error.
  *
  */
-int checkForGenerator(const char *name, isc_db_handle *connection)
-{
-   int             result    = -1;
-   isc_stmt_handle statement = 0;
-   ISC_STATUS      status[ISC_STATUS_LENGTH];
+int checkForGenerator(const char *name, isc_db_handle *connection) {
+  int result    = -1;
+  isc_stmt_handle statement = 0;
+  ISC_STATUS status[ISC_STATUS_LENGTH];
 
-   if(isc_dsql_allocate_statement(status, connection, &statement) == 0)
-   {
-      isc_tr_handle transaction = 0;
+  if(isc_dsql_allocate_statement(status, connection, &statement) == 0) {
+    isc_tr_handle transaction = 0;
 
-      if(isc_start_transaction(status, &transaction, 1, connection, 0,
-                               NULL) == 0)
-      {
-         XSQLDA *da = (XSQLDA *)ALLOC_N(char, XSQLDA_LENGTH(1));
+    if(isc_start_transaction(status, &transaction, 1, connection, 0,
+                             NULL) == 0) {
+      XSQLDA *da = (XSQLDA *)ALLOC_N(char, XSQLDA_LENGTH(1));
 
-         if(da != NULL)
-         {
-            char sql[100];
+      if(da != NULL) {
+        char sql[100];
 
-            da->version = SQLDA_VERSION1;
-            da->sqln    = 1;
-            sprintf(sql, "SELECT COUNT(*) FROM %sS WHERE %s_NAME = UPPER('%s')",
-                    "RDB$GENERATOR", "RDB$GENERATOR", name);
-            if(isc_dsql_prepare(status, &transaction, &statement, strlen(sql),
-                                sql, 3, da) == 0)
-            {
-               /* Prepare the XSQLDA and provide it with data room. */
-               allocateOutXSQLDA(da->sqld, &statement, 3);
-               prepareDataArea(da);
-               if(isc_dsql_execute(status, &transaction, &statement,
-                                   3, da) == 0)
-               {
-                  if(isc_dsql_fetch(status, &statement, 3, da) == 0)
-                  {
-                     int32_t count = *((long *)da->sqlvar->sqldata);
+        da->version = SQLDA_VERSION1;
+        da->sqln    = 1;
+        sprintf(sql, "SELECT COUNT(*) FROM %sS WHERE %s_NAME = UPPER('%s')",
+                "RDB$GENERATOR", "RDB$GENERATOR", name);
+        if(isc_dsql_prepare(status, &transaction, &statement, strlen(sql),
+                            sql, 3, da) == 0) {
+          /* Prepare the XSQLDA and provide it with data room. */
+          allocateOutXSQLDA(da->sqld, &statement, 3);
+          prepareDataArea(da);
+          if(isc_dsql_execute(status, &transaction, &statement,
+                              3, da) == 0) {
+            if(isc_dsql_fetch(status, &statement, 3, da) == 0) {
+              int32_t count = *((long *)da->sqlvar->sqldata);
 
-                     result = (count > 0 ? 1 : 0);
-                  }
-                  else
-                  {
-                     rb_fireruby_raise(status,
-                                       "Error checking for generator.");
-                  }
-               }
-               else
-               {
-                  rb_fireruby_raise(status,
-                                    "Error checking for generator.");
-               }
+              result = (count > 0 ? 1 : 0);
+            } else {
+              rb_fireruby_raise(status,
+                                "Error checking for generator.");
             }
-            else
-            {
-               rb_fireruby_raise(status, "Error checking for generator.");
-            }
+          } else {
+            rb_fireruby_raise(status,
+                              "Error checking for generator.");
+          }
+        } else {
+          rb_fireruby_raise(status, "Error checking for generator.");
+        }
 
-            releaseDataArea(da);
-         }
-         else
-         {
-            rb_raise(rb_eNoMemError, "Memory allocation failure checking "\
-                                     "generator existence.");
-         }
-
-         if(transaction != 0)
-         {
-            isc_commit_transaction(status, &transaction);
-         }
-      }
-      else
-      {
-         rb_fireruby_raise(status, "Error checking for generator.");
+        releaseDataArea(da);
+      } else {
+        rb_raise(rb_eNoMemError, "Memory allocation failure checking " \
+                                 "generator existence.");
       }
 
-      isc_dsql_free_statement(status, &statement, DSQL_drop);
-   }
+      if(transaction != 0) {
+        isc_commit_transaction(status, &transaction);
+      }
+    } else {
+      rb_fireruby_raise(status, "Error checking for generator.");
+    }
 
-   return(result);
+    isc_dsql_free_statement(status, &statement, DSQL_drop);
+  }
+
+  return(result);
 }
 
 
@@ -420,54 +379,42 @@ int checkForGenerator(const char *name, isc_db_handle *connection)
  * @return  Returns 0 if the generator was created or -1 if there was an error.
  *
  */
-int installGenerator(const char *name, isc_db_handle *connection)
-{
-   int             result    = -1;
-   isc_stmt_handle statement = 0;
-   ISC_STATUS      status[ISC_STATUS_LENGTH];
+int installGenerator(const char *name, isc_db_handle *connection) {
+  int result    = -1;
+  isc_stmt_handle statement = 0;
+  ISC_STATUS status[ISC_STATUS_LENGTH];
 
-   if(isc_dsql_allocate_statement(status, connection, &statement) == 0)
-   {
-      isc_tr_handle transaction = 0;
+  if(isc_dsql_allocate_statement(status, connection, &statement) == 0) {
+    isc_tr_handle transaction = 0;
 
-      if(isc_start_transaction(status, &transaction, 1, connection, 0,
-                               NULL) == 0)
-      {
-         char sql[100];
+    if(isc_start_transaction(status, &transaction, 1, connection, 0,
+                             NULL) == 0) {
+      char sql[100];
 
-         sprintf(sql, "CREATE GENERATOR %s", name);
-         if(isc_dsql_prepare(status, &transaction, &statement, strlen(sql),
-                             sql, 3, NULL) == 0)
-         {
-            if(isc_dsql_execute(status, &transaction, &statement,
-                                3, NULL) == 0)
-            {
-               result = 0;
-            }
-            else
-            {
-               rb_fireruby_raise(status, "Error creating generator.");
-            }
-         }
-         else
-         {
-            rb_fireruby_raise(status, "Error creating generator.");
-         }
-
-         if(transaction != 0)
-         {
-            isc_commit_transaction(status, &transaction);
-         }
-      }
-      else
-      {
-         rb_fireruby_raise(status, "Error creating generator.");
+      sprintf(sql, "CREATE GENERATOR %s", name);
+      if(isc_dsql_prepare(status, &transaction, &statement, strlen(sql),
+                          sql, 3, NULL) == 0) {
+        if(isc_dsql_execute(status, &transaction, &statement,
+                            3, NULL) == 0) {
+          result = 0;
+        } else {
+          rb_fireruby_raise(status, "Error creating generator.");
+        }
+      } else {
+        rb_fireruby_raise(status, "Error creating generator.");
       }
 
-      isc_dsql_free_statement(status, &statement, DSQL_drop);
-   }
+      if(transaction != 0) {
+        isc_commit_transaction(status, &transaction);
+      }
+    } else {
+      rb_fireruby_raise(status, "Error creating generator.");
+    }
 
-   return(result);
+    isc_dsql_free_statement(status, &statement, DSQL_drop);
+  }
+
+  return(result);
 }
 
 
@@ -482,54 +429,42 @@ int installGenerator(const char *name, isc_db_handle *connection)
  * @return  Returns 0 if the generator was dropped or -1 if there was an error.
  *
  */
-int deleteGenerator(const char *name, isc_db_handle *connection)
-{
-   int             result    = -1;
-   isc_stmt_handle statement = 0;
-   ISC_STATUS      status[ISC_STATUS_LENGTH];
+int deleteGenerator(const char *name, isc_db_handle *connection) {
+  int result    = -1;
+  isc_stmt_handle statement = 0;
+  ISC_STATUS status[ISC_STATUS_LENGTH];
 
-   if(isc_dsql_allocate_statement(status, connection, &statement) == 0)
-   {
-      isc_tr_handle transaction = 0;
+  if(isc_dsql_allocate_statement(status, connection, &statement) == 0) {
+    isc_tr_handle transaction = 0;
 
-      if(isc_start_transaction(status, &transaction, 1, connection, 0,
-                               NULL) == 0)
-      {
-         char sql[100];
+    if(isc_start_transaction(status, &transaction, 1, connection, 0,
+                             NULL) == 0) {
+      char sql[100];
 
-         sprintf(sql, "DROP GENERATOR %s", name);
-         if(isc_dsql_prepare(status, &transaction, &statement, strlen(sql),
-                             sql, 3, NULL) == 0)
-         {
-            if(isc_dsql_execute(status, &transaction, &statement,
-                                3, NULL) == 0)
-            {
-               result = 0;
-            }
-            else
-            {
-               rb_fireruby_raise(status, "Error dropping generator.");
-            }
-         }
-         else
-         {
-            rb_fireruby_raise(status, "Error dropping generator.");
-         }
-
-         if(transaction != 0)
-         {
-            isc_commit_transaction(status, &transaction);
-         }
-      }
-      else
-      {
-         rb_fireruby_raise(status, "Error dropping generator.");
+      sprintf(sql, "DROP GENERATOR %s", name);
+      if(isc_dsql_prepare(status, &transaction, &statement, strlen(sql),
+                          sql, 3, NULL) == 0) {
+        if(isc_dsql_execute(status, &transaction, &statement,
+                            3, NULL) == 0) {
+          result = 0;
+        } else {
+          rb_fireruby_raise(status, "Error dropping generator.");
+        }
+      } else {
+        rb_fireruby_raise(status, "Error dropping generator.");
       }
 
-      isc_dsql_free_statement(status, &statement, DSQL_drop);
-   }
+      if(transaction != 0) {
+        isc_commit_transaction(status, &transaction);
+      }
+    } else {
+      rb_fireruby_raise(status, "Error dropping generator.");
+    }
 
-   return(result);
+    isc_dsql_free_statement(status, &statement, DSQL_drop);
+  }
+
+  return(result);
 }
 
 
@@ -541,29 +476,25 @@ int deleteGenerator(const char *name, isc_db_handle *connection)
  *          from a generator.
  *
  */
-XSQLDA *createStorage(void)
-{
-   XSQLDA *da = (XSQLDA *)ALLOC_N(char, XSQLDA_LENGTH(1));
+XSQLDA *createStorage(void) {
+  XSQLDA *da = (XSQLDA *)ALLOC_N(char, XSQLDA_LENGTH(1));
 
-   if(da != NULL)
-   {
-      XSQLVAR *var = da->sqlvar;
+  if(da != NULL) {
+    XSQLVAR *var = da->sqlvar;
 
-      da->version   = SQLDA_VERSION1;
-      da->sqln      = 1;
-      da->sqld      = 1;
-      var->sqltype  = SQL_LONG;
-      var->sqlscale = 0;
-      var->sqllen   = sizeof(long);
-      prepareDataArea(da);
-   }
-   else
-   {
-      rb_raise(rb_eNoMemError,
-               "Memory allocation failure allocating generator storage space.");
-   }
+    da->version   = SQLDA_VERSION1;
+    da->sqln      = 1;
+    da->sqld      = 1;
+    var->sqltype  = SQL_LONG;
+    var->sqlscale = 0;
+    var->sqllen   = sizeof(long);
+    prepareDataArea(da);
+  } else {
+    rb_raise(rb_eNoMemError,
+             "Memory allocation failure allocating generator storage space.");
+  }
 
-   return(da);
+  return(da);
 }
 
 
@@ -579,45 +510,37 @@ XSQLDA *createStorage(void)
  * @return  A long integer containing the generator value.
  *
  */
-int32_t getGeneratorValue(const char *name, int step, isc_db_handle *connection)
-{
-   int32_t       result      = 0;
-   ISC_STATUS    status[ISC_STATUS_LENGTH];
-   isc_tr_handle transaction = 0;
-   XSQLDA        *da         = createStorage();
+int32_t getGeneratorValue(const char *name, int step, isc_db_handle *connection) {
+  int32_t result      = 0;
+  ISC_STATUS status[ISC_STATUS_LENGTH];
+  isc_tr_handle transaction = 0;
+  XSQLDA        *da         = createStorage();
 
-   if(isc_start_transaction(status, &transaction, 1, connection, 0, NULL) == 0)
-   {
-      char sql[100];
+  if(isc_start_transaction(status, &transaction, 1, connection, 0, NULL) == 0) {
+    char sql[100];
 
-      sprintf(sql, "SELECT GEN_ID(%s, %d) FROM RDB$DATABASE", name, step);
-      if(isc_dsql_exec_immed2(status, connection, &transaction, 0, sql,
-                              3, NULL, da) == 0)
-      {
-         result = *((int32_t *)da->sqlvar->sqldata);
-      }
-      else
-      {
-         ISC_STATUS local[20];
+    sprintf(sql, "SELECT GEN_ID(%s, %d) FROM RDB$DATABASE", name, step);
+    if(isc_dsql_exec_immed2(status, connection, &transaction, 0, sql,
+                            3, NULL, da) == 0) {
+      result = *((int32_t *)da->sqlvar->sqldata);
+    } else {
+      ISC_STATUS local[20];
 
-         isc_rollback_transaction(local, &transaction);
-         rb_fireruby_raise(status, "Error obtaining generator value.");
-      }
-
-      isc_commit_transaction(status, &transaction);
-   }
-   else
-   {
+      isc_rollback_transaction(local, &transaction);
       rb_fireruby_raise(status, "Error obtaining generator value.");
-   }
+    }
 
-   /* Clean up. */
-   if(da != NULL)
-   {
-      releaseDataArea(da);
-   }
+    isc_commit_transaction(status, &transaction);
+  } else {
+    rb_fireruby_raise(status, "Error obtaining generator value.");
+  }
 
-   return(result);
+  /* Clean up. */
+  if(da != NULL) {
+    releaseDataArea(da);
+  }
+
+  return(result);
 }
 
 
@@ -632,13 +555,12 @@ int32_t getGeneratorValue(const char *name, int step, isc_db_handle *connection)
  * @return  A reference to the new Generator object.
  *
  */
-VALUE rb_generator_new(VALUE name, VALUE connection)
-{
-   VALUE instance = allocateGenerator(cGenerator);
+VALUE rb_generator_new(VALUE name, VALUE connection) {
+  VALUE instance = allocateGenerator(cGenerator);
 
-   initializeGenerator(instance, name, connection);
+  initializeGenerator(instance, name, connection);
 
-   return(instance);
+  return(instance);
 }
 
 
@@ -651,12 +573,10 @@ VALUE rb_generator_new(VALUE name, VALUE connection)
  *                    with the Generator object being collected.
  *
  */
-void generatorFree(void *generator)
-{
-   if(generator != NULL)
-   {
-      free((GeneratorHandle *)generator);
-   }
+void generatorFree(void *generator) {
+  if(generator != NULL) {
+    free((GeneratorHandle *)generator);
+  }
 }
 
 
@@ -667,17 +587,16 @@ void generatorFree(void *generator)
  * @param  module  A reference to the module to create the class within.
  *
  */
-void Init_Generator(VALUE module)
-{
-   cGenerator = rb_define_class_under(module, "Generator", rb_cObject);
-   rb_define_alloc_func(cGenerator, allocateGenerator);
-   rb_define_method(cGenerator, "initialize", initializeGenerator, 2);
-   rb_define_method(cGenerator, "initialize_copy", forbidObjectCopy, 1);
-   rb_define_method(cGenerator, "last", getLastGeneratorValue, 0);
-   rb_define_method(cGenerator, "next", getNextGeneratorValue, 1);
-   rb_define_method(cGenerator, "connection", getGeneratorConnection, 0);
-   rb_define_method(cGenerator, "name", getGeneratorName, 0);
-   rb_define_method(cGenerator, "drop", dropGenerator, 0);
-   rb_define_module_function(cGenerator, "exists?", doesGeneratorExist, 2);
-   rb_define_module_function(cGenerator, "create", createGenerator, 2);
+void Init_Generator(VALUE module) {
+  cGenerator = rb_define_class_under(module, "Generator", rb_cObject);
+  rb_define_alloc_func(cGenerator, allocateGenerator);
+  rb_define_method(cGenerator, "initialize", initializeGenerator, 2);
+  rb_define_method(cGenerator, "initialize_copy", forbidObjectCopy, 1);
+  rb_define_method(cGenerator, "last", getLastGeneratorValue, 0);
+  rb_define_method(cGenerator, "next", getNextGeneratorValue, 1);
+  rb_define_method(cGenerator, "connection", getGeneratorConnection, 0);
+  rb_define_method(cGenerator, "name", getGeneratorName, 0);
+  rb_define_method(cGenerator, "drop", dropGenerator, 0);
+  rb_define_module_function(cGenerator, "exists?", doesGeneratorExist, 2);
+  rb_define_module_function(cGenerator, "create", createGenerator, 2);
 }

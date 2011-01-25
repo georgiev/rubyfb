@@ -3,20 +3,20 @@
  *----------------------------------------------------------------------------*/
 /**
  * Copyright © Peter Wood, 2005
- * 
+ *
  * The contents of this file are subject to the Mozilla Public License Version
  * 1.1 (the "License"); you may not use this file except in compliance with the
- * License. You may obtain a copy of the License at 
+ * License. You may obtain a copy of the License at
  *
  * http://www.mozilla.org/MPL/
- * 
+ *
  * Software distributed under the License is distributed on an "AS IS" basis,
  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
  * the specificlanguage governing rights and  limitations under the License.
- * 
+ *
  * The Original Code is the FireRuby extension for the Ruby language.
- * 
- * The Initial Developer of the Original Code is Peter Wood. All Rights 
+ *
+ * The Initial Developer of the Original Code is Peter Wood. All Rights
  * Reserved.
  *
  * @author  Peter Wood
@@ -54,23 +54,19 @@ VALUE cDatabase;
  * @return  A reference to the new Database class instance.
  *
  */
-static VALUE allocateDatabase(VALUE klass)
-{
-   VALUE          instance  = Qnil;
-   DatabaseHandle *database = ALLOC(DatabaseHandle);
-   
-   if(database != NULL)
-   {
-      /* Wrap the structure in a class. */
-      instance = Data_Wrap_Struct(klass, NULL, databaseFree, database);
-   }
-   else
-   {
-      rb_raise(rb_eNoMemError,
-               "Memory allocation failure creating a Database object.");
-   }
-   
-   return(instance);
+static VALUE allocateDatabase(VALUE klass) {
+  VALUE instance  = Qnil;
+  DatabaseHandle *database = ALLOC(DatabaseHandle);
+
+  if(database != NULL) {
+    /* Wrap the structure in a class. */
+    instance = Data_Wrap_Struct(klass, NULL, databaseFree, database);
+  } else {
+    rb_raise(rb_eNoMemError,
+             "Memory allocation failure creating a Database object.");
+  }
+
+  return(instance);
 }
 
 
@@ -87,29 +83,26 @@ static VALUE allocateDatabase(VALUE klass)
  * @return  A reference to the new initialized object instance.
  *
  */
-VALUE initializeDatabase(int argc, VALUE *argv, VALUE self)
-{
-   VALUE options = rb_hash_new();
-   
-   /* Check the number of parameters. */
-   if(argc < 1)
-   {
-      rb_raise(rb_eArgError, "Wrong number of arguments (%d for %d).", argc, 1);
-   }
-   
-   /* Perform type checks on the input parameters. */
-   Check_Type(argv[0], T_STRING);
-   if(argc > 1)
-   {
-      Check_Type(argv[1], T_STRING);
-      rb_hash_aset(options, INT2FIX(isc_dpb_lc_ctype), argv[1]);
-   }
-   
-   /* Store the database details. */
-   rb_iv_set(self, "@file", argv[0]);
-   rb_iv_set(self, "@options", options);
-   
-   return(self);
+VALUE initializeDatabase(int argc, VALUE *argv, VALUE self) {
+  VALUE options = rb_hash_new();
+
+  /* Check the number of parameters. */
+  if(argc < 1) {
+    rb_raise(rb_eArgError, "Wrong number of arguments (%d for %d).", argc, 1);
+  }
+
+  /* Perform type checks on the input parameters. */
+  Check_Type(argv[0], T_STRING);
+  if(argc > 1) {
+    Check_Type(argv[1], T_STRING);
+    rb_hash_aset(options, INT2FIX(isc_dpb_lc_ctype), argv[1]);
+  }
+
+  /* Store the database details. */
+  rb_iv_set(self, "@file", argv[0]);
+  rb_iv_set(self, "@options", options);
+
+  return(self);
 }
 
 
@@ -122,9 +115,8 @@ VALUE initializeDatabase(int argc, VALUE *argv, VALUE self)
  *          object
  *
  */
-static VALUE getDatabaseFile(VALUE self)
-{
-   return(rb_iv_get(self, "@file"));
+static VALUE getDatabaseFile(VALUE self) {
+  return(rb_iv_get(self, "@file"));
 }
 
 
@@ -140,38 +132,31 @@ static VALUE getDatabaseFile(VALUE self)
  * @return  A reference to a Connection object or nil if an error occurs.
  *
  */
-static VALUE connectToDatabase(int argc, VALUE *argv, VALUE self)
-{
-   VALUE result     = Qnil,
-         user       = Qnil,
-         password   = Qnil,
-         options    = rb_iv_get(self, "@options"),
-         connection = Qnil;
+static VALUE connectToDatabase(int argc, VALUE *argv, VALUE self) {
+  VALUE result     = Qnil,
+        user       = Qnil,
+        password   = Qnil,
+        options    = rb_iv_get(self, "@options"),
+        connection = Qnil;
 
-   if(argc > 0)
-   {
-      user = argv[0];
-   }
-   if(argc > 1)
-   {
-      password = argv[1];
-   }
-   if(argc > 2)
-   {
-      rb_funcall(options, rb_intern("update"), 1, argv[2]);
-   }
-   
-   connection = rb_connection_new(self, user, password, options);
-   if(rb_block_given_p())
-   {
-      result = rb_ensure(connectBlock, connection, connectEnsure, connection);
-   }
-   else
-   {
-      result = connection;
-   }
-   
-   return(result);
+  if(argc > 0) {
+    user = argv[0];
+  }
+  if(argc > 1) {
+    password = argv[1];
+  }
+  if(argc > 2) {
+    rb_funcall(options, rb_intern("update"), 1, argv[2]);
+  }
+
+  connection = rb_connection_new(self, user, password, options);
+  if(rb_block_given_p()) {
+    result = rb_ensure(connectBlock, connection, connectEnsure, connection);
+  } else {
+    result = connection;
+  }
+
+  return(result);
 }
 
 
@@ -192,99 +177,87 @@ static VALUE connectToDatabase(int argc, VALUE *argv, VALUE self)
  * @return  A reference to a Database object on success, nil on failure.
  *
  */
-static VALUE createDatabase(int argc, VALUE *argv, VALUE unused)
-{
-   VALUE         database    = Qnil,
-                 set         = Qnil,
-                 tmp_str     = Qnil;
-   char          sql[512]    = "",
-                 *text       = NULL;
-   int           value       = 1024;
-   isc_db_handle connection  = 0;
-   isc_tr_handle transaction = 0;
-   ISC_STATUS    status[ISC_STATUS_LENGTH];
-   
-   /* Check that sufficient parameters have been provided. */
-   if(argc < 3)
-   {
-      rb_raise(rb_eArgError, "Wrong number of parameters (%d for %d).", argc,
-               3);
-   }
-   
-   /* Check values that are permitted restricted values. */
-   if(argc > 3)
-   {
-      value = FIX2INT(argv[3]);
-      if(value != 1024 && value != 2048 && value != 4096 && value != 8192)
-      {
-         rb_raise(rb_eException,
-                  "Invalid database page size value . Valid values are 1024, "\
-                  "2048 4096 or 8192.");
-      }
-   }
-   
-   /* Prepare the SQL statement. */
-   tmp_str = rb_funcall(argv[0], rb_intern("to_s"), 0);
-   sprintf(sql, "CREATE DATABASE '%s'", StringValuePtr(tmp_str));
+static VALUE createDatabase(int argc, VALUE *argv, VALUE unused) {
+  VALUE database    = Qnil,
+        set         = Qnil,
+        tmp_str     = Qnil;
+  char sql[512]    = "",
+  *text       = NULL;
+  int value       = 1024;
+  isc_db_handle connection  = 0;
+  isc_tr_handle transaction = 0;
+  ISC_STATUS status[ISC_STATUS_LENGTH];
 
-   tmp_str = rb_funcall(argv[1], rb_intern("to_s"), 0);
-   text = StringValuePtr(tmp_str);
-   if(strlen(text) > 0)
-   {
-      strcat(sql, " USER '");
-      strcat(sql, text);
-      strcat(sql, "'");
-   }
+  /* Check that sufficient parameters have been provided. */
+  if(argc < 3) {
+    rb_raise(rb_eArgError, "Wrong number of parameters (%d for %d).", argc,
+             3);
+  }
 
-   tmp_str = rb_funcall(argv[2], rb_intern("to_s"), 0);   
-   text = StringValuePtr(tmp_str);
-   if(strlen(text) > 0)
-   {
-      strcat(sql, " PASSWORD '");
+  /* Check values that are permitted restricted values. */
+  if(argc > 3) {
+    value = FIX2INT(argv[3]);
+    if(value != 1024 && value != 2048 && value != 4096 && value != 8192) {
+      rb_raise(rb_eException,
+               "Invalid database page size value . Valid values are 1024, " \
+               "2048 4096 or 8192.");
+    }
+  }
+
+  /* Prepare the SQL statement. */
+  tmp_str = rb_funcall(argv[0], rb_intern("to_s"), 0);
+  sprintf(sql, "CREATE DATABASE '%s'", StringValuePtr(tmp_str));
+
+  tmp_str = rb_funcall(argv[1], rb_intern("to_s"), 0);
+  text = StringValuePtr(tmp_str);
+  if(strlen(text) > 0) {
+    strcat(sql, " USER '");
+    strcat(sql, text);
+    strcat(sql, "'");
+  }
+
+  tmp_str = rb_funcall(argv[2], rb_intern("to_s"), 0);
+  text = StringValuePtr(tmp_str);
+  if(strlen(text) > 0) {
+    strcat(sql, " PASSWORD '");
+    strcat(sql, text);
+    strcat(sql, "'");
+  }
+
+  if(argc > 3) {
+    char text[50];
+
+    sprintf(text, " PAGE_SIZE = %d", value);
+    strcat(sql, text);
+  }
+
+  if(argc > 4 && argv[4] != Qnil) {
+    char *text = NULL;
+
+    set  = rb_funcall(argv[4], rb_intern("to_s"), 0);
+    text = StringValuePtr(set);
+    if(strlen(text) > 0) {
+      strcat(sql, " DEFAULT CHARACTER SET ");
       strcat(sql, text);
-      strcat(sql, "'");
-   }
-   
-   if(argc > 3)
-   {
-      char text[50];
-      
-      sprintf(text, " PAGE_SIZE = %d", value);
-      strcat(sql, text);
-   }
-   
-   if(argc > 4 && argv[4] != Qnil)
-   {
-      char *text = NULL;
-      
-      set  = rb_funcall(argv[4], rb_intern("to_s"), 0);
-      text = StringValuePtr(set);
-      if(strlen(text) > 0)
-      {
-         strcat(sql, " DEFAULT CHARACTER SET ");
-         strcat(sql, text);
-      }
-   }
-   strcat(sql, ";");
-   
-   if(isc_dsql_execute_immediate(status, &connection, &transaction, 0, sql,
-                                 3, NULL) != 0)
-   {
-      rb_fireruby_raise(status, "Database creation error.");
-   }
-   
-   if(connection != 0)
-   {
-      isc_detach_database(status, &connection);
-   }
-   
-   database = rb_database_new(argv[0]);
-   if(set != Qnil)
-   {
-      setDatabaseCharacterSet(database, set);
-   }
-   
-   return(database);
+    }
+  }
+  strcat(sql, ";");
+
+  if(isc_dsql_execute_immediate(status, &connection, &transaction, 0, sql,
+                                3, NULL) != 0) {
+    rb_fireruby_raise(status, "Database creation error.");
+  }
+
+  if(connection != 0) {
+    isc_detach_database(status, &connection);
+  }
+
+  database = rb_database_new(argv[0]);
+  if(set != Qnil) {
+    setDatabaseCharacterSet(database, set);
+  }
+
+  return(database);
 }
 
 
@@ -302,19 +275,17 @@ static VALUE createDatabase(int argc, VALUE *argv, VALUE unused)
  * @return  Always returns nil.
  *
  */
-static VALUE dropDatabase(VALUE self, VALUE user, VALUE password)
-{
-   VALUE            connection = rb_connection_new(self, user, password, Qnil);
-   ConnectionHandle *cHandle   = NULL;
-   ISC_STATUS       status[ISC_STATUS_LENGTH];
-   
-   Data_Get_Struct(connection, ConnectionHandle, cHandle);
-   if(isc_drop_database(status, &cHandle->handle) != 0)
-   {
-      rb_fireruby_raise(status, "Error dropping database.");
-   }
-   
-   return(Qnil);
+static VALUE dropDatabase(VALUE self, VALUE user, VALUE password) {
+  VALUE connection = rb_connection_new(self, user, password, Qnil);
+  ConnectionHandle *cHandle   = NULL;
+  ISC_STATUS status[ISC_STATUS_LENGTH];
+
+  Data_Get_Struct(connection, ConnectionHandle, cHandle);
+  if(isc_drop_database(status, &cHandle->handle) != 0) {
+    rb_fireruby_raise(status, "Error dropping database.");
+  }
+
+  return(Qnil);
 }
 
 
@@ -327,11 +298,10 @@ static VALUE dropDatabase(VALUE self, VALUE user, VALUE password)
  * @return  A reference to the database character set. May be nil.
  *
  */
-static VALUE getDatabaseCharacterSet(VALUE self)
-{
-   VALUE options = rb_iv_get(self, "@options");
-   
-   return(rb_hash_aref(options, INT2FIX(isc_dpb_lc_ctype)));
+static VALUE getDatabaseCharacterSet(VALUE self) {
+  VALUE options = rb_iv_get(self, "@options");
+
+  return(rb_hash_aref(options, INT2FIX(isc_dpb_lc_ctype)));
 }
 
 
@@ -345,24 +315,20 @@ static VALUE getDatabaseCharacterSet(VALUE self)
  * @return  A reference to the updated Database object.
  *
  */
-static VALUE setDatabaseCharacterSet(VALUE self, VALUE set)
-{
-   VALUE options = rb_iv_get(self, "@options");
-   
-   if(set != Qnil)
-   {
-      rb_hash_aset(options, INT2FIX(isc_dpb_lc_ctype), set); 
-   }
-   else
-   {
-      rb_hash_delete(options, INT2FIX(isc_dpb_lc_ctype));
-   }
-   
-   return(self);
+static VALUE setDatabaseCharacterSet(VALUE self, VALUE set) {
+  VALUE options = rb_iv_get(self, "@options");
+
+  if(set != Qnil) {
+    rb_hash_aset(options, INT2FIX(isc_dpb_lc_ctype), set);
+  } else {
+    rb_hash_delete(options, INT2FIX(isc_dpb_lc_ctype));
+  }
+
+  return(self);
 }
 
 
-/**                 
+/**
  * This function is used to integrate with the Ruby garbage collection system
  * to guarantee the release of the resources associated with a Database object.
  *
@@ -370,12 +336,10 @@ static VALUE setDatabaseCharacterSet(VALUE self, VALUE set)
  *                   a Database object being destroyed.
  *
  */
-void databaseFree(void *database)
-{
-   if(database != NULL)
-   {
-      free((DatabaseHandle *)database);
-   }
+void databaseFree(void *database) {
+  if(database != NULL) {
+    free((DatabaseHandle *)database);
+  }
 }
 
 
@@ -390,9 +354,8 @@ void databaseFree(void *database)
  * @return  The return value provided by execution of the provided block.
  *
  */
-VALUE connectBlock(VALUE connection)
-{
-   return(rb_yield(connection));
+VALUE connectBlock(VALUE connection) {
+  return(rb_yield(connection));
 }
 
 
@@ -406,10 +369,9 @@ VALUE connectBlock(VALUE connection)
  * @return  Always Qnil.
  *
  */
-VALUE connectEnsure(VALUE connection)
-{
-   rb_funcall(connection, rb_intern("close"), 0);
-   return(Qnil);
+VALUE connectEnsure(VALUE connection) {
+  rb_funcall(connection, rb_intern("close"), 0);
+  return(Qnil);
 }
 
 
@@ -421,14 +383,13 @@ VALUE connectEnsure(VALUE connection)
  * @return  A reference to the Database object created.
  *
  */
-VALUE rb_database_new(VALUE file)
-{
-   VALUE database     = allocateDatabase(cDatabase),
-         parameters[] = {file};
-   
-   initializeDatabase(1, parameters, database);
-   
-   return(database);
+VALUE rb_database_new(VALUE file) {
+  VALUE database     = allocateDatabase(cDatabase),
+        parameters[] = {file};
+
+  initializeDatabase(1, parameters, database);
+
+  return(database);
 }
 
 
@@ -439,15 +400,14 @@ VALUE rb_database_new(VALUE file)
  * @param  module  A reference to the module to create the class within.
  *
  */
-void Init_Database(VALUE module)
-{
-   cDatabase = rb_define_class_under(module, "Database", rb_cObject);
-   rb_define_alloc_func(cDatabase, allocateDatabase);
-   rb_define_method(cDatabase, "initialize", initializeDatabase, -1);
-   rb_define_method(cDatabase, "file", getDatabaseFile, 0);
-   rb_define_method(cDatabase, "connect", connectToDatabase, -1);
-   rb_define_method(cDatabase, "drop", dropDatabase, 2);
-   rb_define_method(cDatabase, "character_set", getDatabaseCharacterSet, 0);
-   rb_define_method(cDatabase, "character_set=", setDatabaseCharacterSet, 1);
-   rb_define_module_function(cDatabase, "create", createDatabase, -1);
+void Init_Database(VALUE module) {
+  cDatabase = rb_define_class_under(module, "Database", rb_cObject);
+  rb_define_alloc_func(cDatabase, allocateDatabase);
+  rb_define_method(cDatabase, "initialize", initializeDatabase, -1);
+  rb_define_method(cDatabase, "file", getDatabaseFile, 0);
+  rb_define_method(cDatabase, "connect", connectToDatabase, -1);
+  rb_define_method(cDatabase, "drop", dropDatabase, 2);
+  rb_define_method(cDatabase, "character_set", getDatabaseCharacterSet, 0);
+  rb_define_method(cDatabase, "character_set=", setDatabaseCharacterSet, 1);
+  rb_define_module_function(cDatabase, "create", createDatabase, -1);
 }

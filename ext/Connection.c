@@ -64,24 +64,20 @@ VALUE cConnection;
  * @return  A reference to the newly created instance.
  *
  */
-static VALUE allocateConnection(VALUE klass)
-{
-   VALUE            instance    = Qnil;
-   ConnectionHandle *connection = ALLOC(ConnectionHandle);
+static VALUE allocateConnection(VALUE klass) {
+  VALUE instance    = Qnil;
+  ConnectionHandle *connection = ALLOC(ConnectionHandle);
 
-   if(connection != NULL)
-   {
-      /* Wrap the structure in a class. */
-      connection->handle = 0;
-      instance = Data_Wrap_Struct(klass, NULL, connectionFree, connection);
-   }
-   else
-   {
-      rb_raise(rb_eNoMemError,
-               "Memory allocation failure creating a connection.");
-   }
+  if(connection != NULL) {
+    /* Wrap the structure in a class. */
+    connection->handle = 0;
+    instance = Data_Wrap_Struct(klass, NULL, connectionFree, connection);
+  } else {
+    rb_raise(rb_eNoMemError,
+             "Memory allocation failure creating a connection.");
+  }
 
-   return(instance);
+  return(instance);
 }
 
 
@@ -97,64 +93,58 @@ static VALUE allocateConnection(VALUE klass)
  * @return  A reference to the initialized object.
  *
  */
-static VALUE initializeConnection(int argc, VALUE *argv, VALUE self)
-{
-   ConnectionHandle *connection = NULL;
-   ISC_STATUS       status[ISC_STATUS_LENGTH], attach_result;
-   short            length   = 0;
-   char             *file    = NULL,
-                    *dpb     = NULL;
-   VALUE            user     = Qnil,
-                    password = Qnil,
-                    options  = Qnil,
-                    tmp_str  = Qnil;
+static VALUE initializeConnection(int argc, VALUE *argv, VALUE self) {
+  ConnectionHandle *connection = NULL;
+  ISC_STATUS status[ISC_STATUS_LENGTH], attach_result;
+  short length   = 0;
+  char             *file    = NULL,
+  *dpb     = NULL;
+  VALUE user     = Qnil,
+        password = Qnil,
+        options  = Qnil,
+        tmp_str  = Qnil;
 
-   if(argc < 1)
-   {
-      rb_raise(rb_eArgError, "Wrong number of arguments (%d for %d).", argc, 1);
-   }
+  if(argc < 1) {
+    rb_raise(rb_eArgError, "Wrong number of arguments (%d for %d).", argc, 1);
+  }
 
-   if(TYPE(argv[0]) != T_DATA ||
-      RDATA(argv[0])->dfree != (RUBY_DATA_FUNC)databaseFree)
-   {
-      rb_fireruby_raise(NULL, "Invalid database specified for connection.");
-   }
+  if(TYPE(argv[0]) != T_DATA ||
+     RDATA(argv[0])->dfree != (RUBY_DATA_FUNC)databaseFree) {
+    rb_fireruby_raise(NULL, "Invalid database specified for connection.");
+  }
 
-   tmp_str = rb_iv_get(argv[0], "@file");
-   file = StringValuePtr(tmp_str);
+  tmp_str = rb_iv_get(argv[0], "@file");
+  file = StringValuePtr(tmp_str);
 
-   Data_Get_Struct(self, ConnectionHandle, connection);
+  Data_Get_Struct(self, ConnectionHandle, connection);
 
-   /* Extract parameters. */
-   if(argc > 1)
-   {
-      user = argv[1];
-   }
-   if(argc > 2)
-   {
-      password = argv[2];
-   }
-   if(argc > 3)
-   {
-      options = argv[3];
-   }
+  /* Extract parameters. */
+  if(argc > 1) {
+    user = argv[1];
+  }
+  if(argc > 2) {
+    password = argv[2];
+  }
+  if(argc > 3) {
+    options = argv[3];
+  }
 
-   /* Open the connection connection. */
-   dpb = createDPB(user, password, options, &length);
-   attach_result = isc_attach_database(status, strlen(file), file, &connection->handle, length, dpb);
-   free(dpb);
+  /* Open the connection connection. */
+  dpb = createDPB(user, password, options, &length);
+  attach_result = isc_attach_database(status, strlen(file), file, &connection->handle, length, dpb);
+  free(dpb);
 
-   if(attach_result != 0) {
-      /* Generate an error. */
-      rb_fireruby_raise(status, "Error opening database connection.");
-   }
+  if(attach_result != 0) {
+    /* Generate an error. */
+    rb_fireruby_raise(status, "Error opening database connection.");
+  }
 
-   /* Store connection attributes. */
-   rb_iv_set(self, "@database", argv[0]);
-   rb_iv_set(self, "@user", user);
-   rb_iv_set(self, "@transactions", rb_ary_new());
+  /* Store connection attributes. */
+  rb_iv_set(self, "@database", argv[0]);
+  rb_iv_set(self, "@user", user);
+  rb_iv_set(self, "@transactions", rb_ary_new());
 
-   return(self);
+  return(self);
 }
 
 
@@ -166,18 +156,16 @@ static VALUE initializeConnection(int argc, VALUE *argv, VALUE self)
  * @return  Qtrue if the connection is open, Qfalse if it is closed.
  *
  */
-static VALUE isConnectionOpen(VALUE self)
-{
-   VALUE            result      = Qfalse;
-   ConnectionHandle *connection = NULL;
+static VALUE isConnectionOpen(VALUE self) {
+  VALUE result      = Qfalse;
+  ConnectionHandle *connection = NULL;
 
-   Data_Get_Struct(self, ConnectionHandle, connection);
-   if(connection->handle != 0)
-   {
-      result = Qtrue;
-   }
+  Data_Get_Struct(self, ConnectionHandle, connection);
+  if(connection->handle != 0) {
+    result = Qtrue;
+  }
 
-   return(result);
+  return(result);
 }
 
 
@@ -189,9 +177,8 @@ static VALUE isConnectionOpen(VALUE self)
  * @return  Qtrue if the connection is closed, Qfalse if it is open.
  *
  */
-static VALUE isConnectionClosed(VALUE self)
-{
-   return(isConnectionOpen(self) == Qtrue ? Qfalse : Qtrue);
+static VALUE isConnectionClosed(VALUE self) {
+  return(isConnectionOpen(self) == Qtrue ? Qfalse : Qtrue);
 }
 
 
@@ -204,43 +191,36 @@ static VALUE isConnectionClosed(VALUE self)
  *          if the method is called on a closed Connection.
  *
  */
-static VALUE closeConnection(VALUE self)
-{
-   VALUE            result      = Qnil;
-   ConnectionHandle *connection = NULL;
+static VALUE closeConnection(VALUE self) {
+  VALUE result      = Qnil;
+  ConnectionHandle *connection = NULL;
 
-   Data_Get_Struct(self, ConnectionHandle, connection);
-   if(connection->handle != 0)
-   {
-      VALUE      transactions = rb_iv_get(self, "@transactions"),
-                 transaction  = Qnil;
-      ISC_STATUS status[ISC_STATUS_LENGTH];
+  Data_Get_Struct(self, ConnectionHandle, connection);
+  if(connection->handle != 0) {
+    VALUE transactions = rb_iv_get(self, "@transactions"),
+          transaction  = Qnil;
+    ISC_STATUS status[ISC_STATUS_LENGTH];
 
-      /* Roll back an outstanding transactions. */
-      while((transaction = rb_ary_pop(transactions)) != Qnil)
-      {
-         VALUE active = rb_funcall(transaction, rb_intern("active?"), 0);
+    /* Roll back an outstanding transactions. */
+    while((transaction = rb_ary_pop(transactions)) != Qnil) {
+      VALUE active = rb_funcall(transaction, rb_intern("active?"), 0);
 
-         if(active == Qtrue)
-         {
-            rb_funcall(transaction, rb_intern("rollback"), 0);
-         }
+      if(active == Qtrue) {
+        rb_funcall(transaction, rb_intern("rollback"), 0);
       }
+    }
 
-      /* Detach from the database. */
-      if(isc_detach_database(status, &connection->handle) == 0)
-      {
-         connection->handle = 0;
-         result             = self;
-      }
-      else
-      {
-         /* Generate an error. */
-         rb_fireruby_raise(status, "Error closing connection.");
-      }
-   }
+    /* Detach from the database. */
+    if(isc_detach_database(status, &connection->handle) == 0) {
+      connection->handle = 0;
+      result             = self;
+    } else {
+      /* Generate an error. */
+      rb_fireruby_raise(status, "Error closing connection.");
+    }
+  }
 
-   return(result);
+  return(result);
 }
 
 
@@ -252,9 +232,8 @@ static VALUE closeConnection(VALUE self)
  * @return  A reference to the Connection connection.
  *
  */
-static VALUE getConnectionDatabase(VALUE self)
-{
-   return(rb_iv_get(self, "@database"));
+static VALUE getConnectionDatabase(VALUE self) {
+  return(rb_iv_get(self, "@database"));
 }
 
 
@@ -267,17 +246,15 @@ static VALUE getConnectionDatabase(VALUE self)
  * @return  A reference to a Transaction object or nil if a problem occurs.
  *
  */
-static VALUE startConnectionTransaction(VALUE self)
-{
-   VALUE result = rb_transaction_new(self);
+static VALUE startConnectionTransaction(VALUE self) {
+  VALUE result = rb_transaction_new(self);
 
-   if(rb_block_given_p())
-   {
-      result = rb_rescue(startTransactionBlock, result,
-                         startTransactionRescue, result);
-   }
+  if(rb_block_given_p()) {
+    result = rb_rescue(startTransactionBlock, result,
+                       startTransactionRescue, result);
+  }
 
-   return(result);
+  return(result);
 }
 
 
@@ -290,24 +267,22 @@ static VALUE startConnectionTransaction(VALUE self)
  * @return  A reference to a String object describing the connection.
  *
  */
-static VALUE connectionToString(VALUE self)
-{
-   VALUE            result      = rb_str_new2("(CLOSED)");
-   ConnectionHandle *connection = NULL;
+static VALUE connectionToString(VALUE self) {
+  VALUE result      = rb_str_new2("(CLOSED)");
+  ConnectionHandle *connection = NULL;
 
-   Data_Get_Struct(self, ConnectionHandle, connection);
-   if(connection->handle != 0)
-   {
-      VALUE database = rb_iv_get(self, "@database"),
-            user     = rb_iv_get(self, "@user"),
-            file     = rb_iv_get(database, "@file");
-      char  text[256];
+  Data_Get_Struct(self, ConnectionHandle, connection);
+  if(connection->handle != 0) {
+    VALUE database = rb_iv_get(self, "@database"),
+          user     = rb_iv_get(self, "@user"),
+          file     = rb_iv_get(database, "@file");
+    char text[256];
 
-      sprintf(text, "%s@%s (OPEN)", StringValuePtr(user), StringValuePtr(file));
-      result = rb_str_new2(text);
-   }
+    sprintf(text, "%s@%s (OPEN)", StringValuePtr(user), StringValuePtr(file));
+    result = rb_str_new2(text);
+  }
 
-   return(result);
+  return(result);
 }
 
 
@@ -324,31 +299,27 @@ static VALUE connectionToString(VALUE self)
  *          non-query statement.
  *
  */
-static VALUE executeOnConnection(VALUE self, VALUE sql, VALUE transaction)
-{
-   VALUE results   = Qnil,
-         statement = rb_statement_new(self, transaction, sql, INT2FIX(3));
+static VALUE executeOnConnection(VALUE self, VALUE sql, VALUE transaction) {
+  VALUE results   = Qnil,
+        statement = rb_statement_new(self, transaction, sql, INT2FIX(3));
 
-   results = rb_execute_statement(statement);
-   if(results != Qnil && rb_obj_is_kind_of(results, rb_cInteger) == Qfalse)
-   {
-      if(rb_block_given_p())
-      {
-         VALUE row  = rb_funcall(results, rb_intern("fetch"), 0),
-               last = Qnil;
+  results = rb_execute_statement(statement);
+  if(results != Qnil && rb_obj_is_kind_of(results, rb_cInteger) == Qfalse) {
+    if(rb_block_given_p()) {
+      VALUE row  = rb_funcall(results, rb_intern("fetch"), 0),
+            last = Qnil;
 
-         while(row != Qnil)
-         {
-            last = rb_yield(row);
-            row  = rb_funcall(results, rb_intern("fetch"), 0);
-         }
-         rb_funcall(results, rb_intern("close"), 0);
-         results = last;
+      while(row != Qnil) {
+        last = rb_yield(row);
+        row  = rb_funcall(results, rb_intern("fetch"), 0);
       }
-   }
-   rb_statement_close(statement);
+      rb_funcall(results, rb_intern("close"), 0);
+      results = last;
+    }
+  }
+  rb_statement_close(statement);
 
-   return(results);
+  return(results);
 }
 
 
@@ -362,49 +333,39 @@ static VALUE executeOnConnection(VALUE self, VALUE sql, VALUE transaction)
  * @return  Always returns nil.
  *
  */
-static VALUE executeOnConnectionImmediate(VALUE self, VALUE sql)
-{
-   VALUE transaction = rb_transaction_new(self),
-         set         = Qnil,
-         results     = Qnil,
-         array       = rb_ary_new(),
-         dialect     = INT2FIX(3),
-         statement   = rb_statement_new(self, transaction, sql, dialect);
+static VALUE executeOnConnectionImmediate(VALUE self, VALUE sql) {
+  VALUE transaction = rb_transaction_new(self),
+        set         = Qnil,
+        results     = Qnil,
+        array       = rb_ary_new(),
+        dialect     = INT2FIX(3),
+        statement   = rb_statement_new(self, transaction, sql, dialect);
 
-   rb_ary_push(array, self);
-   rb_ary_push(array, transaction);
-   rb_ary_push(array, sql);
-   rb_ary_push(array, statement);
+  rb_ary_push(array, self);
+  rb_ary_push(array, transaction);
+  rb_ary_push(array, sql);
+  rb_ary_push(array, statement);
 
-   set = rb_rescue(executeBlock, array, executeRescue, array);
-   if(set != Qnil)
-   {
-      if(TYPE(set) == T_DATA &&
-         RDATA(set)->dfree == (RUBY_DATA_FUNC)resultSetFree)
-      {
-         rb_assign_transaction(set, transaction);
-         if(rb_block_given_p())
-         {
-            results = rb_rescue(executeImmediateBlock, set,
-                                executeImmediateRescue, set);
-         }
-         else
-         {
-            results = set;
-         }
+  set = rb_rescue(executeBlock, array, executeRescue, array);
+  if(set != Qnil) {
+    if(TYPE(set) == T_DATA &&
+       RDATA(set)->dfree == (RUBY_DATA_FUNC)resultSetFree) {
+      rb_assign_transaction(set, transaction);
+      if(rb_block_given_p()) {
+        results = rb_rescue(executeImmediateBlock, set,
+                            executeImmediateRescue, set);
+      } else {
+        results = set;
       }
-      else
-      {
-         rb_funcall(transaction, rb_intern("commit"), 0);
-         results = set;
-      }
-   }
-   else
-   {
+    } else {
       rb_funcall(transaction, rb_intern("commit"), 0);
-   }
+      results = set;
+    }
+  } else {
+    rb_funcall(transaction, rb_intern("commit"), 0);
+  }
 
-   return(results);
+  return(results);
 }
 
 
@@ -416,9 +377,8 @@ static VALUE executeOnConnectionImmediate(VALUE self, VALUE sql)
  * @return  A reference to the user name used to establish the connection.
  *
  */
-static VALUE getConnectionUser(VALUE self)
-{
-   return(rb_iv_get(self, "@user"));
+static VALUE getConnectionUser(VALUE self) {
+  return(rb_iv_get(self, "@user"));
 }
 
 
@@ -431,13 +391,12 @@ static VALUE getConnectionUser(VALUE self)
  * @return  A reference to the return value provided by the block.
  *
  */
-VALUE startTransactionBlock(VALUE transaction)
-{
-   VALUE result = rb_yield(transaction);
+VALUE startTransactionBlock(VALUE transaction) {
+  VALUE result = rb_yield(transaction);
 
-   rb_funcall(transaction, rb_intern("commit"), 0);
+  rb_funcall(transaction, rb_intern("commit"), 0);
 
-   return(result);
+  return(result);
 }
 
 
@@ -452,11 +411,10 @@ VALUE startTransactionBlock(VALUE transaction)
  * @return  Would be nil but always throws an exception.
  *
  */
-VALUE startTransactionRescue(VALUE transaction, VALUE error)
-{
-   rb_funcall(transaction, rb_intern("rollback"), 0);
-   rb_exc_raise(error);
-   return(Qnil);
+VALUE startTransactionRescue(VALUE transaction, VALUE error) {
+  rb_funcall(transaction, rb_intern("rollback"), 0);
+  rb_exc_raise(error);
+  return(Qnil);
 }
 
 
@@ -471,18 +429,17 @@ VALUE startTransactionRescue(VALUE transaction, VALUE error)
  *          query.
  *
  */
-VALUE executeBlock(VALUE array)
-{
-   VALUE result      = Qnil,
-         connection  = rb_ary_entry(array, 0),
-         transaction = rb_ary_entry(array, 1),
-         sql         = rb_ary_entry(array, 2),
-         statement   = rb_ary_entry(array, 3);
+VALUE executeBlock(VALUE array) {
+  VALUE result      = Qnil,
+        connection  = rb_ary_entry(array, 0),
+        transaction = rb_ary_entry(array, 1),
+        sql         = rb_ary_entry(array, 2),
+        statement   = rb_ary_entry(array, 3);
 
-   result = rb_execute_statement(statement);
-   rb_statement_close(statement);
+  result = rb_execute_statement(statement);
+  rb_statement_close(statement);
 
-   return(result);
+  return(result);
 }
 
 
@@ -496,15 +453,14 @@ VALUE executeBlock(VALUE array)
  * @return  Would always returns nil except that it always raises an exception.
  *
  */
-VALUE executeRescue(VALUE array, VALUE error)
-{
-   VALUE transaction = rb_ary_entry(array, 1),
-         statement   = rb_ary_entry(array, 3);
+VALUE executeRescue(VALUE array, VALUE error) {
+  VALUE transaction = rb_ary_entry(array, 1),
+        statement   = rb_ary_entry(array, 3);
 
-   rb_funcall(transaction, rb_intern("rollback"), 0);
-   rb_statement_close(statement);
-   rb_exc_raise(error);
-   return(Qnil);
+  rb_funcall(transaction, rb_intern("rollback"), 0);
+  rb_statement_close(statement);
+  rb_exc_raise(error);
+  return(Qnil);
 }
 
 
@@ -517,19 +473,17 @@ VALUE executeRescue(VALUE array, VALUE error)
  * @return  A reference to the return value generated by the block.
  *
  */
-VALUE executeImmediateBlock(VALUE set)
-{
-   VALUE result = Qnil,
-         row    = rb_funcall(set, rb_intern("fetch"), 0);
+VALUE executeImmediateBlock(VALUE set) {
+  VALUE result = Qnil,
+        row    = rb_funcall(set, rb_intern("fetch"), 0);
 
-   while(row != Qnil)
-   {
-      result = rb_yield(row);
-      row    = rb_funcall(set, rb_intern("fetch"), 0);
-   }
-   rb_funcall(set, rb_intern("close"), 0);
+  while(row != Qnil) {
+    result = rb_yield(row);
+    row    = rb_funcall(set, rb_intern("fetch"), 0);
+  }
+  rb_funcall(set, rb_intern("close"), 0);
 
-   return(result);
+  return(result);
 }
 
 
@@ -543,11 +497,10 @@ VALUE executeImmediateBlock(VALUE set)
  * @return  Would always returns nil except that it always raises an exception.
  *
  */
-VALUE executeImmediateRescue(VALUE set, VALUE error)
-{
-   rb_funcall(set, rb_intern("close"), 0);
-   rb_exc_raise(error);
-   return(Qnil);
+VALUE executeImmediateRescue(VALUE set, VALUE error) {
+  rb_funcall(set, rb_intern("close"), 0);
+  rb_exc_raise(error);
+  return(Qnil);
 }
 
 
@@ -568,139 +521,124 @@ VALUE executeImmediateRescue(VALUE set, VALUE error)
  *          parameter buffer.
  *
  */
-char *createDPB(VALUE user, VALUE password, VALUE options, short *length)
-{
-   char *dpb = NULL;
-   VALUE keys;
-   VALUE entry;
-   int i;
-   short type;
+char *createDPB(VALUE user, VALUE password, VALUE options, short *length) {
+  char *dpb = NULL;
+  VALUE keys;
+  VALUE entry;
+  int i;
+  short type;
 
-   /* Determine the dpb length and allocate it. */
-   *length = 1;
-   if(user != Qnil)
-   {
-      *length += strlen(StringValuePtr(user)) + 2;
-   }
-   if(password != Qnil)
-   {
-      *length += strlen(StringValuePtr(password)) + 2;
-   }
-   if(options != Qnil)
-   {
-      keys = rb_funcall(options, rb_intern("keys"), 0);
+  /* Determine the dpb length and allocate it. */
+  *length = 1;
+  if(user != Qnil) {
+    *length += strlen(StringValuePtr(user)) + 2;
+  }
+  if(password != Qnil) {
+    *length += strlen(StringValuePtr(password)) + 2;
+  }
+  if(options != Qnil) {
+    keys = rb_funcall(options, rb_intern("keys"), 0);
 
-      for(i = 0; i < RARRAY_LEN(keys); i++)
+    for(i = 0; i < RARRAY_LEN(keys); i++) {
+      type = FIX2INT(rb_ary_entry(keys, i));
+
+      switch (type) {
+      case isc_dpb_sql_role_name:
+      case isc_dpb_lc_messages:
+      case isc_dpb_lc_ctype:
+      case isc_dpb_reserved:
       {
-         type = FIX2INT(rb_ary_entry(keys, i));
-
-         switch (type)
-         {
-            case isc_dpb_sql_role_name:
-            case isc_dpb_lc_messages:
-            case isc_dpb_lc_ctype:
-            case isc_dpb_reserved:
-            {
-               entry = rb_hash_aref(options, INT2FIX(type));
-               *length += strlen(StringValuePtr(entry)) + 2;
-               break;
-            }
-            default:
-            {
-               *length += 3;
-            }
-         }
+        entry = rb_hash_aref(options, INT2FIX(type));
+        *length += strlen(StringValuePtr(entry)) + 2;
+        break;
       }
-   }
-   dpb = ALLOC_N(char, *length);
-
-   /* Populate the buffer. */
-   if(dpb != NULL)
-   {
-      char *ptr = NULL;
-      int  size = 0;
-
-      /* Fill out the DPB. */
-      memset(dpb, 0, *length);
-      dpb[0] = isc_dpb_version1;
-      ptr    = &dpb[1];
-
-      if(user != Qnil)
+      default:
       {
-         char *username = StringValuePtr(user);
-
-         size   = strlen(username);
-         *ptr++ = isc_dpb_user_name;
-         *ptr++ = (char)size;
-         memcpy(ptr, username, size);
-         ptr    = ptr + size;
+        *length += 3;
       }
-
-      if(password != Qnil)
-      {
-         char *userpwd  = StringValuePtr(password);
-
-         size   = strlen(userpwd);
-         *ptr++ = isc_dpb_password;
-         *ptr++ = (char)size;
-         memcpy(ptr, userpwd, size);
-         ptr    = ptr + size;
       }
+    }
+  }
+  dpb = ALLOC_N(char, *length);
 
-      if(options != Qnil)
-      {
-         for(i = 0; i < RARRAY_LEN(keys); i++)
-         {
-            type = FIX2INT(rb_ary_entry(keys, i));
-            entry = rb_hash_aref(options, INT2FIX(type));
+  /* Populate the buffer. */
+  if(dpb != NULL) {
+    char *ptr = NULL;
+    int size = 0;
 
-            switch (type)
-            {
-               case isc_dpb_sql_role_name:
-               case isc_dpb_lc_messages:
-               case isc_dpb_lc_ctype:
-               case isc_dpb_reserved:
-               {
-                  char *text = StringValuePtr(entry);
+    /* Fill out the DPB. */
+    memset(dpb, 0, *length);
+    dpb[0] = isc_dpb_version1;
+    ptr    = &dpb[1];
 
-                  size   = strlen(text);
-                  *ptr++ = type;
-                  *ptr++ = (char)size;
-                  memcpy(ptr, text, size);
-                  ptr    = ptr + size;
-                  break;
-               }
-               default:
-               {
-                  short value;
-                  switch (TYPE(entry))
-                  {
-                     case T_FIXNUM : value = FIX2INT(entry);
-                     case T_NIL    : value = 0;
-                     case T_FALSE  : value = 0;
-                     case T_TRUE   : value = 1;
-                     case T_UNDEF  : value = 0;
-                     case T_FLOAT  : value = NUM2INT(entry);
-                     case T_BIGNUM : value = NUM2INT(entry);
-                     default       : value = 0;
-                  }
+    if(user != Qnil) {
+      char *username = StringValuePtr(user);
 
-                  *ptr++ = type;
-                  *ptr++ = (char)1;
-                  *ptr++ = value;
-               }
-            }
-         }
+      size   = strlen(username);
+      *ptr++ = isc_dpb_user_name;
+      *ptr++ = (char)size;
+      memcpy(ptr, username, size);
+      ptr    = ptr + size;
+    }
+
+    if(password != Qnil) {
+      char *userpwd  = StringValuePtr(password);
+
+      size   = strlen(userpwd);
+      *ptr++ = isc_dpb_password;
+      *ptr++ = (char)size;
+      memcpy(ptr, userpwd, size);
+      ptr    = ptr + size;
+    }
+
+    if(options != Qnil) {
+      for(i = 0; i < RARRAY_LEN(keys); i++) {
+        type = FIX2INT(rb_ary_entry(keys, i));
+        entry = rb_hash_aref(options, INT2FIX(type));
+
+        switch (type) {
+        case isc_dpb_sql_role_name:
+        case isc_dpb_lc_messages:
+        case isc_dpb_lc_ctype:
+        case isc_dpb_reserved:
+        {
+          char *text = StringValuePtr(entry);
+
+          size   = strlen(text);
+          *ptr++ = type;
+          *ptr++ = (char)size;
+          memcpy(ptr, text, size);
+          ptr    = ptr + size;
+          break;
+        }
+        default:
+        {
+          short value;
+          switch (TYPE(entry)) {
+          case T_FIXNUM: value = FIX2INT(entry);
+          case T_NIL: value = 0;
+          case T_FALSE: value = 0;
+          case T_TRUE: value = 1;
+          case T_UNDEF: value = 0;
+          case T_FLOAT: value = NUM2INT(entry);
+          case T_BIGNUM: value = NUM2INT(entry);
+          default: value = 0;
+          }
+
+          *ptr++ = type;
+          *ptr++ = (char)1;
+          *ptr++ = value;
+        }
+        }
       }
-   }
-   else
-   {
-      /* Generate an error. */
-      rb_raise(rb_eNoMemError,
-               "Memory allocation failure creating database DPB.");
-   }
+    }
+  } else {
+    /* Generate an error. */
+    rb_raise(rb_eNoMemError,
+             "Memory allocation failure creating database DPB.");
+  }
 
-   return(dpb);
+  return(dpb);
 }
 
 
@@ -712,20 +650,17 @@ char *createDPB(VALUE user, VALUE password, VALUE options, short *length)
  *                     with a Connection object.
  *
  */
-void connectionFree(void *connection)
-{
-   if(connection != NULL)
-   {
-      ConnectionHandle *handle = (ConnectionHandle *)connection;
+void connectionFree(void *connection) {
+  if(connection != NULL) {
+    ConnectionHandle *handle = (ConnectionHandle *)connection;
 
-      if(handle->handle != 0)
-      {
-         ISC_STATUS status[ISC_STATUS_LENGTH];
+    if(handle->handle != 0) {
+      ISC_STATUS status[ISC_STATUS_LENGTH];
 
-         isc_detach_database(status, &handle->handle);
-      }
-      free(handle);
-   }
+      isc_detach_database(status, &handle->handle);
+    }
+    free(handle);
+  }
 }
 
 
@@ -745,19 +680,18 @@ void connectionFree(void *connection)
  * @return  A reference to the newly created Connection object.
  *
  */
-VALUE rb_connection_new(VALUE database, VALUE user, VALUE password, VALUE options)
-{
-   VALUE connection = allocateConnection(cConnection),
-         parameters[4];
+VALUE rb_connection_new(VALUE database, VALUE user, VALUE password, VALUE options) {
+  VALUE connection = allocateConnection(cConnection),
+        parameters[4];
 
-   parameters[0] = database;
-   parameters[1] = user;
-   parameters[2] = password;
-   parameters[3] = options;
+  parameters[0] = database;
+  parameters[1] = user;
+  parameters[2] = password;
+  parameters[3] = options;
 
-   initializeConnection(4, parameters, connection);
+  initializeConnection(4, parameters, connection);
 
-   return(connection);
+  return(connection);
 }
 
 
@@ -771,27 +705,24 @@ VALUE rb_connection_new(VALUE database, VALUE user, VALUE password, VALUE option
  *                      transaction.
  *
  */
-void rb_tx_started(VALUE transaction, VALUE connection)
-{
-   VALUE array  = TYPE(connection) == T_ARRAY ? connection : rb_ary_new(),
-         number = Qnil;
-   long  size   = 0,
-         index;
+void rb_tx_started(VALUE transaction, VALUE connection) {
+  VALUE array  = TYPE(connection) == T_ARRAY ? connection : rb_ary_new(),
+        number = Qnil;
+  long size   = 0,
+       index;
 
-   if(TYPE(connection) != T_ARRAY)
-   {
-      rb_ary_push(array, connection);
-   }
-   number = rb_funcall(array, rb_intern("size"), 0);
-   size   = TYPE(number) == T_FIXNUM ? FIX2INT(number) : NUM2INT(number);
+  if(TYPE(connection) != T_ARRAY) {
+    rb_ary_push(array, connection);
+  }
+  number = rb_funcall(array, rb_intern("size"), 0);
+  size   = TYPE(number) == T_FIXNUM ? FIX2INT(number) : NUM2INT(number);
 
-   for(index = 0; index < size; index++)
-   {
-      VALUE entry = rb_ary_entry(array, index),
-            list  = rb_iv_get(entry, "@transactions");
+  for(index = 0; index < size; index++) {
+    VALUE entry = rb_ary_entry(array, index),
+          list  = rb_iv_get(entry, "@transactions");
 
-      rb_ary_push(list, transaction);
-   }
+    rb_ary_push(list, transaction);
+  }
 }
 
 
@@ -807,27 +738,24 @@ void rb_tx_started(VALUE transaction, VALUE connection)
  *                      released.
  *
  */
-void rb_tx_released(VALUE connection, VALUE transaction)
-{
-   VALUE array  = TYPE(connection) == T_ARRAY ? connection : rb_ary_new(),
-         number = Qnil;
-   long  size   = 0,
-         index;
+void rb_tx_released(VALUE connection, VALUE transaction) {
+  VALUE array  = TYPE(connection) == T_ARRAY ? connection : rb_ary_new(),
+        number = Qnil;
+  long size   = 0,
+       index;
 
-   if(TYPE(connection) != T_ARRAY)
-   {
-      rb_ary_push(array, connection);
-   }
-   number = rb_funcall(array, rb_intern("size"), 0);
-   size   = TYPE(number) == T_FIXNUM ? FIX2INT(number) : NUM2INT(number);
+  if(TYPE(connection) != T_ARRAY) {
+    rb_ary_push(array, connection);
+  }
+  number = rb_funcall(array, rb_intern("size"), 0);
+  size   = TYPE(number) == T_FIXNUM ? FIX2INT(number) : NUM2INT(number);
 
-   for(index = 0; index < size; index++)
-   {
-      VALUE entry = rb_ary_entry(array, index),
-            list  = rb_iv_get(entry, "@transactions");
+  for(index = 0; index < size; index++) {
+    VALUE entry = rb_ary_entry(array, index),
+          list  = rb_iv_get(entry, "@transactions");
 
-      rb_ary_delete(list, transaction);
-   }
+    rb_ary_delete(list, transaction);
+  }
 }
 
 
@@ -838,29 +766,28 @@ void rb_tx_released(VALUE connection, VALUE transaction)
  * @param  module  A reference to the module to create the class within.
  *
  */
-void Init_Connection(VALUE module)
-{
-   cConnection = rb_define_class_under(module, "Connection", rb_cObject);
-   rb_define_alloc_func(cConnection, allocateConnection);
-   rb_define_method(cConnection, "initialize", initializeConnection, -1);
-   rb_define_method(cConnection, "initialize_copy", forbidObjectCopy, 1);
-   rb_define_method(cConnection, "user", getConnectionUser, 0);
-   rb_define_method(cConnection, "open?", isConnectionOpen, 0);
-   rb_define_method(cConnection, "closed?", isConnectionClosed, 0);
-   rb_define_method(cConnection, "close", closeConnection, 0);
-   rb_define_method(cConnection, "database", getConnectionDatabase, 0);
-   rb_define_method(cConnection, "start_transaction", startConnectionTransaction, 0);
-   rb_define_method(cConnection, "to_s", connectionToString, 0);
-   rb_define_method(cConnection, "execute", executeOnConnection, 2);
-   rb_define_method(cConnection, "execute_immediate", executeOnConnectionImmediate, 1);
+void Init_Connection(VALUE module) {
+  cConnection = rb_define_class_under(module, "Connection", rb_cObject);
+  rb_define_alloc_func(cConnection, allocateConnection);
+  rb_define_method(cConnection, "initialize", initializeConnection, -1);
+  rb_define_method(cConnection, "initialize_copy", forbidObjectCopy, 1);
+  rb_define_method(cConnection, "user", getConnectionUser, 0);
+  rb_define_method(cConnection, "open?", isConnectionOpen, 0);
+  rb_define_method(cConnection, "closed?", isConnectionClosed, 0);
+  rb_define_method(cConnection, "close", closeConnection, 0);
+  rb_define_method(cConnection, "database", getConnectionDatabase, 0);
+  rb_define_method(cConnection, "start_transaction", startConnectionTransaction, 0);
+  rb_define_method(cConnection, "to_s", connectionToString, 0);
+  rb_define_method(cConnection, "execute", executeOnConnection, 2);
+  rb_define_method(cConnection, "execute_immediate", executeOnConnectionImmediate, 1);
 
-   rb_define_const(cConnection, "MARK_DATABASE_DAMAGED", INT2FIX(isc_dpb_damaged));
-   rb_define_const(cConnection, "WRITE_POLICY", INT2FIX(isc_dpb_force_write));
-   rb_define_const(cConnection, "CHARACTER_SET", INT2FIX(isc_dpb_lc_ctype));
-   rb_define_const(cConnection, "MESSAGE_FILE", INT2FIX(isc_dpb_lc_messages));
-   rb_define_const(cConnection, "NUMBER_OF_CACHE_BUFFERS", INT2FIX(isc_dpb_num_buffers));
-   rb_define_const(cConnection, "DBA_USER_NAME", INT2FIX(isc_dpb_sys_user_name));
-   rb_define_const(cConnection, "SQL_ROLE_NAME", INT2FIX(isc_dpb_sql_role_name));
-   rb_define_const(cConnection, "WRITE_ASYNCHRONOUS", INT2FIX(0));
-   rb_define_const(cConnection, "WRITE_SYNCHRONOUS", INT2FIX(1));
+  rb_define_const(cConnection, "MARK_DATABASE_DAMAGED", INT2FIX(isc_dpb_damaged));
+  rb_define_const(cConnection, "WRITE_POLICY", INT2FIX(isc_dpb_force_write));
+  rb_define_const(cConnection, "CHARACTER_SET", INT2FIX(isc_dpb_lc_ctype));
+  rb_define_const(cConnection, "MESSAGE_FILE", INT2FIX(isc_dpb_lc_messages));
+  rb_define_const(cConnection, "NUMBER_OF_CACHE_BUFFERS", INT2FIX(isc_dpb_num_buffers));
+  rb_define_const(cConnection, "DBA_USER_NAME", INT2FIX(isc_dpb_sys_user_name));
+  rb_define_const(cConnection, "SQL_ROLE_NAME", INT2FIX(isc_dpb_sql_role_name));
+  rb_define_const(cConnection, "WRITE_ASYNCHRONOUS", INT2FIX(0));
+  rb_define_const(cConnection, "WRITE_SYNCHRONOUS", INT2FIX(1));
 }

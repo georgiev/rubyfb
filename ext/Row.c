@@ -3,20 +3,20 @@
  *----------------------------------------------------------------------------*/
 /**
  * Copyright © Peter Wood, 2005
- * 
+ *
  * The contents of this file are subject to the Mozilla Public License Version
  * 1.1 (the "License"); you may not use this file except in compliance with the
- * License. You may obtain a copy of the License at 
+ * License. You may obtain a copy of the License at
  *
  * http://www.mozilla.org/MPL/
- * 
+ *
  * Software distributed under the License is distributed on an "AS IS" basis,
  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
  * the specificlanguage governing rights and  limitations under the License.
- * 
+ *
  * The Original Code is the FireRuby extension for the Ruby language.
- * 
- * The Initial Developer of the Original Code is Peter Wood. All Rights 
+ *
+ * The Initial Developer of the Original Code is Peter Wood. All Rights
  * Reserved.
  *
  * @author  Peter Wood
@@ -68,26 +68,22 @@ VALUE cRow;
  * @return  A reference to the Row class instance allocated.
  *
  */
-static VALUE allocateRow(VALUE klass)
-{
-   VALUE     row;
-   RowHandle *handle = ALLOC(RowHandle);
-   
-   if(handle != NULL)
-   {
-      /* Initialise the row fields. */
-      handle->size    = 0;
-      handle->number  = 0;
-      handle->columns = NULL;
-      row             = Data_Wrap_Struct(klass, NULL, freeRow, handle);
-   }
-   else
-   {
-      /* Generate an exception. */
-      rb_raise(rb_eNoMemError, "Memory allocation failure allocating a row.");
-   }
-   
-   return(row);
+static VALUE allocateRow(VALUE klass) {
+  VALUE row;
+  RowHandle *handle = ALLOC(RowHandle);
+
+  if(handle != NULL) {
+    /* Initialise the row fields. */
+    handle->size    = 0;
+    handle->number  = 0;
+    handle->columns = NULL;
+    row             = Data_Wrap_Struct(klass, NULL, freeRow, handle);
+  } else {
+    /* Generate an exception. */
+    rb_raise(rb_eNoMemError, "Memory allocation failure allocating a row.");
+  }
+
+  return(row);
 }
 
 
@@ -107,54 +103,47 @@ static VALUE allocateRow(VALUE klass)
  * @return  A reference to the initialize Row object.
  *
  */
-static VALUE initializeRow(VALUE self, VALUE results, VALUE data, VALUE number)
-{
-   RowHandle *row  = NULL;
-   VALUE     value = rb_funcall(data, rb_intern("size"), 0);
-   
-   Data_Get_Struct(self, RowHandle, row);
-   rb_iv_set(self, "@number", number);
-   row->size = TYPE(value) == T_FIXNUM ? FIX2INT(value) : NUM2INT(value);
-   if(row->size > 0)
-   {
-      row->columns = ALLOC_N(ColumnHandle, row->size);
-      
-      if(row->columns != NULL)
-      {
-         int i;
-         
-         memset(row->columns, 0, sizeof(ColumnHandle) * row->size);
-         for(i = 0; i < row->size; i++)
-         {
-            VALUE index,
-                  name,
-                  alias,
-                  scale,
-                  items;
-                  
-            index = INT2NUM(i);
-            name  = rb_funcall(results, rb_intern("column_name"), 1, index);
-            alias = rb_funcall(results, rb_intern("column_alias"), 1, index);
-            strcpy(row->columns[i].name, StringValuePtr(name));
-            strcpy(row->columns[i].alias, StringValuePtr(alias));
-            items = rb_ary_entry(data, i);
-            row->columns[i].value = rb_ary_entry(items, 0);
-            row->columns[i].type  = rb_ary_entry(items, 1);
-            row->columns[i].scale = rb_funcall(results, rb_intern("column_scale"), 1, index);
-            
-            if(TYPE(rb_ary_entry(items, 1)) == T_NIL)
-            {
-               fprintf(stderr, "Nil column type encountered.\n");
-            }
-         }
+static VALUE initializeRow(VALUE self, VALUE results, VALUE data, VALUE number) {
+  RowHandle *row  = NULL;
+  VALUE value = rb_funcall(data, rb_intern("size"), 0);
+
+  Data_Get_Struct(self, RowHandle, row);
+  rb_iv_set(self, "@number", number);
+  row->size = TYPE(value) == T_FIXNUM ? FIX2INT(value) : NUM2INT(value);
+  if(row->size > 0) {
+    row->columns = ALLOC_N(ColumnHandle, row->size);
+
+    if(row->columns != NULL) {
+      int i;
+
+      memset(row->columns, 0, sizeof(ColumnHandle) * row->size);
+      for(i = 0; i < row->size; i++) {
+        VALUE index,
+              name,
+              alias,
+              scale,
+              items;
+
+        index = INT2NUM(i);
+        name  = rb_funcall(results, rb_intern("column_name"), 1, index);
+        alias = rb_funcall(results, rb_intern("column_alias"), 1, index);
+        strcpy(row->columns[i].name, StringValuePtr(name));
+        strcpy(row->columns[i].alias, StringValuePtr(alias));
+        items = rb_ary_entry(data, i);
+        row->columns[i].value = rb_ary_entry(items, 0);
+        row->columns[i].type  = rb_ary_entry(items, 1);
+        row->columns[i].scale = rb_funcall(results, rb_intern("column_scale"), 1, index);
+
+        if(TYPE(rb_ary_entry(items, 1)) == T_NIL) {
+          fprintf(stderr, "Nil column type encountered.\n");
+        }
       }
-      else
-      {
-         rb_raise(rb_eNoMemError, "Memory allocation failure populating row.");
-      }
-   }
-   
-   return(self);
+    } else {
+      rb_raise(rb_eNoMemError, "Memory allocation failure populating row.");
+    }
+  }
+
+  return(self);
 }
 
 
@@ -166,13 +155,12 @@ static VALUE initializeRow(VALUE self, VALUE results, VALUE data, VALUE number)
  * @return  The number of columns that make up the row.
  *
  */
-static VALUE columnsInRow(VALUE self)
-{
-   RowHandle *row = NULL;
-   
-   Data_Get_Struct(self, RowHandle, row);
-   
-   return(INT2NUM(row->size));
+static VALUE columnsInRow(VALUE self) {
+  RowHandle *row = NULL;
+
+  Data_Get_Struct(self, RowHandle, row);
+
+  return(INT2NUM(row->size));
 }
 
 
@@ -184,9 +172,8 @@ static VALUE columnsInRow(VALUE self)
  * @param  A reference to the row number.
  *
  */
-static VALUE getRowNumber(VALUE self)
-{
-   return(rb_iv_get(self, "@number"));
+static VALUE getRowNumber(VALUE self) {
+  return(rb_iv_get(self, "@number"));
 }
 
 
@@ -200,20 +187,18 @@ static VALUE getRowNumber(VALUE self)
  *          specified.
  *
  */
-static VALUE getColumnName(VALUE self, VALUE index)
-{
-   VALUE     name   = Qnil;
-   RowHandle *row   = NULL;
-   int       number = 0;
-   
-   Data_Get_Struct(self, RowHandle, row);
-   number = TYPE(index) == T_FIXNUM ? FIX2INT(index) : NUM2INT(index);
-   if(number >= 0 && number < row->size)
-   {
-      name = rb_str_new2(row->columns[number].name);
-   }
-   
-   return(name);
+static VALUE getColumnName(VALUE self, VALUE index) {
+  VALUE name   = Qnil;
+  RowHandle *row   = NULL;
+  int number = 0;
+
+  Data_Get_Struct(self, RowHandle, row);
+  number = TYPE(index) == T_FIXNUM ? FIX2INT(index) : NUM2INT(index);
+  if(number >= 0 && number < row->size) {
+    name = rb_str_new2(row->columns[number].name);
+  }
+
+  return(name);
 }
 
 
@@ -227,20 +212,18 @@ static VALUE getColumnName(VALUE self, VALUE index)
  *          specified.
  *
  */
-static VALUE getColumnAlias(VALUE self, VALUE index)
-{
-   VALUE     alias  = Qnil;
-   RowHandle *row   = NULL;
-   int       number = 0;
-   
-   Data_Get_Struct(self, RowHandle, row);
-   number = TYPE(index) == T_FIXNUM ? FIX2INT(index) : NUM2INT(index);
-   if(number >= 0 && number < row->size)
-   {
-      alias = rb_str_new2(row->columns[number].alias);
-   }
-   
-   return(alias);
+static VALUE getColumnAlias(VALUE self, VALUE index) {
+  VALUE alias  = Qnil;
+  RowHandle *row   = NULL;
+  int number = 0;
+
+  Data_Get_Struct(self, RowHandle, row);
+  number = TYPE(index) == T_FIXNUM ? FIX2INT(index) : NUM2INT(index);
+  if(number >= 0 && number < row->size) {
+    alias = rb_str_new2(row->columns[number].alias);
+  }
+
+  return(alias);
 }
 
 
@@ -255,52 +238,42 @@ static VALUE getColumnAlias(VALUE self, VALUE index)
  *          is specified.
  *
  */
-static VALUE getColumnValue(VALUE self, VALUE index)
-{
-   VALUE     value  = Qnil;
-   RowHandle *row   = NULL;
+static VALUE getColumnValue(VALUE self, VALUE index) {
+  VALUE value  = Qnil;
+  RowHandle *row   = NULL;
 
-   Data_Get_Struct(self, RowHandle, row);
-   if(TYPE(index) == T_STRING)
-   {
-      char  name[32];
-      int   i,
-            done = 0;
-      VALUE flag = getFireRubySetting("ALIAS_KEYS");
-      
-      strcpy(name, StringValuePtr(index));
-      for(i = 0; i < row->size && done == 0; i++)
-      {
-         int match;
-         
-         /* Check whether its column name or column alias to compare on. */
-         if(flag == Qtrue)
-         {
-            match = strcmp(name, row->columns[i].alias);
-         }
-         else
-         {
-            match = strcmp(name, row->columns[i].name);
-         }
-         
-         if(match == 0)
-         {
-            value = row->columns[i].value;
-            done  = 1;
-         }
+  Data_Get_Struct(self, RowHandle, row);
+  if(TYPE(index) == T_STRING) {
+    char name[32];
+    int i,
+        done = 0;
+    VALUE flag = getFireRubySetting("ALIAS_KEYS");
+
+    strcpy(name, StringValuePtr(index));
+    for(i = 0; i < row->size && done == 0; i++) {
+      int match;
+
+      /* Check whether its column name or column alias to compare on. */
+      if(flag == Qtrue) {
+        match = strcmp(name, row->columns[i].alias);
+      } else {
+        match = strcmp(name, row->columns[i].name);
       }
-   }
-   else
-   {
-      int number = TYPE(index) == T_FIXNUM ? FIX2INT(index) : NUM2INT(index);
-      
-      if(number >= 0 && number < row->size)
-      {
-         value = row->columns[number].value;
+
+      if(match == 0) {
+        value = row->columns[i].value;
+        done  = 1;
       }
-   }
-   
-   return(value);
+    }
+  } else {
+    int number = TYPE(index) == T_FIXNUM ? FIX2INT(index) : NUM2INT(index);
+
+    if(number >= 0 && number < row->size) {
+      value = row->columns[number].value;
+    }
+  }
+
+  return(value);
 }
 
 
@@ -314,36 +287,30 @@ static VALUE getColumnValue(VALUE self, VALUE index)
  *          block was provided.
  *
  */
-VALUE eachColumn(VALUE self)
-{
-   VALUE result = Qnil;
-   
-   if(rb_block_given_p())
-   {
-      RowHandle *row = NULL;
-      int       i;
-      VALUE     flag = getFireRubySetting("ALIAS_KEYS");
-      
-      Data_Get_Struct(self, RowHandle, row);
-      for(i = 0; i < row->size; i++)
-      {
-         VALUE parameters = rb_ary_new();
-         
-         /* Decide whether we're keying on column name or alias. */
-         if(flag == Qtrue)
-         {
-            rb_ary_push(parameters, rb_str_new2(row->columns[i].alias));
-         }
-         else
-         {
-            rb_ary_push(parameters, rb_str_new2(row->columns[i].name));
-         }
-         rb_ary_push(parameters, row->columns[i].value);
-         result = rb_yield(parameters);
+VALUE eachColumn(VALUE self) {
+  VALUE result = Qnil;
+
+  if(rb_block_given_p()) {
+    RowHandle *row = NULL;
+    int i;
+    VALUE flag = getFireRubySetting("ALIAS_KEYS");
+
+    Data_Get_Struct(self, RowHandle, row);
+    for(i = 0; i < row->size; i++) {
+      VALUE parameters = rb_ary_new();
+
+      /* Decide whether we're keying on column name or alias. */
+      if(flag == Qtrue) {
+        rb_ary_push(parameters, rb_str_new2(row->columns[i].alias));
+      } else {
+        rb_ary_push(parameters, rb_str_new2(row->columns[i].name));
       }
-   }
-   
-   return(result);
+      rb_ary_push(parameters, row->columns[i].value);
+      result = rb_yield(parameters);
+    }
+  }
+
+  return(result);
 }
 
 
@@ -358,31 +325,25 @@ VALUE eachColumn(VALUE self)
  *          block was provided.
  *
  */
-VALUE eachColumnKey(VALUE self)
-{
-   VALUE result = Qnil;
-   
-   if(rb_block_given_p())
-   {
-      RowHandle *row = NULL;
-      int       i;
-      VALUE     flag = getFireRubySetting("ALIAS_KEYS");
-      
-      Data_Get_Struct(self, RowHandle, row);
-      for(i = 0; i < row->size; i++)
-      {
-         if(flag == Qtrue)
-         {
-            result = rb_yield(rb_str_new2(row->columns[i].alias));
-         }
-         else
-         {
-            result = rb_yield(rb_str_new2(row->columns[i].name));
-         }
+VALUE eachColumnKey(VALUE self) {
+  VALUE result = Qnil;
+
+  if(rb_block_given_p()) {
+    RowHandle *row = NULL;
+    int i;
+    VALUE flag = getFireRubySetting("ALIAS_KEYS");
+
+    Data_Get_Struct(self, RowHandle, row);
+    for(i = 0; i < row->size; i++) {
+      if(flag == Qtrue) {
+        result = rb_yield(rb_str_new2(row->columns[i].alias));
+      } else {
+        result = rb_yield(rb_str_new2(row->columns[i].name));
       }
-   }
-   
-   return(result);
+    }
+  }
+
+  return(result);
 }
 
 
@@ -396,30 +357,27 @@ VALUE eachColumnKey(VALUE self)
  *          block was provided.
  *
  */
-VALUE eachColumnValue(VALUE self)
-{
-   VALUE result = Qnil;
-   
-   if(rb_block_given_p())
-   {
-      RowHandle *row = NULL;
-      int       i;
-      
-      Data_Get_Struct(self, RowHandle, row);
-      for(i = 0; i < row->size; i++)
-      {
-         result = rb_yield(row->columns[i].value);
-      }
-   }
-   
-   return(result);
+VALUE eachColumnValue(VALUE self) {
+  VALUE result = Qnil;
+
+  if(rb_block_given_p()) {
+    RowHandle *row = NULL;
+    int i;
+
+    Data_Get_Struct(self, RowHandle, row);
+    for(i = 0; i < row->size; i++) {
+      result = rb_yield(row->columns[i].value);
+    }
+  }
+
+  return(result);
 }
 
 
 /**
  * This function provides the fetch method for the Row class.
  *
- * @param  self        A reference to the Row class that the method is being 
+ * @param  self        A reference to the Row class that the method is being
  *                     called for.
  * @param  parameters  A reference to an array containing the parameters for
  *                     the method call. Must contain at least a key.
@@ -428,35 +386,28 @@ VALUE eachColumnValue(VALUE self)
  *          return value for any block specified.
  *
  */
-VALUE fetchRowValue(int size, VALUE *parameters, VALUE self)
-{
-   VALUE value = Qnil;
-   
-   if(size < 1)
-   {
-      rb_raise(rb_eArgError, "Wrong number of arguments (%d for %d)", size, 1);
-   }
+VALUE fetchRowValue(int size, VALUE *parameters, VALUE self) {
+  VALUE value = Qnil;
 
-   /* Extract the parameters. */
-   value = getColumnValue(self, parameters[0]);
-   if(value == Qnil)
-   {
-      if(size == 1 && rb_block_given_p())
-      {
-         value = rb_yield(rb_ary_new());
+  if(size < 1) {
+    rb_raise(rb_eArgError, "Wrong number of arguments (%d for %d)", size, 1);
+  }
+
+  /* Extract the parameters. */
+  value = getColumnValue(self, parameters[0]);
+  if(value == Qnil) {
+    if(size == 1 && rb_block_given_p()) {
+      value = rb_yield(rb_ary_new());
+    } else {
+      if(size == 1) {
+        rb_raise(rb_eIndexError, "Column identifier '%s' not found in row.",
+                 StringValuePtr(parameters[0]));
       }
-      else
-      {
-         if(size == 1)
-         {
-            rb_raise(rb_eIndexError, "Column identifier '%s' not found in row.",
-                     StringValuePtr(parameters[0]));
-         }
-         value = parameters[1];
-      }
-   }
-   
-   return(value);
+      value = parameters[1];
+    }
+  }
+
+  return(value);
 }
 
 
@@ -471,37 +422,31 @@ VALUE fetchRowValue(int size, VALUE *parameters, VALUE self)
  *          otherwise.
  *
  */
-VALUE hasColumnKey(VALUE self, VALUE name)
-{
-   VALUE     result = Qfalse;
-   RowHandle *row   = NULL;
-   char      text[32];
-   int       i;
-   VALUE     flag = getFireRubySetting("ALIAS_KEYS");
-   
-   Data_Get_Struct(self, RowHandle, row);
-   strcpy(text, StringValuePtr(name));
-   for(i = 0; i < row->size && result == Qfalse; i++)
-   {
-      int match;
-      
-      /* Check whether key is column name or alias. */
-      if(flag == Qtrue)
-      {
-         match = strcmp(text, row->columns[i].alias);
-      }
-      else
-      {
-         match = strcmp(text, row->columns[i].name);
-      }
-      
-      if(match == 0)
-      {
-         result = Qtrue;
-      }
-   }
-   
-   return(result);
+VALUE hasColumnKey(VALUE self, VALUE name) {
+  VALUE result = Qfalse;
+  RowHandle *row   = NULL;
+  char text[32];
+  int i;
+  VALUE flag = getFireRubySetting("ALIAS_KEYS");
+
+  Data_Get_Struct(self, RowHandle, row);
+  strcpy(text, StringValuePtr(name));
+  for(i = 0; i < row->size && result == Qfalse; i++) {
+    int match;
+
+    /* Check whether key is column name or alias. */
+    if(flag == Qtrue) {
+      match = strcmp(text, row->columns[i].alias);
+    } else {
+      match = strcmp(text, row->columns[i].name);
+    }
+
+    if(match == 0) {
+      result = Qtrue;
+    }
+  }
+
+  return(result);
 }
 
 
@@ -516,24 +461,21 @@ VALUE hasColumnKey(VALUE self, VALUE name)
  *          otherwise.
  *
  */
-VALUE hasColumnName(VALUE self, VALUE name)
-{
-   VALUE     result = Qfalse;
-   RowHandle *row   = NULL;
-   char      text[32];
-   int       i;
-   
-   Data_Get_Struct(self, RowHandle, row);
-   strcpy(text, StringValuePtr(name));
-   for(i = 0; i < row->size && result == Qfalse; i++)
-   {
-      if(strcmp(text, row->columns[i].name) == 0)
-      {
-         result = Qtrue;
-      }
-   }
-   
-   return(result);
+VALUE hasColumnName(VALUE self, VALUE name) {
+  VALUE result = Qfalse;
+  RowHandle *row   = NULL;
+  char text[32];
+  int i;
+
+  Data_Get_Struct(self, RowHandle, row);
+  strcpy(text, StringValuePtr(name));
+  for(i = 0; i < row->size && result == Qfalse; i++) {
+    if(strcmp(text, row->columns[i].name) == 0) {
+      result = Qtrue;
+    }
+  }
+
+  return(result);
 }
 
 
@@ -548,24 +490,21 @@ VALUE hasColumnName(VALUE self, VALUE name)
  *          otherwise.
  *
  */
-VALUE hasColumnAlias(VALUE self, VALUE name)
-{
-   VALUE     result = Qfalse;
-   RowHandle *row   = NULL;
-   char      text[32];
-   int       i;
-   
-   Data_Get_Struct(self, RowHandle, row);
-   strcpy(text, StringValuePtr(name));
-   for(i = 0; i < row->size && result == Qfalse; i++)
-   {
-      if(strcmp(text, row->columns[i].alias) == 0)
-      {
-         result = Qtrue;
-      }
-   }
-   
-   return(result);
+VALUE hasColumnAlias(VALUE self, VALUE name) {
+  VALUE result = Qfalse;
+  RowHandle *row   = NULL;
+  char text[32];
+  int i;
+
+  Data_Get_Struct(self, RowHandle, row);
+  strcpy(text, StringValuePtr(name));
+  for(i = 0; i < row->size && result == Qfalse; i++) {
+    if(strcmp(text, row->columns[i].alias) == 0) {
+      result = Qtrue;
+    }
+  }
+
+  return(result);
 }
 
 
@@ -578,19 +517,17 @@ VALUE hasColumnAlias(VALUE self, VALUE name)
  * @return  True if the row contains a matching value, false otherwise.
  *
  */
-VALUE hasColumnValue(VALUE self, VALUE value)
-{
-   VALUE     result = Qfalse;
-   RowHandle *row   = NULL;
-   int       i;
-   
-   Data_Get_Struct(self, RowHandle, row);
-   for(i = 0; i < row->size && result == Qfalse; i++)
-   {
-      result = rb_funcall(row->columns[i].value, rb_intern("eql?"), 1, value);
-   }
-   
-   return(result);
+VALUE hasColumnValue(VALUE self, VALUE value) {
+  VALUE result = Qfalse;
+  RowHandle *row   = NULL;
+  int i;
+
+  Data_Get_Struct(self, RowHandle, row);
+  for(i = 0; i < row->size && result == Qfalse; i++) {
+    result = rb_funcall(row->columns[i].value, rb_intern("eql?"), 1, value);
+  }
+
+  return(result);
 }
 
 
@@ -604,21 +541,17 @@ VALUE hasColumnValue(VALUE self, VALUE value)
  * @return  A reference to an array containing the row keys.
  *
  */
-VALUE getColumnKeys(VALUE self)
-{
-   VALUE flag = getFireRubySetting("ALIAS_KEYS"),
-         keys = Qnil;
-         
-   if(flag == Qtrue)
-   {
-      keys = getColumnAliases(self);
-   }
-   else
-   {
-      keys = getColumnNames(self);
-   }
-   
-   return(keys);
+VALUE getColumnKeys(VALUE self) {
+  VALUE flag = getFireRubySetting("ALIAS_KEYS"),
+        keys = Qnil;
+
+  if(flag == Qtrue) {
+    keys = getColumnAliases(self);
+  } else {
+    keys = getColumnNames(self);
+  }
+
+  return(keys);
 }
 
 
@@ -627,22 +560,20 @@ VALUE getColumnKeys(VALUE self)
  *
  * @param  self  A reference to the Row object to call the method on.
  *
- * @return  A reference to an array containing the row column names. 
+ * @return  A reference to an array containing the row column names.
  *
  */
-VALUE getColumnNames(VALUE self)
-{
-   VALUE     result = rb_ary_new();
-   RowHandle *row   = NULL;
-   int       i;
-   
-   Data_Get_Struct(self, RowHandle, row);
-   for(i = 0; i < row->size; i++)
-   {
-      rb_ary_push(result, rb_str_new2(row->columns[i].name));
-   }
-   
-   return(result);
+VALUE getColumnNames(VALUE self) {
+  VALUE result = rb_ary_new();
+  RowHandle *row   = NULL;
+  int i;
+
+  Data_Get_Struct(self, RowHandle, row);
+  for(i = 0; i < row->size; i++) {
+    rb_ary_push(result, rb_str_new2(row->columns[i].name));
+  }
+
+  return(result);
 }
 
 
@@ -651,22 +582,20 @@ VALUE getColumnNames(VALUE self)
  *
  * @param  self  A reference to the Row object to call the method on.
  *
- * @return  A reference to an array containing the row column aliases. 
+ * @return  A reference to an array containing the row column aliases.
  *
  */
-VALUE getColumnAliases(VALUE self)
-{
-   VALUE     result = rb_ary_new();
-   RowHandle *row   = NULL;
-   int       i;
-   
-   Data_Get_Struct(self, RowHandle, row);
-   for(i = 0; i < row->size; i++)
-   {
-      rb_ary_push(result, rb_str_new2(row->columns[i].alias));
-   }
-   
-   return(result);
+VALUE getColumnAliases(VALUE self) {
+  VALUE result = rb_ary_new();
+  RowHandle *row   = NULL;
+  int i;
+
+  Data_Get_Struct(self, RowHandle, row);
+  for(i = 0; i < row->size; i++) {
+    rb_ary_push(result, rb_str_new2(row->columns[i].alias));
+  }
+
+  return(result);
 }
 
 
@@ -675,22 +604,20 @@ VALUE getColumnAliases(VALUE self)
  *
  * @param  self  A reference to the Row object to call the method on.
  *
- * @return  A reference to an array containing the row column names. 
+ * @return  A reference to an array containing the row column names.
  *
  */
-VALUE getColumnValues(VALUE self)
-{
-   VALUE     result = rb_ary_new();
-   RowHandle *row   = NULL;
-   int       i;
-   
-   Data_Get_Struct(self, RowHandle, row);
-   for(i = 0; i < row->size; i++)
-   {
-      rb_ary_push(result, row->columns[i].value);
-   }
-   
-   return(result);
+VALUE getColumnValues(VALUE self) {
+  VALUE result = rb_ary_new();
+  RowHandle *row   = NULL;
+  int i;
+
+  Data_Get_Struct(self, RowHandle, row);
+  for(i = 0; i < row->size; i++) {
+    rb_ary_push(result, row->columns[i].value);
+  }
+
+  return(result);
 }
 
 
@@ -703,33 +630,28 @@ VALUE getColumnValues(VALUE self)
  * @return  An Symbol containing the base type details.
  *
  */
-VALUE getColumnBaseType(VALUE self, VALUE index)
-{
-   VALUE result = Qnil;
+VALUE getColumnBaseType(VALUE self, VALUE index) {
+  VALUE result = Qnil;
 
-   if(TYPE(index) == T_FIXNUM)
-   {
-      RowHandle *row   = NULL;
+  if(TYPE(index) == T_FIXNUM) {
+    RowHandle *row   = NULL;
 
-      Data_Get_Struct(self, RowHandle, row);
-      if(row != NULL)
-      {
-         int offset = FIX2INT(index);
+    Data_Get_Struct(self, RowHandle, row);
+    if(row != NULL) {
+      int offset = FIX2INT(index);
 
-         /* Correct negative index values. */
-         if(offset < 0)
-         {
-            offset = row->size + offset;
-         }
-
-         if(offset >= 0 && offset < row->size)
-         {
-            result = row->columns[offset].type;
-         }
+      /* Correct negative index values. */
+      if(offset < 0) {
+        offset = row->size + offset;
       }
-   }
 
-   return(result);
+      if(offset >= 0 && offset < row->size) {
+        result = row->columns[offset].type;
+      }
+    }
+  }
+
+  return(result);
 }
 
 /**
@@ -743,33 +665,28 @@ VALUE getColumnBaseType(VALUE self, VALUE index)
  *          invalid column was specified.
  *
  */
-static VALUE getColumnScale(VALUE self, VALUE index)
-{
-   VALUE result = Qnil;
+static VALUE getColumnScale(VALUE self, VALUE index) {
+  VALUE result = Qnil;
 
-   if(TYPE(index) == T_FIXNUM)
-   {
-      RowHandle *row   = NULL;
+  if(TYPE(index) == T_FIXNUM) {
+    RowHandle *row   = NULL;
 
-      Data_Get_Struct(self, RowHandle, row);
-      if(row != NULL)
-      {
-         int offset = FIX2INT(index);
+    Data_Get_Struct(self, RowHandle, row);
+    if(row != NULL) {
+      int offset = FIX2INT(index);
 
-         /* Correct negative index values. */
-         if(offset < 0)
-         {
-            offset = row->size + offset;
-         }
-
-         if(offset >= 0 && offset < row->size)
-         {
-            result = row->columns[offset].scale;
-         }
+      /* Correct negative index values. */
+      if(offset < 0) {
+        offset = row->size + offset;
       }
-   }
 
-   return(result);
+      if(offset >= 0 && offset < row->size) {
+        result = row->columns[offset].scale;
+      }
+    }
+  }
+
+  return(result);
 }
 
 
@@ -782,42 +699,35 @@ static VALUE getColumnScale(VALUE self, VALUE index)
  *          function.
  *
  */
-VALUE selectRowEntries(VALUE self)
-{
-   VALUE     result = Qnil,
-             flag   = getFireRubySetting("ALIAS_KEYS");
-   RowHandle *row   = NULL;
-   int       i;
-   
-   if(!rb_block_given_p())
-   {
-      rb_raise(rb_eStandardError, "No block specified in call to Row#select.");
-   }
-   
-   result = rb_ary_new();
-   Data_Get_Struct(self, RowHandle, row);
-   for(i = 0; i < row->size; i++)
-   {
-      VALUE parameters = rb_ary_new();
-      
-      /* Check whether we're keying on column name or alias. */
-      if(flag == Qtrue)
-      {
-         rb_ary_push(parameters, rb_str_new2(row->columns[i].alias));
-      }
-      else
-      {
-         rb_ary_push(parameters, rb_str_new2(row->columns[i].name));
-      }
-      rb_ary_push(parameters, row->columns[i].value);
-      if(rb_yield(parameters) == Qtrue)
-      {
-         rb_ary_push(result, parameters);
-      }
-   }
-   
-   
-   return(result);
+VALUE selectRowEntries(VALUE self) {
+  VALUE result = Qnil,
+        flag   = getFireRubySetting("ALIAS_KEYS");
+  RowHandle *row   = NULL;
+  int i;
+
+  if(!rb_block_given_p()) {
+    rb_raise(rb_eStandardError, "No block specified in call to Row#select.");
+  }
+
+  result = rb_ary_new();
+  Data_Get_Struct(self, RowHandle, row);
+  for(i = 0; i < row->size; i++) {
+    VALUE parameters = rb_ary_new();
+
+    /* Check whether we're keying on column name or alias. */
+    if(flag == Qtrue) {
+      rb_ary_push(parameters, rb_str_new2(row->columns[i].alias));
+    } else {
+      rb_ary_push(parameters, rb_str_new2(row->columns[i].name));
+    }
+    rb_ary_push(parameters, row->columns[i].value);
+    if(rb_yield(parameters) == Qtrue) {
+      rb_ary_push(result, parameters);
+    }
+  }
+
+
+  return(result);
 }
 
 
@@ -829,32 +739,27 @@ VALUE selectRowEntries(VALUE self)
  * @return  An array containing the entries from the Row object.
  *
  */
-VALUE rowToArray(VALUE self)
-{
-   VALUE     result = rb_ary_new(),
-             flag   = getFireRubySetting("ALIAS_KEYS");
-   RowHandle *row   = NULL;
-   int       i;
-   
-   Data_Get_Struct(self, RowHandle, row);
-   for(i = 0; i < row->size; i++)
-   {
-      VALUE parameters = rb_ary_new();
-      
-      /* Check whether we're keying on column name or alias. */
-      if(flag == Qtrue)
-      {
-         rb_ary_push(parameters, rb_str_new2(row->columns[i].alias));
-      }
-      else
-      {
-         rb_ary_push(parameters, rb_str_new2(row->columns[i].name));
-      }
-      rb_ary_push(parameters, row->columns[i].value);
-      rb_ary_push(result, parameters);
-   }
-   
-   return(result);
+VALUE rowToArray(VALUE self) {
+  VALUE result = rb_ary_new(),
+        flag   = getFireRubySetting("ALIAS_KEYS");
+  RowHandle *row   = NULL;
+  int i;
+
+  Data_Get_Struct(self, RowHandle, row);
+  for(i = 0; i < row->size; i++) {
+    VALUE parameters = rb_ary_new();
+
+    /* Check whether we're keying on column name or alias. */
+    if(flag == Qtrue) {
+      rb_ary_push(parameters, rb_str_new2(row->columns[i].alias));
+    } else {
+      rb_ary_push(parameters, rb_str_new2(row->columns[i].name));
+    }
+    rb_ary_push(parameters, row->columns[i].value);
+    rb_ary_push(result, parameters);
+  }
+
+  return(result);
 }
 
 
@@ -866,31 +771,26 @@ VALUE rowToArray(VALUE self)
  * @return  A hash containing the entries from the Row object.
  *
  */
-VALUE rowToHash(VALUE self)
-{
-   VALUE     result = rb_hash_new(),
-             flag   = getFireRubySetting("ALIAS_KEYS");
-   RowHandle *row   = NULL;
-   int       i;
-   
-   Data_Get_Struct(self, RowHandle, row);
-   for(i = 0; i < row->size; i++)
-   {
-      VALUE key = Qnil;
-      
-      /* Check if we're keying on column name or alias. */
-      if(flag == Qtrue)
-      {
-         key = rb_str_new2(row->columns[i].alias);
-      }
-      else
-      {
-         key = rb_str_new2(row->columns[i].name);
-      }
-      rb_hash_aset(result, key, row->columns[i].value);
-   }
-   
-   return(result);
+VALUE rowToHash(VALUE self) {
+  VALUE result = rb_hash_new(),
+        flag   = getFireRubySetting("ALIAS_KEYS");
+  RowHandle *row   = NULL;
+  int i;
+
+  Data_Get_Struct(self, RowHandle, row);
+  for(i = 0; i < row->size; i++) {
+    VALUE key = Qnil;
+
+    /* Check if we're keying on column name or alias. */
+    if(flag == Qtrue) {
+      key = rb_str_new2(row->columns[i].alias);
+    } else {
+      key = rb_str_new2(row->columns[i].name);
+    }
+    rb_hash_aset(result, key, row->columns[i].value);
+  }
+
+  return(result);
 }
 
 
@@ -904,17 +804,15 @@ VALUE rowToHash(VALUE self)
  * @return  An array of the values that match the column names specified.
  *
  */
-VALUE rowValuesAt(int size, VALUE *keys, VALUE self)
-{
-   VALUE result = rb_ary_new();
-   int   i;
-   
-   for(i = 0; i < size; i++)
-   {
-      rb_ary_push(result, getColumnValue(self, keys[i]));
-   }
-   
-   return(result);
+VALUE rowValuesAt(int size, VALUE *keys, VALUE self) {
+  VALUE result = rb_ary_new();
+  int i;
+
+  for(i = 0; i < size; i++) {
+    rb_ary_push(result, getColumnValue(self, keys[i]));
+  }
+
+  return(result);
 }
 
 
@@ -926,18 +824,15 @@ VALUE rowValuesAt(int size, VALUE *keys, VALUE self)
  * @param  row  A pointer to the RowHandle object for the Row object.
  *
  */
-void freeRow(void *row)
-{
-   if(row != NULL)
-   {
-      RowHandle *handle = (RowHandle *)row;
-      
-      if(handle->columns != NULL)
-      {
-         free(handle->columns);
-      }
-      free(handle);
-   }
+void freeRow(void *row) {
+  if(row != NULL) {
+    RowHandle *handle = (RowHandle *)row;
+
+    if(handle->columns != NULL) {
+      free(handle->columns);
+    }
+    free(handle);
+  }
 }
 
 
@@ -951,13 +846,12 @@ void freeRow(void *row)
  * @return  A reference to the Row object created.
  *
  */
-VALUE rb_row_new(VALUE results, VALUE data, VALUE number)
-{
-   VALUE row = allocateRow(cRow);
-   
-   initializeRow(row, results, data, number);
-   
-   return(row);
+VALUE rb_row_new(VALUE results, VALUE data, VALUE number) {
+  VALUE row = allocateRow(cRow);
+
+  initializeRow(row, results, data, number);
+
+  return(row);
 }
 
 
@@ -969,41 +863,40 @@ VALUE rb_row_new(VALUE results, VALUE data, VALUE number)
  *                 under.
  *
  */
-void Init_Row(VALUE module)
-{
-   cRow = rb_define_class_under(module, "Row", rb_cObject);
-   rb_define_alloc_func(cRow, allocateRow);
-   rb_include_module(cRow, rb_mEnumerable);
-   rb_define_method(cRow, "initialize", initializeRow, 3);
-   rb_define_method(cRow, "number", getRowNumber, 0);
-   rb_define_method(cRow, "column_count", columnsInRow, 0);
-   rb_define_method(cRow, "column_name", getColumnName, 1);
-   rb_define_method(cRow, "column_alias", getColumnAlias, 1);
-   rb_define_method(cRow, "column_scale", getColumnScale, 1);
-   rb_define_method(cRow, "each", eachColumn, 0);
-   rb_define_method(cRow, "each_key", eachColumnKey, 0);
-   rb_define_method(cRow, "each_value", eachColumnValue, 0);
-   rb_define_method(cRow, "[]", getColumnValue, 1);
-   rb_define_method(cRow, "fetch", fetchRowValue, -1);
-   rb_define_method(cRow, "has_key?", hasColumnKey, 1);
-   rb_define_method(cRow, "has_column?", hasColumnName, 1);
-   rb_define_method(cRow, "has_alias?", hasColumnAlias, 1);
-   rb_define_method(cRow, "has_value?", hasColumnValue, 1);
-   rb_define_method(cRow, "keys", getColumnKeys, 0);
-   rb_define_method(cRow, "names", getColumnNames, 0);
-   rb_define_method(cRow, "aliases", getColumnAliases, 0);
-   rb_define_method(cRow, "values", getColumnValues, 0);
-   rb_define_method(cRow, "get_base_type", getColumnBaseType, 1);
-   rb_define_method(cRow, "select", selectRowEntries, 0);
-   rb_define_method(cRow, "to_a", rowToArray, 0);
-   rb_define_method(cRow, "to_hash", rowToHash, 0);
-   rb_define_method(cRow, "values_at", rowValuesAt, -1);;
+void Init_Row(VALUE module) {
+  cRow = rb_define_class_under(module, "Row", rb_cObject);
+  rb_define_alloc_func(cRow, allocateRow);
+  rb_include_module(cRow, rb_mEnumerable);
+  rb_define_method(cRow, "initialize", initializeRow, 3);
+  rb_define_method(cRow, "number", getRowNumber, 0);
+  rb_define_method(cRow, "column_count", columnsInRow, 0);
+  rb_define_method(cRow, "column_name", getColumnName, 1);
+  rb_define_method(cRow, "column_alias", getColumnAlias, 1);
+  rb_define_method(cRow, "column_scale", getColumnScale, 1);
+  rb_define_method(cRow, "each", eachColumn, 0);
+  rb_define_method(cRow, "each_key", eachColumnKey, 0);
+  rb_define_method(cRow, "each_value", eachColumnValue, 0);
+  rb_define_method(cRow, "[]", getColumnValue, 1);
+  rb_define_method(cRow, "fetch", fetchRowValue, -1);
+  rb_define_method(cRow, "has_key?", hasColumnKey, 1);
+  rb_define_method(cRow, "has_column?", hasColumnName, 1);
+  rb_define_method(cRow, "has_alias?", hasColumnAlias, 1);
+  rb_define_method(cRow, "has_value?", hasColumnValue, 1);
+  rb_define_method(cRow, "keys", getColumnKeys, 0);
+  rb_define_method(cRow, "names", getColumnNames, 0);
+  rb_define_method(cRow, "aliases", getColumnAliases, 0);
+  rb_define_method(cRow, "values", getColumnValues, 0);
+  rb_define_method(cRow, "get_base_type", getColumnBaseType, 1);
+  rb_define_method(cRow, "select", selectRowEntries, 0);
+  rb_define_method(cRow, "to_a", rowToArray, 0);
+  rb_define_method(cRow, "to_hash", rowToHash, 0);
+  rb_define_method(cRow, "values_at", rowValuesAt, -1);;
 
-   rb_define_alias(cRow, "each_pair", "each");
-   rb_define_alias(cRow, "include?", "has_key?");
-   rb_define_alias(cRow, "key?", "has_key?");
-   rb_define_alias(cRow, "member?", "has_key?");
-   rb_define_alias(cRow, "value?", "has_value?");
-   rb_define_alias(cRow, "length", "column_count");
-   rb_define_alias(cRow, "size", "column_count");
+  rb_define_alias(cRow, "each_pair", "each");
+  rb_define_alias(cRow, "include?", "has_key?");
+  rb_define_alias(cRow, "key?", "has_key?");
+  rb_define_alias(cRow, "member?", "has_key?");
+  rb_define_alias(cRow, "value?", "has_value?");
+  rb_define_alias(cRow, "length", "column_count");
+  rb_define_alias(cRow, "size", "column_count");
 }

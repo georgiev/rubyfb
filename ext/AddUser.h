@@ -25,13 +25,13 @@
 #ifndef FIRERUBY_ADD_USER_H
 #define FIRERUBY_ADD_USER_H
 
-   /* Includes. */
+/* Includes. */
    #ifndef RUBY_H_INCLUDED
       #include "ruby.h"
       #define RUBY_H_INCLUDED
    #endif
 
-   /* Function prototypes. */
-   void Init_AddUser(VALUE);
+/* Function prototypes. */
+void Init_AddUser(VALUE);
 
 #endif /* FIRERUBY_ADD_USER_H */

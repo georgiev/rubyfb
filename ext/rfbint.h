@@ -5,9 +5,9 @@
   #include <inttypes.h>
 #else
   #ifndef __GNUC__
-    typedef short     int16_t;
-    typedef long      int32_t;
-    typedef long long int64_t;
+typedef short int16_t;
+typedef long int32_t;
+typedef long long int64_t;
   #endif
 #endif
 

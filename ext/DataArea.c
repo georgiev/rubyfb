@@ -40,32 +40,27 @@
  * @return  A pointer to the newly allocated XSQLDA.
  *
  */
-XSQLDA *allocateOutXSQLDA(int size, isc_stmt_handle *statement, short dialect)
-{
-   XSQLDA *area = (XSQLDA *)ALLOC_N(char, XSQLDA_LENGTH(size));
+XSQLDA *allocateOutXSQLDA(int size, isc_stmt_handle *statement, short dialect) {
+  XSQLDA *area = (XSQLDA *)ALLOC_N(char, XSQLDA_LENGTH(size));
 
-   if(area != NULL)
-   {
-      ISC_STATUS status[ISC_STATUS_LENGTH];
+  if(area != NULL) {
+    ISC_STATUS status[ISC_STATUS_LENGTH];
 
-      area->sqln    = size;
-      area->version = SQLDA_VERSION1;
-      if(isc_dsql_describe(status, statement, dialect, area) != 0)
-      {
-         /* Release the memory and generate an error. */
-         free(area);
-         rb_fireruby_raise(status, "Error allocating output storage space.");
-      }
-   }
-   else
-   {
-      /* Generate an error. */
-      rb_raise(rb_eNoMemError,
-               "Memory allocation failure preparing output SQL data "\
-               "definition area.");
-   }
+    area->sqln    = size;
+    area->version = SQLDA_VERSION1;
+    if(isc_dsql_describe(status, statement, dialect, area) != 0) {
+      /* Release the memory and generate an error. */
+      free(area);
+      rb_fireruby_raise(status, "Error allocating output storage space.");
+    }
+  } else {
+    /* Generate an error. */
+    rb_raise(rb_eNoMemError,
+             "Memory allocation failure preparing output SQL data " \
+             "definition area.");
+  }
 
-   return(area);
+  return(area);
 }
 
 
@@ -81,34 +76,29 @@ XSQLDA *allocateOutXSQLDA(int size, isc_stmt_handle *statement, short dialect)
  * @return  A pointer to the newly allocated XSQLDA.
  *
  */
-XSQLDA *allocateInXSQLDA(int size, isc_stmt_handle *statement, short dialect)
-{
-   XSQLDA *area  = NULL;
+XSQLDA *allocateInXSQLDA(int size, isc_stmt_handle *statement, short dialect) {
+  XSQLDA *area  = NULL;
 
-   area = (XSQLDA *)ALLOC_N(char, XSQLDA_LENGTH(size));
+  area = (XSQLDA *)ALLOC_N(char, XSQLDA_LENGTH(size));
 
-   if(area != NULL)
-   {
-      ISC_STATUS status[ISC_STATUS_LENGTH];
+  if(area != NULL) {
+    ISC_STATUS status[ISC_STATUS_LENGTH];
 
-      area->sqln    = size;
-      area->version = SQLDA_VERSION1;
-      if(isc_dsql_describe_bind(status, statement, dialect, area) != 0)
-      {
-         /* Release the memory and generate an error. */
-         free(area);
-         rb_fireruby_raise(status, "Error allocating input storage space.");
-      }
-   }
-   else
-   {
-      /* Generate an error. */
-      rb_raise(rb_eNoMemError,
-               "Memory allocation failure preparing input SQL data "\
-               "definition area.");
-   }
+    area->sqln    = size;
+    area->version = SQLDA_VERSION1;
+    if(isc_dsql_describe_bind(status, statement, dialect, area) != 0) {
+      /* Release the memory and generate an error. */
+      free(area);
+      rb_fireruby_raise(status, "Error allocating input storage space.");
+    }
+  } else {
+    /* Generate an error. */
+    rb_raise(rb_eNoMemError,
+             "Memory allocation failure preparing input SQL data " \
+             "definition area.");
+  }
 
-   return(area);
+  return(area);
 }
 
 
@@ -119,74 +109,71 @@ XSQLDA *allocateInXSQLDA(int size, isc_stmt_handle *statement, short dialect)
  * @param  da  A pointer to the XSQLDA to have data space allocated for.
  *
  */
-void prepareDataArea(XSQLDA *da)
-{
-   XSQLVAR *field = da->sqlvar;
-   int     index;
+void prepareDataArea(XSQLDA *da) {
+  XSQLVAR *field = da->sqlvar;
+  int index;
 
-   for(index = 0; index < da->sqld; index++, field++)
-   {
-      int type  = (field->sqltype & ~1),
-          total = (field->sqllen / 2) + 2;
+  for(index = 0; index < da->sqld; index++, field++) {
+    int type  = (field->sqltype & ~1),
+        total = (field->sqllen / 2) + 2;
 
-      field->sqldata = NULL;
-      field->sqlind  = NULL;
-      switch(type)
-      {
-         case SQL_ARRAY :
-            fprintf(stderr, "Allocating for an array (NOT).\n");
-            break;
+    field->sqldata = NULL;
+    field->sqlind  = NULL;
+    switch(type) {
+    case SQL_ARRAY:
+      fprintf(stderr, "Allocating for an array (NOT).\n");
+      break;
 
-         case SQL_BLOB :
-            field->sqldata = (char *)ALLOC(ISC_QUAD);
-            break;
+    case SQL_BLOB:
+      field->sqldata = (char *)ALLOC(ISC_QUAD);
+      break;
 
-         case SQL_DOUBLE :
-            field->sqldata = (char *)ALLOC(double);
-            break;
+    case SQL_DOUBLE:
+      field->sqldata = (char *)ALLOC(double);
+      break;
 
-         case SQL_FLOAT :
-            field->sqldata = (char *)ALLOC(float);
-            break;
+    case SQL_FLOAT:
+      field->sqldata = (char *)ALLOC(float);
+      break;
 
-         case SQL_INT64 :
-            field->sqldata = (char *)ALLOC(int64_t);
-            break;
+    case SQL_INT64:
+      field->sqldata = (char *)ALLOC(int64_t);
+      break;
 
-         case SQL_LONG :
-            field->sqldata = (char *)ALLOC(int32_t);
-            break;
+    case SQL_LONG:
+      field->sqldata = (char *)ALLOC(int32_t);
+      break;
 
-         case SQL_SHORT :
-            field->sqldata = (char *)ALLOC(int16_t);
-            break;
+    case SQL_SHORT:
+      field->sqldata = (char *)ALLOC(int16_t);
+      break;
 
-         case SQL_TEXT :
-            field->sqldata = ALLOC_N(char, field->sqllen + 1);
-            break;
+    case SQL_TEXT:
+      field->sqldata = ALLOC_N(char, field->sqllen + 1);
+      break;
 
-         case SQL_TIMESTAMP :
-            field->sqldata = (char *)ALLOC(ISC_TIMESTAMP);
-            break;
+    case SQL_TIMESTAMP:
+      field->sqldata = (char *)ALLOC(ISC_TIMESTAMP);
+      break;
 
-         case SQL_TYPE_DATE :
-            field->sqldata = (char *)ALLOC(ISC_DATE);
-            break;
+    case SQL_TYPE_DATE:
+      field->sqldata = (char *)ALLOC(ISC_DATE);
+      break;
 
-         case SQL_TYPE_TIME:
-            field->sqldata = (char *)ALLOC(ISC_TIME);
-            break;
+    case SQL_TYPE_TIME:
+      field->sqldata = (char *)ALLOC(ISC_TIME);
+      break;
 
-         case SQL_VARYING :
-            field->sqldata = (char *)ALLOC_N(short, total);
-            break;
+    case SQL_VARYING:
+      field->sqldata = (char *)ALLOC_N(short, total);
+      break;
 
-         default :
-            rb_fireruby_raise(NULL, "Unknown SQL data type encountered.");
-      }
-      field->sqlind  = ALLOC(short);
-      *field->sqlind = 0;
-   }
+    default:
+      rb_fireruby_raise(NULL, "Unknown SQL data type encountered.");
+    }
+    field->sqlind  = ALLOC(short);
+    *field->sqlind = 0;
+  }
 }
 
 
@@ -196,71 +183,67 @@ void prepareDataArea(XSQLDA *da)
  * @param  da  A reference to the XSQLDA to be cleared up.
  *
  */
-void releaseDataArea(XSQLDA *da)
-{
-   XSQLVAR *field = da->sqlvar;
-   int     index;
+void releaseDataArea(XSQLDA *da) {
+  XSQLVAR *field = da->sqlvar;
+  int index;
 
-   for(index = 0; index < da->sqld; index++, field++)
-   {
-      int type  = (field->sqltype & ~1);
+  for(index = 0; index < da->sqld; index++, field++) {
+    int type  = (field->sqltype & ~1);
 
-      switch(type)
-      {
-         case SQL_ARRAY :
-            fprintf(stderr, "Releasing an array (NOT).\n");
-            break;
+    switch(type) {
+    case SQL_ARRAY:
+      fprintf(stderr, "Releasing an array (NOT).\n");
+      break;
 
-         case SQL_BLOB :
-            free((ISC_QUAD *)field->sqldata);
-            break;
+    case SQL_BLOB:
+      free((ISC_QUAD *)field->sqldata);
+      break;
 
-         case SQL_DOUBLE :
-            free((double *)field->sqldata);
-            break;
+    case SQL_DOUBLE:
+      free((double *)field->sqldata);
+      break;
 
-         case SQL_FLOAT :
-            free((float *)field->sqldata);
-            break;
+    case SQL_FLOAT:
+      free((float *)field->sqldata);
+      break;
 
-         case SQL_INT64 :
-            free((int64_t *)field->sqldata);
-            break;
+    case SQL_INT64:
+      free((int64_t *)field->sqldata);
+      break;
 
-         case SQL_LONG :
-            free((int32_t *)field->sqldata);
-            break;
+    case SQL_LONG:
+      free((int32_t *)field->sqldata);
+      break;
 
-         case SQL_SHORT :
-            free((int16_t *)field->sqldata);
-            break;
+    case SQL_SHORT:
+      free((int16_t *)field->sqldata);
+      break;
 
-         case SQL_TEXT :
-            free(field->sqldata);
-            break;
+    case SQL_TEXT:
+      free(field->sqldata);
+      break;
 
-         case SQL_TIMESTAMP :
-            free((ISC_TIMESTAMP *)field->sqldata);
-            break;
+    case SQL_TIMESTAMP:
+      free((ISC_TIMESTAMP *)field->sqldata);
+      break;
 
-         case SQL_TYPE_DATE :
-            free((ISC_DATE *)field->sqldata);
-            break;
+    case SQL_TYPE_DATE:
+      free((ISC_DATE *)field->sqldata);
+      break;
 
-         case SQL_TYPE_TIME:
-            free((ISC_TIME *)field->sqldata);
-            break;
+    case SQL_TYPE_TIME:
+      free((ISC_TIME *)field->sqldata);
+      break;
 
-         case SQL_VARYING :
-            free((short *)field->sqldata);
-            break;
-      }
-      if(field->sqlind != NULL)
-      {
-         free(field->sqlind);
-      }
+    case SQL_VARYING:
+      free((short *)field->sqldata);
+      break;
+    }
+    if(field->sqlind != NULL) {
+      free(field->sqlind);
+    }
 
-      field->sqldata = NULL;
-      field->sqlind  = NULL;
-   }
+    field->sqldata = NULL;
+    field->sqlind  = NULL;
+  }
 }

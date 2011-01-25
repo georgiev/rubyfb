@@ -49,11 +49,10 @@
  * @param  key  A string containing the name of the key to be retrieved.
  *
  */
-VALUE getFireRubySetting(const char *key)
-{
-   VALUE settings = rb_gv_get("$FireRubySettings");
+VALUE getFireRubySetting(const char *key) {
+  VALUE settings = rb_gv_get("$FireRubySettings");
 
-   return(rb_hash_aref(settings, toSymbol(key)));
+  return(rb_hash_aref(settings, toSymbol(key)));
 }
 
 
@@ -65,12 +64,11 @@ VALUE getFireRubySetting(const char *key)
  * @param  name    A string that will be populated with the class name.
  *
  */
-void getClassName(VALUE object, char *name)
-{
-   VALUE klass  = rb_funcall(object, rb_intern("class"), 0),
-         string = rb_funcall(klass, rb_intern("name"), 0);
+void getClassName(VALUE object, char *name) {
+  VALUE klass  = rb_funcall(object, rb_intern("class"), 0),
+        string = rb_funcall(klass, rb_intern("name"), 0);
 
-   strcpy(name, StringValuePtr(string));
+  strcpy(name, StringValuePtr(string));
 }
 
 
@@ -82,9 +80,8 @@ void getClassName(VALUE object, char *name)
  * @return  A Symbol object for the string passed in.
  *
  */
-VALUE toSymbol(const char *name)
-{
-   return(rb_funcall(rb_str_new2(name), rb_intern("intern"), 0));
+VALUE toSymbol(const char *name) {
+  return(rb_funcall(rb_str_new2(name), rb_intern("intern"), 0));
 }
 
 
@@ -98,103 +95,83 @@ VALUE toSymbol(const char *name)
  * @return  A symbol giving the base type for the column.
  *
  */
-VALUE getColumnType(const XSQLVAR *column)
-{
-   VALUE type = Qnil;
-   
-   switch((column->sqltype & ~1))
-   {
-      case SQL_BLOB:
-         type = toSymbol("BLOB");
-         break;
+VALUE getColumnType(const XSQLVAR *column) {
+  VALUE type = Qnil;
 
-      case SQL_TYPE_DATE:
-         type = toSymbol("DATE");
-         break;
+  switch((column->sqltype & ~1)) {
+  case SQL_BLOB:
+    type = toSymbol("BLOB");
+    break;
 
-      case SQL_DOUBLE:
-         type = toSymbol("DOUBLE");
-         break;
+  case SQL_TYPE_DATE:
+    type = toSymbol("DATE");
+    break;
 
-      case SQL_FLOAT:
-         type = toSymbol("FLOAT");
-         break;
+  case SQL_DOUBLE:
+    type = toSymbol("DOUBLE");
+    break;
 
-      case SQL_INT64:
-         if(column->sqlsubtype != 0)
-         {
-            if(column->sqlsubtype == 1)
-            {
-               type = toSymbol("NUMERIC");
-            }
-            else if(column->sqlsubtype == 2)
-            {
-               type = toSymbol("DECIMAL");
-            }
-         }
-         else
-         {
-            type = toSymbol("BIGINT");
-         }
-         break;
+  case SQL_FLOAT:
+    type = toSymbol("FLOAT");
+    break;
 
-      case SQL_LONG:
-         if(column->sqlsubtype != 0)
-         {
-            if(column->sqlsubtype == 1)
-            {
-               type = toSymbol("NUMERIC");
-            }
-            else if(column->sqlsubtype == 2)
-            {
-               type = toSymbol("DECIMAL");
-            }
-         }
-         else
-         {
-            type = toSymbol("INTEGER");
-         }
-         break;
+  case SQL_INT64:
+    if(column->sqlsubtype != 0) {
+      if(column->sqlsubtype == 1) {
+        type = toSymbol("NUMERIC");
+      } else if(column->sqlsubtype == 2) {
+        type = toSymbol("DECIMAL");
+      }
+    } else {
+      type = toSymbol("BIGINT");
+    }
+    break;
 
-      case SQL_SHORT:
-         if(column->sqlsubtype != 0)
-         {
-            if(column->sqlsubtype == 1)
-            {
-               type = toSymbol("NUMERIC");
-            }
-            else if(column->sqlsubtype == 2)
-            {
-               type = toSymbol("DECIMAL");
-            }
-         }
-         else
-         {
-            type = toSymbol("SMALLINT");
-         }
-         break;
+  case SQL_LONG:
+    if(column->sqlsubtype != 0) {
+      if(column->sqlsubtype == 1) {
+        type = toSymbol("NUMERIC");
+      } else if(column->sqlsubtype == 2) {
+        type = toSymbol("DECIMAL");
+      }
+    } else {
+      type = toSymbol("INTEGER");
+    }
+    break;
 
-      case SQL_TEXT:
-         type = toSymbol("CHAR");
-         break;
+  case SQL_SHORT:
+    if(column->sqlsubtype != 0) {
+      if(column->sqlsubtype == 1) {
+        type = toSymbol("NUMERIC");
+      } else if(column->sqlsubtype == 2) {
+        type = toSymbol("DECIMAL");
+      }
+    } else {
+      type = toSymbol("SMALLINT");
+    }
+    break;
 
-      case SQL_TYPE_TIME:
-         type = toSymbol("TIME");
-         break;
+  case SQL_TEXT:
+    type = toSymbol("CHAR");
+    break;
 
-      case SQL_TIMESTAMP:
-         type = toSymbol("TIMESTAMP");
-         break;
+  case SQL_TYPE_TIME:
+    type = toSymbol("TIME");
+    break;
 
-      case SQL_VARYING:
-         type = toSymbol("VARCHAR");
-         break;
-         
-      default:
-         type = toSymbol("UNKNOWN");
-   }
-   
-   return(type);
+  case SQL_TIMESTAMP:
+    type = toSymbol("TIMESTAMP");
+    break;
+
+  case SQL_VARYING:
+    type = toSymbol("VARCHAR");
+    break;
+
+  default:
+    type = toSymbol("UNKNOWN");
+  }
+
+  return(type);
 }
 
 
@@ -204,37 +181,36 @@ VALUE getColumnType(const XSQLVAR *column)
  * and then creates the various extension classes within this module.
  *
  */
-void Init_rubyfb_lib(void)
-{
-   VALUE module = rb_define_module("Rubyfb"),
-         array  = rb_ary_new(),
-         hash   = rb_hash_new();
+void Init_rubyfb_lib(void) {
+  VALUE module = rb_define_module("Rubyfb"),
+        array  = rb_ary_new(),
+        hash   = rb_hash_new();
 
-   /* Initialise the configuration and make it available. */
-   rb_ary_push(array, INT2FIX(MAJOR_VERSION_NO));
-   rb_ary_push(array, INT2FIX(MINOR_VERSION_NO));
-   rb_ary_push(array, INT2FIX(BUILD_NO));
-   rb_hash_aset(hash, toSymbol("ALIAS_KEYS"), Qtrue);
-   rb_hash_aset(hash, toSymbol("DATE_AS_DATE"), Qtrue);
-   rb_gv_set("$FireRubyVersion", array);
-   rb_gv_set("$FireRubySettings", hash);
+  /* Initialise the configuration and make it available. */
+  rb_ary_push(array, INT2FIX(MAJOR_VERSION_NO));
+  rb_ary_push(array, INT2FIX(MINOR_VERSION_NO));
+  rb_ary_push(array, INT2FIX(BUILD_NO));
+  rb_hash_aset(hash, toSymbol("ALIAS_KEYS"), Qtrue);
+  rb_hash_aset(hash, toSymbol("DATE_AS_DATE"), Qtrue);
+  rb_gv_set("$FireRubyVersion", array);
+  rb_gv_set("$FireRubySettings", hash);
 
-   /* Require needed libraries. */
-   rb_require("date");
+  /* Require needed libraries. */
+  rb_require("date");
 
-   /* Initialise the library classes. */
-   Init_Database(module);
-   Init_Connection(module);
-   Init_Transaction(module);
-   Init_Statement(module);
-   Init_ResultSet(module);
-   Init_Generator(module);
-   Init_FireRubyException(module);
-   Init_Blob(module);
-   Init_Row(module);
-   Init_ServiceManager(module);
-   Init_Backup(module);
-   Init_AddUser(module);
-   Init_RemoveUser(module);
-   Init_Restore(module);
+  /* Initialise the library classes. */
+  Init_Database(module);
+  Init_Connection(module);
+  Init_Transaction(module);
+  Init_Statement(module);
+  Init_ResultSet(module);
+  Init_Generator(module);
+  Init_FireRubyException(module);
+  Init_Blob(module);
+  Init_Row(module);
+  Init_ServiceManager(module);
+  Init_Backup(module);
+  Init_AddUser(module);
+  Init_RemoveUser(module);
+  Init_Restore(module);
 }

@@ -45,81 +45,72 @@
  *          or nil if there is no output.
  *
  */
-VALUE queryService(isc_svc_handle *handle)
-{
-   VALUE result = Qnil;
-   int   size   = START_BUFFER_SIZE;
-   short done   = 0;
+VALUE queryService(isc_svc_handle *handle) {
+  VALUE result = Qnil;
+  int size   = START_BUFFER_SIZE;
+  short done   = 0;
 
-   /* Query the service until it has completed. */
-   while(!done)
-   {
-      ISC_STATUS status[ISC_STATUS_LENGTH];
-      char       *output   = NULL,
-                 *offset   = NULL,
-                 *log      = NULL,
-                 request[] = {isc_info_svc_to_eof};
-      short      len       = 0;
+  /* Query the service until it has completed. */
+  while(!done) {
+    ISC_STATUS status[ISC_STATUS_LENGTH];
+    char       *output   = NULL,
+    *offset   = NULL,
+    *log      = NULL,
+                request[] = {isc_info_svc_to_eof};
+    short len       = 0;
 
-      /* Allocate the output buffer. */
-      offset = output = ALLOC_N(char, size);
-      if(output == NULL)
-      {
-         rb_raise(rb_eNoMemError,
-                  "Memory allocation failure querying service status.");
-      }
-      memset(output, 0, size);
+    /* Allocate the output buffer. */
+    offset = output = ALLOC_N(char, size);
+    if(output == NULL) {
+      rb_raise(rb_eNoMemError,
+               "Memory allocation failure querying service status.");
+    }
+    memset(output, 0, size);
 
-      /* Make the service info request. */
-      done = 1;
-      if(isc_service_query(status, handle, NULL, 0, NULL, sizeof(request),
-                           request, size, output))
-      {
-         free(output);
-         rb_fireruby_raise(status, "Error querying service status.");
-      }
-
-      do
-      {
-         switch(*offset++)
-         {
-            case isc_info_svc_to_eof :
-               len    = isc_vax_integer(offset, 2);
-               offset += 2;
-               if(len > 0)
-               {
-                  log = ALLOC_N(char, len + 1);
-                  if(log == NULL)
-                  {
-                     free(output);
-                     rb_raise(rb_eNoMemError,
-                              "Memory allocation failure querying service status.");
-                  }
-
-                  memset(log, 0, len + 1);
-                  memcpy(log, offset, len);
-
-                  result = rb_str_new2(log);
-                  free(log);
-               }
-               break;
-
-            case isc_info_truncated :
-               done = 0;
-               size = size * 2;
-               break;
-         }
-      } while(*offset);
-
-      /* Clean up. */
+    /* Make the service info request. */
+    done = 1;
+    if(isc_service_query(status, handle, NULL, 0, NULL, sizeof(request),
+                         request, size, output)) {
       free(output);
+      rb_fireruby_raise(status, "Error querying service status.");
+    }
 
-      /* Snooze if we're not done. */
-      if(!done)
-      {
-         rfb_sleep(1);
+    do {
+      switch(*offset++) {
+      case isc_info_svc_to_eof:
+        len    = isc_vax_integer(offset, 2);
+        offset += 2;
+        if(len > 0) {
+          log = ALLOC_N(char, len + 1);
+          if(log == NULL) {
+            free(output);
+            rb_raise(rb_eNoMemError,
+                     "Memory allocation failure querying service status.");
+          }
+
+          memset(log, 0, len + 1);
+          memcpy(log, offset, len);
+
+          result = rb_str_new2(log);
+          free(log);
+        }
+        break;
+
+      case isc_info_truncated:
+        done = 0;
+        size = size * 2;
+        break;
       }
-   }
+    } while(*offset);
 
-   return(result);
+    /* Clean up. */
+    free(output);
+
+    /* Snooze if we're not done. */
+    if(!done) {
+      rfb_sleep(1);
+    }
+  }
+
+  return(result);
 }

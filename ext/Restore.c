@@ -88,39 +88,32 @@ VALUE cRestore;
  * @return  A reference to the newly initialized Restore object.
  *
  */
-VALUE initializeRestore(VALUE self, VALUE file, VALUE database)
-{
-   VALUE from    = Qnil,
-         to      = rb_hash_new(),
-         options = rb_hash_new();
+VALUE initializeRestore(VALUE self, VALUE file, VALUE database) {
+  VALUE from    = Qnil,
+        to      = rb_hash_new(),
+        options = rb_hash_new();
 
-   /* Extract the parameters. */
-   if(TYPE(file) == T_FILE)
-   {
-      from = rb_funcall(file, rb_intern("path"), 0);
-   }
-   else
-   {
-      from = rb_funcall(file, rb_intern("to_s"), 0);
-   }
+  /* Extract the parameters. */
+  if(TYPE(file) == T_FILE) {
+    from = rb_funcall(file, rb_intern("path"), 0);
+  } else {
+    from = rb_funcall(file, rb_intern("to_s"), 0);
+  }
 
-   if(TYPE(database) == T_FILE)
-   {
-      to = rb_funcall(database, rb_intern("path"), 0);
-   }
-   else
-   {
-      to = rb_funcall(database, rb_intern("to_s"), 0);
-   }
-   rb_hash_aset(options, RESTORE_MODE, CREATE_DATABASE);
+  if(TYPE(database) == T_FILE) {
+    to = rb_funcall(database, rb_intern("path"), 0);
+  } else {
+    to = rb_funcall(database, rb_intern("to_s"), 0);
+  }
+  rb_hash_aset(options, RESTORE_MODE, CREATE_DATABASE);
 
-   /* Store the object attributes. */
-   rb_iv_set(self, "@backup_file", from);
-   rb_iv_set(self, "@database", to);
-   rb_iv_set(self, "@options", options);
-   rb_iv_set(self, "@log", Qnil);
+  /* Store the object attributes. */
+  rb_iv_set(self, "@backup_file", from);
+  rb_iv_set(self, "@database", to);
+  rb_iv_set(self, "@options", options);
+  rb_iv_set(self, "@log", Qnil);
 
-   return(self);
+  return(self);
 }
 
 
@@ -133,9 +126,8 @@ VALUE initializeRestore(VALUE self, VALUE file, VALUE database)
  * @return  A reference to the attribute value.
  *
  */
-VALUE getRestoreFile(VALUE self)
-{
-   return(rb_iv_get(self, "@backup_file"));
+VALUE getRestoreFile(VALUE self) {
+  return(rb_iv_get(self, "@backup_file"));
 }
 
 
@@ -150,21 +142,17 @@ VALUE getRestoreFile(VALUE self)
  * @return  A reference to the newly update Restore object.
  *
  */
-VALUE setRestoreFile(VALUE self, VALUE setting)
-{
-   VALUE actual = Qnil;
+VALUE setRestoreFile(VALUE self, VALUE setting) {
+  VALUE actual = Qnil;
 
-   if(TYPE(setting) == T_FILE)
-   {
-      actual = rb_funcall(setting, rb_intern("path"), 0);
-   }
-   else
-   {
-      actual = rb_funcall(setting, rb_intern("to_s"), 0);
-   }
-   rb_iv_set(self, "@backup_file", actual);
+  if(TYPE(setting) == T_FILE) {
+    actual = rb_funcall(setting, rb_intern("path"), 0);
+  } else {
+    actual = rb_funcall(setting, rb_intern("to_s"), 0);
+  }
+  rb_iv_set(self, "@backup_file", actual);
 
-   return(self);
+  return(self);
 }
 
 
@@ -177,9 +165,8 @@ VALUE setRestoreFile(VALUE self, VALUE setting)
  * @return  A reference to the attribute value.
  *
  */
-VALUE getRestoreDatabase(VALUE self)
-{
-   return(rb_iv_get(self, "@database"));
+VALUE getRestoreDatabase(VALUE self) {
+  return(rb_iv_get(self, "@database"));
 }
 
 
@@ -194,21 +181,17 @@ VALUE getRestoreDatabase(VALUE self)
  * @return  A reference to the newly update Restore object.
  *
  */
-VALUE setRestoreDatabase(VALUE self, VALUE setting)
-{
-   VALUE actual = Qnil;
+VALUE setRestoreDatabase(VALUE self, VALUE setting) {
+  VALUE actual = Qnil;
 
-   if(TYPE(setting) == T_FILE)
-   {
-      actual = rb_funcall(setting, rb_intern("path"), 0);
-   }
-   else
-   {
-      actual = rb_funcall(setting, rb_intern("to_s"), 0);
-   }
-   rb_iv_set(self, "@database", actual);
+  if(TYPE(setting) == T_FILE) {
+    actual = rb_funcall(setting, rb_intern("path"), 0);
+  } else {
+    actual = rb_funcall(setting, rb_intern("to_s"), 0);
+  }
+  rb_iv_set(self, "@database", actual);
 
-   return(self);
+  return(self);
 }
 
 
@@ -221,9 +204,8 @@ VALUE setRestoreDatabase(VALUE self, VALUE setting)
  * @return  A reference to the current cache buffers setting.
  *
  */
-VALUE getRestoreCacheBuffers(VALUE self)
-{
-   return(rb_hash_aref(rb_iv_get(self, "@options"), CACHE_BUFFERS));
+VALUE getRestoreCacheBuffers(VALUE self) {
+  return(rb_hash_aref(rb_iv_get(self, "@options"), CACHE_BUFFERS));
 }
 
 
@@ -237,17 +219,15 @@ VALUE getRestoreCacheBuffers(VALUE self)
  * @return  A reference to the newly updated Restore object.
  *
  */
-VALUE setRestoreCacheBuffers(VALUE self, VALUE setting)
-{
-   if(rb_obj_is_kind_of(setting, rb_cInteger) == Qfalse)
-   {
-      rb_fireruby_raise(NULL,
-                        "Invalid cache buffers setting specified for database "\
-                        "restore.");
-   }
-   rb_hash_aset(rb_iv_get(self, "@options"), CACHE_BUFFERS, setting);
+VALUE setRestoreCacheBuffers(VALUE self, VALUE setting) {
+  if(rb_obj_is_kind_of(setting, rb_cInteger) == Qfalse) {
+    rb_fireruby_raise(NULL,
+                      "Invalid cache buffers setting specified for database " \
+                      "restore.");
+  }
+  rb_hash_aset(rb_iv_get(self, "@options"), CACHE_BUFFERS, setting);
 
-   return(self);
+  return(self);
 }
 
 
@@ -260,9 +240,8 @@ VALUE setRestoreCacheBuffers(VALUE self, VALUE setting)
  * @return  A reference to the current cache buffers setting.
  *
  */
-VALUE getRestorePageSize(VALUE self)
-{
-   return(rb_hash_aref(rb_iv_get(self, "@options"), PAGE_SIZE));
+VALUE getRestorePageSize(VALUE self) {
+  return(rb_hash_aref(rb_iv_get(self, "@options"), PAGE_SIZE));
 }
 
 
@@ -276,17 +255,15 @@ VALUE getRestorePageSize(VALUE self)
  * @return  A reference to the newly updated Restore object.
  *
  */
-VALUE setRestorePageSize(VALUE self, VALUE setting)
-{
-   if(rb_obj_is_kind_of(setting, rb_cInteger) == Qfalse)
-   {
-      rb_fireruby_raise(NULL,
-                        "Invalid page size setting specified for database "\
-                        "restore.");
-   }
-   rb_hash_aset(rb_iv_get(self, "@options"), PAGE_SIZE, setting);
+VALUE setRestorePageSize(VALUE self, VALUE setting) {
+  if(rb_obj_is_kind_of(setting, rb_cInteger) == Qfalse) {
+    rb_fireruby_raise(NULL,
+                      "Invalid page size setting specified for database " \
+                      "restore.");
+  }
+  rb_hash_aset(rb_iv_get(self, "@options"), PAGE_SIZE, setting);
 
-   return(self);
+  return(self);
 }
 
 
@@ -299,9 +276,8 @@ VALUE setRestorePageSize(VALUE self, VALUE setting)
  * @return  A reference to the current cache buffers setting.
  *
  */
-VALUE getRestoreAccessMode(VALUE self)
-{
-   return(rb_hash_aref(rb_iv_get(self, "@options"), ACCESS_MODE));
+VALUE getRestoreAccessMode(VALUE self) {
+  return(rb_hash_aref(rb_iv_get(self, "@options"), ACCESS_MODE));
 }
 
 
@@ -315,28 +291,25 @@ VALUE getRestoreAccessMode(VALUE self)
  * @return  A reference to the newly updated Restore object.
  *
  */
-VALUE setRestoreAccessMode(VALUE self, VALUE setting)
-{
-   int value = 0;
+VALUE setRestoreAccessMode(VALUE self, VALUE setting) {
+  int value = 0;
 
-   if(rb_obj_is_kind_of(setting, rb_cInteger) == Qfalse)
-   {
-      rb_fireruby_raise(NULL,
-                        "Invalid access mode setting specified for database "\
-                        "restore.");
-   }
+  if(rb_obj_is_kind_of(setting, rb_cInteger) == Qfalse) {
+    rb_fireruby_raise(NULL,
+                      "Invalid access mode setting specified for database " \
+                      "restore.");
+  }
 
-   value = TYPE(setting) == T_FIXNUM ? FIX2INT(setting) : NUM2INT(setting);
-   if(value != isc_spb_prp_am_readonly && value != isc_spb_prp_am_readwrite)
-   {
-      rb_fireruby_raise(NULL,
-                        "Invalid access mode value specified for database "\
-                        "restore.");
-   }
+  value = TYPE(setting) == T_FIXNUM ? FIX2INT(setting) : NUM2INT(setting);
+  if(value != isc_spb_prp_am_readonly && value != isc_spb_prp_am_readwrite) {
+    rb_fireruby_raise(NULL,
+                      "Invalid access mode value specified for database " \
+                      "restore.");
+  }
 
-   rb_hash_aset(rb_iv_get(self, "@options"), ACCESS_MODE, setting);
+  rb_hash_aset(rb_iv_get(self, "@options"), ACCESS_MODE, setting);
 
-   return(self);
+  return(self);
 }
 
 
@@ -349,17 +322,15 @@ VALUE setRestoreAccessMode(VALUE self, VALUE setting)
  * @return  A reference to the current cache buffers setting.
  *
  */
-VALUE getRestoreBuildIndices(VALUE self)
-{
-   VALUE result  = Qtrue,
-         setting = rb_hash_aref(rb_iv_get(self, "@options"), BUILD_INDICES);
+VALUE getRestoreBuildIndices(VALUE self) {
+  VALUE result  = Qtrue,
+        setting = rb_hash_aref(rb_iv_get(self, "@options"), BUILD_INDICES);
 
-   if(setting != Qnil)
-   {
-      result = setting;
-   }
+  if(setting != Qnil) {
+    result = setting;
+  }
 
-   return(result);
+  return(result);
 }
 
 
@@ -373,17 +344,15 @@ VALUE getRestoreBuildIndices(VALUE self)
  * @return  A reference to the newly updated Restore object.
  *
  */
-VALUE setRestoreBuildIndices(VALUE self, VALUE setting)
-{
-   if(setting != Qfalse && setting != Qtrue)
-   {
-      rb_fireruby_raise(NULL,
-                        "Invalid build indices setting specified for database "\
-                        "restore.");
-   }
-   rb_hash_aset(rb_iv_get(self, "@options"), BUILD_INDICES, setting);
+VALUE setRestoreBuildIndices(VALUE self, VALUE setting) {
+  if(setting != Qfalse && setting != Qtrue) {
+    rb_fireruby_raise(NULL,
+                      "Invalid build indices setting specified for database " \
+                      "restore.");
+  }
+  rb_hash_aset(rb_iv_get(self, "@options"), BUILD_INDICES, setting);
 
-   return(self);
+  return(self);
 }
 
 
@@ -396,17 +365,15 @@ VALUE setRestoreBuildIndices(VALUE self, VALUE setting)
  * @return  A reference to the current cache buffers setting.
  *
  */
-VALUE getRestoreCreateShadows(VALUE self)
-{
-   VALUE result  = Qfalse,
-         setting = rb_hash_aref(rb_iv_get(self, "@options"), NO_SHADOWS);
+VALUE getRestoreCreateShadows(VALUE self) {
+  VALUE result  = Qfalse,
+        setting = rb_hash_aref(rb_iv_get(self, "@options"), NO_SHADOWS);
 
-   if(setting != Qnil)
-   {
-      result = setting;
-   }
+  if(setting != Qnil) {
+    result = setting;
+  }
 
-   return(result);
+  return(result);
 }
 
 
@@ -420,17 +387,15 @@ VALUE getRestoreCreateShadows(VALUE self)
  * @return  A reference to the newly updated Restore object.
  *
  */
-VALUE setRestoreCreateShadows(VALUE self, VALUE setting)
-{
-   if(setting != Qfalse && setting != Qtrue)
-   {
-      rb_fireruby_raise(NULL,
-                        "Invalid create shadows setting specified for "\
-                        "database restore.");
-   }
-   rb_hash_aset(rb_iv_get(self, "@options"), NO_SHADOWS, setting);
+VALUE setRestoreCreateShadows(VALUE self, VALUE setting) {
+  if(setting != Qfalse && setting != Qtrue) {
+    rb_fireruby_raise(NULL,
+                      "Invalid create shadows setting specified for " \
+                      "database restore.");
+  }
+  rb_hash_aset(rb_iv_get(self, "@options"), NO_SHADOWS, setting);
 
-   return(self);
+  return(self);
 }
 
 
@@ -443,17 +408,15 @@ VALUE setRestoreCreateShadows(VALUE self, VALUE setting)
  * @return  A reference to the current cache buffers setting.
  *
  */
-VALUE getRestoreCheckValidity(VALUE self)
-{
-   VALUE result  = Qtrue,
-         setting = rb_hash_aref(rb_iv_get(self, "@options"), VALIDITY_CHECKS);
+VALUE getRestoreCheckValidity(VALUE self) {
+  VALUE result  = Qtrue,
+        setting = rb_hash_aref(rb_iv_get(self, "@options"), VALIDITY_CHECKS);
 
-   if(setting != Qnil)
-   {
-      result = setting;
-   }
+  if(setting != Qnil) {
+    result = setting;
+  }
 
-   return(result);
+  return(result);
 }
 
 
@@ -467,17 +430,15 @@ VALUE getRestoreCheckValidity(VALUE self)
  * @return  A reference to the newly updated Restore object.
  *
  */
-VALUE setRestoreCheckValidity(VALUE self, VALUE setting)
-{
-   if(setting != Qfalse && setting != Qtrue)
-   {
-      rb_fireruby_raise(NULL,
-                        "Invalid validity checks setting specified for "\
-                        "database restore.");
-   }
-   rb_hash_aset(rb_iv_get(self, "@options"), VALIDITY_CHECKS, setting);
+VALUE setRestoreCheckValidity(VALUE self, VALUE setting) {
+  if(setting != Qfalse && setting != Qtrue) {
+    rb_fireruby_raise(NULL,
+                      "Invalid validity checks setting specified for " \
+                      "database restore.");
+  }
+  rb_hash_aset(rb_iv_get(self, "@options"), VALIDITY_CHECKS, setting);
 
-   return(self);
+  return(self);
 }
 
 
@@ -490,17 +451,15 @@ VALUE setRestoreCheckValidity(VALUE self, VALUE setting)
  * @return  A reference to the current cache buffers setting.
  *
  */
-VALUE getRestoreCommitTables(VALUE self)
-{
-   VALUE result  = Qfalse,
-         setting = rb_hash_aref(rb_iv_get(self, "@options"), COMMIT_TABLES);
+VALUE getRestoreCommitTables(VALUE self) {
+  VALUE result  = Qfalse,
+        setting = rb_hash_aref(rb_iv_get(self, "@options"), COMMIT_TABLES);
 
-   if(setting != Qnil)
-   {
-      result = setting;
-   }
+  if(setting != Qnil) {
+    result = setting;
+  }
 
-   return(result);
+  return(result);
 }
 
 
@@ -514,17 +473,15 @@ VALUE getRestoreCommitTables(VALUE self)
  * @return  A reference to the newly updated Restore object.
  *
  */
-VALUE setRestoreCommitTables(VALUE self, VALUE setting)
-{
-   if(setting != Qfalse && setting != Qtrue)
-   {
-      rb_fireruby_raise(NULL,
-                        "Invalid commit tables setting specified for "\
-                        "database restore.");
-   }
-   rb_hash_aset(rb_iv_get(self, "@options"), COMMIT_TABLES, setting);
+VALUE setRestoreCommitTables(VALUE self, VALUE setting) {
+  if(setting != Qfalse && setting != Qtrue) {
+    rb_fireruby_raise(NULL,
+                      "Invalid commit tables setting specified for " \
+                      "database restore.");
+  }
+  rb_hash_aset(rb_iv_get(self, "@options"), COMMIT_TABLES, setting);
 
-   return(self);
+  return(self);
 }
 
 
@@ -536,17 +493,15 @@ VALUE setRestoreCommitTables(VALUE self, VALUE setting)
  * @return  A reference to the current cache buffers setting.
  *
  */
-VALUE getRestoreMode(VALUE self)
-{
-   VALUE result  = Qfalse,
-         setting = rb_hash_aref(rb_iv_get(self, "@options"), RESTORE_MODE);
+VALUE getRestoreMode(VALUE self) {
+  VALUE result  = Qfalse,
+        setting = rb_hash_aref(rb_iv_get(self, "@options"), RESTORE_MODE);
 
-   if(setting != Qnil)
-   {
-      result = setting;
-   }
+  if(setting != Qnil) {
+    result = setting;
+  }
 
-   return(result);
+  return(result);
 }
 
 
@@ -559,26 +514,23 @@ VALUE getRestoreMode(VALUE self)
  * @return  A reference to the newly updated Restore object.
  *
  */
-VALUE setRestoreMode(VALUE self, VALUE setting)
-{
-   int value;
+VALUE setRestoreMode(VALUE self, VALUE setting) {
+  int value;
 
-   if(rb_obj_is_kind_of(setting, rb_cInteger) == Qfalse)
-   {
-      rb_fireruby_raise(NULL,
-                        "Invalid mode setting specified for database restore.");
-   }
+  if(rb_obj_is_kind_of(setting, rb_cInteger) == Qfalse) {
+    rb_fireruby_raise(NULL,
+                      "Invalid mode setting specified for database restore.");
+  }
 
-   value = TYPE(setting) == T_FIXNUM ? FIX2INT(setting) : NUM2INT(setting);
-   if(value != isc_spb_res_create && value != isc_spb_res_replace)
-   {
-      rb_fireruby_raise(NULL,
-                        "Unrecognised mode setting specified for database "\
-                        "restore.");
-   }
-   rb_hash_aset(rb_iv_get(self, "@options"), RESTORE_MODE, setting);
+  value = TYPE(setting) == T_FIXNUM ? FIX2INT(setting) : NUM2INT(setting);
+  if(value != isc_spb_res_create && value != isc_spb_res_replace) {
+    rb_fireruby_raise(NULL,
+                      "Unrecognised mode setting specified for database " \
+                      "restore.");
+  }
+  rb_hash_aset(rb_iv_get(self, "@options"), RESTORE_MODE, setting);
 
-   return(self);
+  return(self);
 }
 
 
@@ -591,17 +543,15 @@ VALUE setRestoreMode(VALUE self, VALUE setting)
  * @return  A reference to the current cache buffers setting.
  *
  */
-VALUE getRestoreUseAllSpace(VALUE self)
-{
-   VALUE result  = Qfalse,
-         setting = rb_hash_aref(rb_iv_get(self, "@options"), USE_ALL_SPACE);
+VALUE getRestoreUseAllSpace(VALUE self) {
+  VALUE result  = Qfalse,
+        setting = rb_hash_aref(rb_iv_get(self, "@options"), USE_ALL_SPACE);
 
-   if(setting != Qnil)
-   {
-      result = setting;
-   }
+  if(setting != Qnil) {
+    result = setting;
+  }
 
-   return(result);
+  return(result);
 }
 
 
@@ -615,17 +565,15 @@ VALUE getRestoreUseAllSpace(VALUE self)
  * @return  A reference to the newly updated Restore object.
  *
  */
-VALUE setRestoreUseAllSpace(VALUE self, VALUE setting)
-{
-   if(setting != Qfalse && setting != Qtrue)
-   {
-      rb_fireruby_raise(NULL,
-                        "Invalid space usage setting specified for database "\
-                        "restore.");
-   }
-   rb_hash_aset(rb_iv_get(self, "@options"), USE_ALL_SPACE, setting);
+VALUE setRestoreUseAllSpace(VALUE self, VALUE setting) {
+  if(setting != Qfalse && setting != Qtrue) {
+    rb_fireruby_raise(NULL,
+                      "Invalid space usage setting specified for database " \
+                      "restore.");
+  }
+  rb_hash_aset(rb_iv_get(self, "@options"), USE_ALL_SPACE, setting);
 
-   return(self);
+  return(self);
 }
 
 
@@ -639,37 +587,34 @@ VALUE setRestoreUseAllSpace(VALUE self, VALUE setting)
  * @return  A reference to the Restore object executed.
  *
  */
-VALUE executeRestore(VALUE self, VALUE manager)
-{
-   ManagerHandle *handle = NULL;
-   char          *buffer = NULL;
-   short         length  = 0;
-   ISC_STATUS    status[ISC_STATUS_LENGTH];
+VALUE executeRestore(VALUE self, VALUE manager) {
+  ManagerHandle *handle = NULL;
+  char          *buffer = NULL;
+  short length  = 0;
+  ISC_STATUS status[ISC_STATUS_LENGTH];
 
-   /* Check that the service manager is connected. */
-   Data_Get_Struct(manager, ManagerHandle, handle);
-   if(handle->handle == 0)
-   {
-      rb_fireruby_raise(NULL,
-                        "Database restore error. Service manager not connected.");
-   }
+  /* Check that the service manager is connected. */
+  Data_Get_Struct(manager, ManagerHandle, handle);
+  if(handle->handle == 0) {
+    rb_fireruby_raise(NULL,
+                      "Database restore error. Service manager not connected.");
+  }
 
-   createRestoreBuffer(rb_iv_get(self, "@backup_file"),
-                       rb_iv_get(self, "@database"),
-                       rb_iv_get(self, "@options"), &buffer, &length);
+  createRestoreBuffer(rb_iv_get(self, "@backup_file"),
+                      rb_iv_get(self, "@database"),
+                      rb_iv_get(self, "@options"), &buffer, &length);
 
-   /* Start the service request. */
-   if(isc_service_start(status, &handle->handle, NULL, length, buffer))
-   {
-      free(buffer);
-      rb_fireruby_raise(status, "Error performing database restore.");
-   }
-   free(buffer);
+  /* Start the service request. */
+  if(isc_service_start(status, &handle->handle, NULL, length, buffer)) {
+    free(buffer);
+    rb_fireruby_raise(status, "Error performing database restore.");
+  }
+  free(buffer);
 
-   /* Query the service until it is complete. */
-   rb_iv_set(self, "@log", queryService(&handle->handle));
+  /* Query the service until it is complete. */
+  rb_iv_set(self, "@log", queryService(&handle->handle));
 
-   return(self);
+  return(self);
 }
 
 
@@ -681,9 +626,8 @@ VALUE executeRestore(VALUE self, VALUE manager)
  * @return  A reference to the log attribute value.
  *
  */
-VALUE getRestoreLog(VALUE self)
-{
-   return(rb_iv_get(self, "@log"));
+VALUE getRestoreLog(VALUE self) {
+  return(rb_iv_get(self, "@log"));
 }
 
 
@@ -705,111 +649,98 @@ VALUE getRestoreLog(VALUE self)
  *
  */
 void createRestoreBuffer(VALUE file, VALUE database, VALUE options,
-                         char **buffer, short *length)
-{
-   char  *offset = NULL;
-   int   number  = 0;
-   long  mask    = 0;
-   VALUE cache   = rb_hash_aref(options, CACHE_BUFFERS),
-         page    = rb_hash_aref(options, PAGE_SIZE),
-         mode    = rb_hash_aref(options, ACCESS_MODE),
-         policy  = rb_hash_aref(options, RESTORE_MODE);
+                         char **buffer, short *length) {
+  char  *offset = NULL;
+  int number  = 0;
+  long mask    = 0;
+  VALUE cache   = rb_hash_aref(options, CACHE_BUFFERS),
+        page    = rb_hash_aref(options, PAGE_SIZE),
+        mode    = rb_hash_aref(options, ACCESS_MODE),
+        policy  = rb_hash_aref(options, RESTORE_MODE);
 
-   /* Determine the length of the buffer. */
-   *length = 7;
-   *length += strlen(StringValuePtr(file)) + 3;
-   *length += strlen(StringValuePtr(database)) + 3;
-   if(cache != Qnil)
-   {
-      *length += 5;
-   }
-   if(page != Qnil)
-   {
-      *length += 5;
-   }
-   if(mode != Qnil)
-   {
-      *length += 2;
-   }
+  /* Determine the length of the buffer. */
+  *length = 7;
+  *length += strlen(StringValuePtr(file)) + 3;
+  *length += strlen(StringValuePtr(database)) + 3;
+  if(cache != Qnil) {
+    *length += 5;
+  }
+  if(page != Qnil) {
+    *length += 5;
+  }
+  if(mode != Qnil) {
+    *length += 2;
+  }
 
-   /* Create and populate the buffer. */
-   offset = *buffer = ALLOC_N(char, *length);
-   if(buffer == NULL)
-   {
-      rb_raise(rb_eNoMemError,
-               "Memory allocation error preparing database restore.");
-   }
-   memset(*buffer, 8, *length);
+  /* Create and populate the buffer. */
+  offset = *buffer = ALLOC_N(char, *length);
+  if(buffer == NULL) {
+    rb_raise(rb_eNoMemError,
+             "Memory allocation error preparing database restore.");
+  }
+  memset(*buffer, 8, *length);
 
-   *offset++ = isc_action_svc_restore;
+  *offset++ = isc_action_svc_restore;
 
-   number    = strlen(StringValuePtr(file));
-   *offset++ = isc_spb_bkp_file;
-   ADD_SPB_LENGTH(offset, number);
-   memcpy(offset, StringValuePtr(file), number);
-   offset    += number;
+  number    = strlen(StringValuePtr(file));
+  *offset++ = isc_spb_bkp_file;
+  ADD_SPB_LENGTH(offset, number);
+  memcpy(offset, StringValuePtr(file), number);
+  offset    += number;
 
-   number    = strlen(StringValuePtr(database));
-   *offset++ = isc_spb_dbname;
-   ADD_SPB_LENGTH(offset, number);
-   memcpy(offset, StringValuePtr(database), number);
-   offset    += number;
+  number    = strlen(StringValuePtr(database));
+  *offset++ = isc_spb_dbname;
+  ADD_SPB_LENGTH(offset, number);
+  memcpy(offset, StringValuePtr(database), number);
+  offset    += number;
 
-   if(cache != Qnil)
-   {
-      long value;
+  if(cache != Qnil) {
+    long value;
 
-      value = TYPE(cache) == T_FIXNUM ? FIX2INT(cache) : NUM2INT(cache);
-      *offset++ = isc_spb_res_buffers;
-      ADD_SPB_NUMERIC(offset, value);
-   }
+    value = TYPE(cache) == T_FIXNUM ? FIX2INT(cache) : NUM2INT(cache);
+    *offset++ = isc_spb_res_buffers;
+    ADD_SPB_NUMERIC(offset, value);
+  }
 
-   if(page != Qnil)
-   {
-      long value;
+  if(page != Qnil) {
+    long value;
 
-      value = TYPE(page) == T_FIXNUM ? FIX2INT(page) : NUM2INT(page);
-      *offset++ = isc_spb_res_page_size;
-      ADD_SPB_NUMERIC(offset, value);
-   }
+    value = TYPE(page) == T_FIXNUM ? FIX2INT(page) : NUM2INT(page);
+    *offset++ = isc_spb_res_page_size;
+    ADD_SPB_NUMERIC(offset, value);
+  }
 
-   if(mode != Qnil)
-   {
-      *offset++ = isc_spb_res_access_mode;
-      *offset++ = (char)FIX2INT(mode);
-   }
+  if(mode != Qnil) {
+    *offset++ = isc_spb_res_access_mode;
+    *offset++ = (char)FIX2INT(mode);
+  }
 
-   mask = FIX2INT(policy);
+  mask = FIX2INT(policy);
 
-   if(rb_hash_aref(options, BUILD_INDICES) == Qfalse)
-   {
-      mask |= isc_spb_res_deactivate_idx;
-   }
+  if(rb_hash_aref(options, BUILD_INDICES) == Qfalse) {
+    mask |= isc_spb_res_deactivate_idx;
+  }
 
-   if(rb_hash_aref(options, NO_SHADOWS) == Qtrue)
-   {
-      mask |= isc_spb_res_no_shadow;
-   }
+  if(rb_hash_aref(options, NO_SHADOWS) == Qtrue) {
+    mask |= isc_spb_res_no_shadow;
+  }
 
-   if(rb_hash_aref(options, VALIDITY_CHECKS) == Qfalse)
-   {
-      mask |= isc_spb_res_no_validity;
-   }
+  if(rb_hash_aref(options, VALIDITY_CHECKS) == Qfalse) {
+    mask |= isc_spb_res_no_validity;
+  }
 
-   if(rb_hash_aref(options, COMMIT_TABLES) == Qtrue)
-   {
-      mask |= isc_spb_res_one_at_a_time;
-   }
+  if(rb_hash_aref(options, COMMIT_TABLES) == Qtrue) {
+    mask |= isc_spb_res_one_at_a_time;
+  }
 
-   if(rb_hash_aref(options, USE_ALL_SPACE) == Qtrue)
-   {
-      mask |= isc_spb_res_use_all_space;
-   }
+  if(rb_hash_aref(options, USE_ALL_SPACE) == Qtrue) {
+    mask |= isc_spb_res_use_all_space;
+  }
 
-   *offset++ = isc_spb_options;
-   ADD_SPB_NUMERIC(offset, mask);
+  *offset++ = isc_spb_options;
+  ADD_SPB_NUMERIC(offset, mask);
 
-   *offset++ = isc_spb_verbose;
+  *offset++ = isc_spb_verbose;
 }
 
 
@@ -819,37 +750,36 @@ void createRestoreBuffer(VALUE file, VALUE database, VALUE options,
  * @param  module  The module to create the new class definition under.
  *
  */
-void Init_Restore(VALUE module)
-{
-   cRestore = rb_define_class_under(module, "Restore", rb_cObject);
-   rb_define_method(cRestore, "initialize", initializeRestore, 2);
-   rb_define_method(cRestore, "backup_file", getRestoreFile, 0);
-   rb_define_method(cRestore, "backup_file=", setRestoreFile, 1);
-   rb_define_method(cRestore, "database", getRestoreDatabase, 0);
-   rb_define_method(cRestore, "database=", setRestoreDatabase, 1);
-   rb_define_method(cRestore, "cache_buffers", getRestoreCacheBuffers, 0);
-   rb_define_method(cRestore, "cache_buffers=", setRestoreCacheBuffers, 1);
-   rb_define_method(cRestore, "page_size", getRestorePageSize, 0);
-   rb_define_method(cRestore, "page_size=", setRestorePageSize, 1);
-   rb_define_method(cRestore, "access_mode", getRestoreAccessMode, 0);
-   rb_define_method(cRestore, "access_mode=", setRestoreAccessMode, 1);
-   rb_define_method(cRestore, "build_indices", getRestoreBuildIndices, 0);
-   rb_define_method(cRestore, "build_indices=", setRestoreBuildIndices, 1);
-   rb_define_method(cRestore, "no_shadows", getRestoreCreateShadows, 0);
-   rb_define_method(cRestore, "no_shadows=", setRestoreCreateShadows, 1);
-   rb_define_method(cRestore, "check_validity", getRestoreCheckValidity, 0);
-   rb_define_method(cRestore, "check_validity=", setRestoreCheckValidity, 1);
-   rb_define_method(cRestore, "commit_tables", getRestoreCommitTables, 0);
-   rb_define_method(cRestore, "commit_tables=", setRestoreCommitTables, 1);
-   rb_define_method(cRestore, "restore_mode", getRestoreMode, 0);
-   rb_define_method(cRestore, "restore_mode=", setRestoreMode, 1);
-   rb_define_method(cRestore, "use_all_space", getRestoreUseAllSpace, 0);
-   rb_define_method(cRestore, "use_all_space=", setRestoreUseAllSpace, 1);
-   rb_define_method(cRestore, "execute", executeRestore, 1);
-   rb_define_method(cRestore, "log", getRestoreLog, 0);
+void Init_Restore(VALUE module) {
+  cRestore = rb_define_class_under(module, "Restore", rb_cObject);
+  rb_define_method(cRestore, "initialize", initializeRestore, 2);
+  rb_define_method(cRestore, "backup_file", getRestoreFile, 0);
+  rb_define_method(cRestore, "backup_file=", setRestoreFile, 1);
+  rb_define_method(cRestore, "database", getRestoreDatabase, 0);
+  rb_define_method(cRestore, "database=", setRestoreDatabase, 1);
+  rb_define_method(cRestore, "cache_buffers", getRestoreCacheBuffers, 0);
+  rb_define_method(cRestore, "cache_buffers=", setRestoreCacheBuffers, 1);
+  rb_define_method(cRestore, "page_size", getRestorePageSize, 0);
+  rb_define_method(cRestore, "page_size=", setRestorePageSize, 1);
+  rb_define_method(cRestore, "access_mode", getRestoreAccessMode, 0);
+  rb_define_method(cRestore, "access_mode=", setRestoreAccessMode, 1);
+  rb_define_method(cRestore, "build_indices", getRestoreBuildIndices, 0);
+  rb_define_method(cRestore, "build_indices=", setRestoreBuildIndices, 1);
+  rb_define_method(cRestore, "no_shadows", getRestoreCreateShadows, 0);
+  rb_define_method(cRestore, "no_shadows=", setRestoreCreateShadows, 1);
+  rb_define_method(cRestore, "check_validity", getRestoreCheckValidity, 0);
+  rb_define_method(cRestore, "check_validity=", setRestoreCheckValidity, 1);
+  rb_define_method(cRestore, "commit_tables", getRestoreCommitTables, 0);
+  rb_define_method(cRestore, "commit_tables=", setRestoreCommitTables, 1);
+  rb_define_method(cRestore, "restore_mode", getRestoreMode, 0);
+  rb_define_method(cRestore, "restore_mode=", setRestoreMode, 1);
+  rb_define_method(cRestore, "use_all_space", getRestoreUseAllSpace, 0);
+  rb_define_method(cRestore, "use_all_space=", setRestoreUseAllSpace, 1);
+  rb_define_method(cRestore, "execute", executeRestore, 1);
+  rb_define_method(cRestore, "log", getRestoreLog, 0);
 
-   rb_define_const(cRestore, "ACCESS_READ_ONLY", INT2FIX(isc_spb_prp_am_readonly));
-   rb_define_const(cRestore, "ACCESS_READ_WRITE", INT2FIX(isc_spb_prp_am_readwrite));
-   rb_define_const(cRestore, "MODE_CREATE", INT2FIX(isc_spb_res_replace));
-   rb_define_const(cRestore, "MODE_REPLACE", INT2FIX(isc_spb_res_create));
+  rb_define_const(cRestore, "ACCESS_READ_ONLY", INT2FIX(isc_spb_prp_am_readonly));
+  rb_define_const(cRestore, "ACCESS_READ_WRITE", INT2FIX(isc_spb_prp_am_readwrite));
+  rb_define_const(cRestore, "MODE_CREATE", INT2FIX(isc_spb_res_replace));
+  rb_define_const(cRestore, "MODE_REPLACE", INT2FIX(isc_spb_res_create));
 }

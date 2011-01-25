@@ -25,13 +25,13 @@
 #ifndef FIRERUBY_REMOVE_USER_H
 #define FIRERUBY_REMOVE_USER_H
 
-   /* Includes. */
+/* Includes. */
    #ifndef RUBY_H_INCLUDED
       #include "ruby.h"
       #define RUBY_H_INCLUDED
    #endif
 
-   /* Function prototypes. */
-   void Init_RemoveUser(VALUE);
+/* Function prototypes. */
+void Init_RemoveUser(VALUE);
 
 #endif /* FIRERUBY_REMOVE_USER_H */

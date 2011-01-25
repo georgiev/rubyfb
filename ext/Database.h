@@ -3,20 +3,20 @@
  *----------------------------------------------------------------------------*/
 /**
  * Copyright © Peter Wood, 2005
- * 
+ *
  * The contents of this file are subject to the Mozilla Public License Version
  * 1.1 (the "License"); you may not use this file except in compliance with the
- * License. You may obtain a copy of the License at 
+ * License. You may obtain a copy of the License at
  *
  * http://www.mozilla.org/MPL/
- * 
+ *
  * Software distributed under the License is distributed on an "AS IS" basis,
  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
  * the specificlanguage governing rights and  limitations under the License.
- * 
+ *
  * The Original Code is the FireRuby extension for the Ruby language.
- * 
- * The Initial Developer of the Original Code is Peter Wood. All Rights 
+ *
+ * The Initial Developer of the Original Code is Peter Wood. All Rights
  * Reserved.
  *
  * @author  Peter Wood
@@ -25,7 +25,7 @@
 #ifndef FIRERUBY_DATABASE_H
 #define FIRERUBY_DATABASE_H
 
-   /* Includes. */
+/* Includes. */
    #ifndef FIRERUBY_FIRE_RUBY_H
       #include "FireRuby.h"
    #endif
@@ -34,15 +34,14 @@
       #include "FireRubyException.h"
    #endif
 
-   /* Structure definitions. */
-   typedef struct
-   {
-      int unused;
-   } DatabaseHandle;
-   
-   /* Function prototypes. */
-   void Init_Database(VALUE);
-   void databaseFree(void *);
-   VALUE rb_database_new(VALUE);   
+/* Structure definitions. */
+typedef struct {
+  int unused;
+} DatabaseHandle;
+
+/* Function prototypes. */
+void Init_Database(VALUE);
+void databaseFree(void *);
+VALUE rb_database_new(VALUE);
 
 #endif /* FIRERUBY_DATABASE_H */

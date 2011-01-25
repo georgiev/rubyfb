@@ -25,13 +25,13 @@
 #ifndef FIRERUBY_BACKUP_H
 #define FIRERUBY_BACKUP_H
 
-   /* Includes. */
+/* Includes. */
    #ifndef RUBY_H_INCLUDED
       #include "ruby.h"
       #define RUBY_H_INCLUDED
    #endif
 
-   /* Function prototypes. */
-   void Init_Backup(VALUE);
+/* Function prototypes. */
+void Init_Backup(VALUE);
 
 #endif /* FIRERUBY_BACKUP_H */
