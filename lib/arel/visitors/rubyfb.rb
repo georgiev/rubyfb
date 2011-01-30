@@ -10,11 +10,11 @@ module Arel
       end
 
       def fb_limit limit
-      	"first #{limit}" if limit
+      	"first #{limit.expr}" if limit
       end
 
       def fb_offset offset
-      	"skip #{offset}" if offset
+      	"skip #{offset.expr}" if offset
       end
     end
   end
