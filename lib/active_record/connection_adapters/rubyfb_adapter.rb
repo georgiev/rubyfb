@@ -1,5 +1,7 @@
 # Author: Ken Kunz <kennethkunz@gmail.com>
 require 'active_record/connection_adapters/abstract_adapter'
+require 'active_support/core_ext/kernel/requires'
+
 if defined?(Arel) then
   require 'arel/visitors/rubyfb'
 end
