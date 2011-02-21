@@ -262,6 +262,15 @@ VALUE fetchResultSetEntry(VALUE self) {
       results->exhausted = 1;
       resolveResultsTransaction(results, "commit");
       break;
+    case isc_req_sync:
+      /* Return nil if #fetch() was called after we were #exhausted?.
+       * Otherwise, fall through to error.
+       *
+       * SQLCODE -901 request synchronization error (isc_req_sync)
+       * "Unsuccessful execution caused by system error that does not
+       * preclude successful execution of subsequent statements."
+       */
+      if (results->exhausted) break;
     default:
       rb_fireruby_raise(status, "Error fetching query row.");
     }
