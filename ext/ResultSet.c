@@ -240,7 +240,7 @@ VALUE fetchResultSetEntry(VALUE self) {
              value;
 
   Data_Get_Struct(self, ResultsHandle, results);
-  if(results->handle != 0) {
+  if(results->handle != 0 && !results->exhausted) {
     VALUE array,number;
     value = results->procedure_output_fetch_state;
     if(value < 0) {

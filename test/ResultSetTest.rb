@@ -172,4 +172,17 @@ class ResultSetTest < Test::Unit::TestCase
    ensure
       results.close if results
    end
+
+   def test06
+      results = @transactions.first.execute(<<-EOSQL)
+                SELECT * FROM RDB$DATABASE WHERE 1=0
+                EOSQL
+
+      assert_nil(results.fetch,
+                 'Initial #fetch of empty result set was not nil')
+          assert(results.exhausted?,
+                 'Completely fetched ResultSet was not #exhausted?')
+      assert_nil(results.fetch,
+                 '#fetch after exhaustion was not nil')
+   end
 end
