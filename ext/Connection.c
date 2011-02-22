@@ -299,29 +299,9 @@ static VALUE connectionToString(VALUE self) {
  *          non-query statement.
  *
  */
-static VALUE executeOnConnection(VALUE self, VALUE sql, VALUE transaction) {
-  VALUE results   = Qnil,
-        statement = rb_statement_new(self, transaction, sql, INT2FIX(3));
-
-  results = rb_execute_statement(statement);
-  if(results != Qnil && rb_obj_is_kind_of(results, rb_cInteger) == Qfalse) {
-    if(rb_block_given_p()) {
-      VALUE row  = rb_funcall(results, rb_intern("fetch"), 0),
-            last = Qnil;
-
-      while(row != Qnil) {
-        last = rb_yield(row);
-        row  = rb_funcall(results, rb_intern("fetch"), 0);
-      }
-      rb_funcall(results, rb_intern("close"), 0);
-      results = last;
-    }
-  }
-  rb_statement_close(statement);
-
-  return(results);
+ static VALUE executeOnConnection(VALUE self, VALUE sql, VALUE transaction) {
+  return rb_execute_sql(self, transaction, sql);
 }
-
 
 /**
  * This function provides the execute_immediate method for the Connection class.

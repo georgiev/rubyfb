@@ -53,6 +53,7 @@ void execute(isc_tr_handle *, isc_stmt_handle *, short, XSQLDA *,
 VALUE rb_statement_new(VALUE, VALUE, VALUE, VALUE);
 VALUE rb_execute_statement(VALUE);
 VALUE rb_execute_statement_for(VALUE, VALUE);
+VALUE rb_execute_sql(VALUE, VALUE, VALUE);
 VALUE rb_get_statement_type(VALUE);
 void rb_statement_close(VALUE);
 void statementFree(void *);

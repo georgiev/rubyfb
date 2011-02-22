@@ -622,6 +622,40 @@ VALUE rb_execute_statement_for(VALUE statement, VALUE parameters) {
 
 
 /**
+ * This function provides a programmatic way of executing a SQL
+ * within transaction
+ *
+ * @param  connection  A reference to the connection object.
+ * @param  transaction A reference to the transaction object.
+ * @param  sql         SQL text.
+ *
+ * @return  A reference to the results of executing the statement.
+ *
+ */
+VALUE rb_execute_sql(VALUE connection, VALUE transaction, VALUE sql) {
+  VALUE results   = Qnil,
+        statement = rb_statement_new(connection, transaction, sql, INT2FIX(3));
+
+  results = rb_execute_statement(statement);
+  if(results != Qnil && rb_obj_is_kind_of(results, rb_cInteger) == Qfalse) {
+    if(rb_block_given_p()) {
+      VALUE row  = rb_funcall(results, rb_intern("fetch"), 0),
+            last = Qnil;
+
+      while(row != Qnil) {
+        last = rb_yield(row);
+        row  = rb_funcall(results, rb_intern("fetch"), 0);
+      }
+      rb_funcall(results, rb_intern("close"), 0);
+      results = last;
+    }
+  }
+  rb_statement_close(statement);
+
+  return(results);
+}
+
+/**
  * This method retrieves the type information for a Statement object.
  *
  * @param  statement  A reference to a Statement object.
