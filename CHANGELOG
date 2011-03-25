@@ -1,6 +1,9 @@
 v0.5.8 ==
 Merge duplicated code in transaction.execute() and connection.execute()
 Make #fetch() *always* return nil if #exhausted? - pilcrow/look-before-you-leap
+Add Fb1.5 compatible arel adapter - at least to some extent
+Some words of caution here - the Fb1.5 arel implementation will yield WRONG results with union selects
+The Fb15 compatibility mode is turned on by setting Rubyfb::Options.fb15_compat = true in your initialization code
 
 v0.5.7 ==
 arel-2.0.7 compatibility - use node.expr for limit/offset clauses
