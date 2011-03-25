@@ -3,7 +3,11 @@ require 'active_record/connection_adapters/abstract_adapter'
 require 'active_support/core_ext/kernel/requires'
 
 if defined?(Arel) then
-  require 'arel/visitors/rubyfb'
+  if Rubyfb::Options.fb15_compat
+    require 'arel/visitors/rubyfb_15compat'
+  else
+    require 'arel/visitors/rubyfb'
+  end
 end
 
 module Rubyfb # :nodoc: all

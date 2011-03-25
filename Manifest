@@ -45,14 +45,17 @@ ext/TypeMap.h
 ext/extconf.rb
 ext/rfbint.h
 ext/rfbsleep.h
+ext/uncrustify.cfg
 lib/Connection.rb
 lib/ProcedureCall.rb
 lib/SQLType.rb
 lib/active_record/connection_adapters/rubyfb_adapter.rb
 lib/arel/visitors/rubyfb.rb
+lib/arel/visitors/rubyfb_15compat.rb
 lib/mkdoc
 lib/rubyfb.rb
 lib/rubyfb_lib.so
+lib/rubyfb_options.rb
 lib/src.rb
 mswin32fb/fbclient_mingw.def
 mswin32fb/fbclient_mingw.lib
