@@ -8,9 +8,8 @@ require 'rubyfb'
 include Rubyfb
 
 class BackupRestoreTest < Test::Unit::TestCase
-   CURDIR      = "#{Dir.getwd}"
-   DB_FILE     = "#{CURDIR}#{File::SEPARATOR}backup_restore_unit_test.fdb"
-   BACKUP_FILE = "#{CURDIR}#{File::SEPARATOR}database.bak"
+   DB_FILE     = File.join(DB_DIR, "backup_restore_unit_test.fdb")
+   BACKUP_FILE = File.join(DB_DIR, "database.bak")
 
    def setup
       puts "#{self.class.name} started." if TEST_LOGGING

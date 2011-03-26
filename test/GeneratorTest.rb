@@ -8,8 +8,7 @@ require 'rubyfb'
 include Rubyfb
 
 class GeneratorTest < Test::Unit::TestCase
-   CURDIR  = "#{Dir.getwd}"
-   DB_FILE = "#{CURDIR}#{File::SEPARATOR}generator_unit_test.fdb"
+   DB_FILE = File.join(DB_DIR, "generator_unit_test.fdb")
    
    def setup
       puts "#{self.class.name} started." if TEST_LOGGING
