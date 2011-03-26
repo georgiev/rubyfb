@@ -8,8 +8,7 @@ require 'rubyfb'
 include Rubyfb
 
 class RowCountTest < Test::Unit::TestCase
-   CURDIR      = "#{Dir.getwd}"
-   DB_FILE     = "#{CURDIR}#{File::SEPARATOR}row_count_test.fdb"
+   DB_FILE     = File.join(DB_DIR, "row_count_test.fdb")
 
    def setup
       puts "#{self.class.name} started." if TEST_LOGGING

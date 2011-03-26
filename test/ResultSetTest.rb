@@ -8,8 +8,7 @@ require 'rubyfb'
 include Rubyfb
 
 class ResultSetTest < Test::Unit::TestCase
-   CURDIR  = "#{Dir.getwd}"
-   DB_FILE = "#{CURDIR}#{File::SEPARATOR}result_set_unit_test.fdb"
+   DB_FILE = File.join(DB_DIR, "result_set_unit_test.fdb")
    
    def setup
       puts "#{self.class.name} started." if TEST_LOGGING

@@ -8,8 +8,7 @@ require 'rubyfb'
 include Rubyfb
 
 class DDLTest < Test::Unit::TestCase
-   CURDIR  = "#{Dir.getwd}"
-   DB_FILE = "#{CURDIR}#{File::SEPARATOR}ddl_unit_test.fdb"
+   DB_FILE = File.join(DB_DIR, "ddl_unit_test.fdb")
    
    def setup
       puts "#{self.class.name} started." if TEST_LOGGING

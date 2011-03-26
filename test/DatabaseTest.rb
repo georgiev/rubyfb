@@ -8,9 +8,8 @@ require 'rubyfb'
 include Rubyfb
 
 class DatabaseTest < Test::Unit::TestCase
-   CURDIR      = "#{Dir.getwd}"
-   DB_FILE     = "#{CURDIR}#{File::SEPARATOR}db_unit_test.fdb"
-   CREATE_FILE = "#{CURDIR}#{File::SEPARATOR}db_create_test.fdb"
+   DB_FILE     = File.join(DB_DIR, "db_unit_test.fdb")
+   CREATE_FILE = File.join(DB_DIR, "db_create_test.fdb")
    
    def setup
       puts "#{self.class.name} started." if TEST_LOGGING

@@ -8,8 +8,7 @@ require 'rubyfb'
 include Rubyfb
 
 class SQLTest < Test::Unit::TestCase
-   CURDIR      = "#{Dir.getwd}"
-   DB_FILE     = "#{CURDIR}#{File::SEPARATOR}sql_unit_test.fdb"
+   DB_FILE     = File.join(DB_DIR, "sql_unit_test.fdb")
    ITERATIONS  = 100
    
    INSERT_SQL  = "INSERT INTO TEST_TABLE VALUES(?, ?, ?, ?, ?, ?)"

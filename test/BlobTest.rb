@@ -8,9 +8,8 @@ require 'rubyfb'
 include Rubyfb
 
 class BlobTest < Test::Unit::TestCase
-   CURDIR      = "#{Dir.getwd}"
-   DB_FILE     = "#{CURDIR}#{File::SEPARATOR}blob_unit_test.fdb"
-   TXT_FILE    = "#{CURDIR}#{File::SEPARATOR}data.txt"
+   DB_FILE     = File.join(DB_DIR, "blob_unit_test.fdb")
+   TXT_FILE    = File.join(DB_DIR, "data.txt")
    DATA        = "aasdfjakhdsfljkashdfslfhaslhasyhfawyufalwuhlhsdlkfhasljlkshflalksjhasjhalsjhdf\nasdflkajshdfjkahsdfjajdfalsdfasdf\nasdfasdfasdkljfhajdfhkjasdfagdsflalkjfgagsdflasdf\nasdfasdfasdf"
 
    def setup

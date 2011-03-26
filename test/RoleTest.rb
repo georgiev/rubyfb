@@ -8,8 +8,7 @@ require 'rubyfb'
 include Rubyfb
 
 class RoleTest < Test::Unit::TestCase
-   CURDIR      = "#{Dir.getwd}"
-   DB_FILE     = "#{CURDIR}#{File::SEPARATOR}role_unit_test.fdb"
+   DB_FILE     = File.join(DB_DIR, "role_unit_test.fdb")
 
    def setup
       puts "#{self.class.name} started." if TEST_LOGGING

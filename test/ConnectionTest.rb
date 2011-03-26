@@ -8,8 +8,7 @@ require 'rubyfb'
 include Rubyfb
 
 class ConnectionTest < Test::Unit::TestCase
-   CURDIR  = "#{Dir.getwd}"
-   DB_FILE = "#{CURDIR}#{File::SEPARATOR}con_unit_test.fdb"
+   DB_FILE = File.join(DB_DIR, "con_unit_test.fdb")
    
    def setup
       puts "#{self.class.name} started." if TEST_LOGGING
