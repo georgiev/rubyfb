@@ -41,6 +41,7 @@ VALUE createDate(const struct tm *);
 VALUE createDateTime(VALUE dt);
 VALUE createTime(VALUE dt);
 VALUE createSafeTime(const struct tm*);
+VALUE createString(const char *, short, short);
 VALUE getConstant(const char *, VALUE);
 VALUE toDateTime(VALUE);
 VALUE rescueConvert(VALUE, VALUE);
@@ -166,14 +167,8 @@ VALUE toValue(XSQLVAR *entry,
       break;
 
     case SQL_TEXT:       /* Type: CHAR */
-      array = ALLOC_N(char, entry->sqllen + 1);
-      if(array != NULL) {
-        memset(array, 0, entry->sqllen + 1);
-        memcpy(array, entry->sqldata, entry->sqllen);
-        rb_ary_push(value, rb_str_new2(array));
-        rb_ary_push(value, getColumnType(entry));
-        free(array);
-      }
+      rb_ary_push(value, createString(entry->sqldata, entry->sqllen, entry->sqlsubtype));
+      rb_ary_push(value, getColumnType(entry));
       break;
 
     case SQL_TYPE_TIME:       /* Type: TIME */
@@ -193,16 +188,8 @@ VALUE toValue(XSQLVAR *entry,
 
     case SQL_VARYING:
       memcpy(&length, entry->sqldata, 2);
-      if(length >= 0) {
-        array = ALLOC_N(char, length + 1);
-        if(array != NULL) {
-          memset(array, 0, length + 1);
-          memcpy(array, &entry->sqldata[2], length);
-          rb_ary_push(value, rb_str_new2(array));
-          rb_ary_push(value, getColumnType(entry));
-          free(array);
-        }
-      }
+      rb_ary_push(value, createString(&entry->sqldata[2], length, entry->sqlsubtype));
+      rb_ary_push(value, getColumnType(entry));
       break;
 
     default:
@@ -493,6 +480,31 @@ VALUE createTime(VALUE dt) {
 VALUE createSafeTime(const struct tm *datetime) {
   VALUE dt = Data_Wrap_Struct(rb_cObject, NULL, NULL, (void*)datetime);
   return rb_rescue(createTime, dt, createDateTime, dt);
+}
+
+/**
+ * This function converts a sql data into ruby string
+ * respecting data encoding
+ *
+ * @param data  A pointer to the sql data
+ * @param length  Length of the sql data
+ * @param sqlsubtype  SQL subtype of the field (fot character types - used to hold encoding information)
+ *
+ * @return  A Ruby String object with correct encoding
+ *
+ */
+VALUE createString(const char *data, short length, short sqlsubtype) {
+  VALUE value = Qnil;
+  if (length >= 0) {
+    fprintf(stderr, "sqlsubtype => %d\n", sqlsubtype);
+    
+    char *array  = ALLOC_N(char, length + 1);
+    memcpy(array, data, length);
+    array[length] = 0;
+    value = rb_str_new2(array);
+    free(array);
+  }
+  return value;
 }
 
 /**
