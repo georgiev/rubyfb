@@ -38,10 +38,10 @@ class FieldCharacterSetTest < Test::Unit::TestCase
         cxn.execute("INSERT INTO SAMPLE_TABLE VALUES ('#{utf8_str}')", tr)
         row_count = 0
         cxn.execute("SELECT * FROM SAMPLE_TABLE WHERE SAMPLE_FIELD = '#{utf8_str}'", tr) do |row|
-          assert("Field char set test failure.", row['SAMPLE_FIELD'] == utf8_str)
+          assert(row['SAMPLE_FIELD'] == utf8_str, "Field encoding failed")
           row_count += 1
         end
-        assert("Field char set test failed (WHERE clause)", 1==row_count)
+        assert(1==row_count)
       end
     end
   end

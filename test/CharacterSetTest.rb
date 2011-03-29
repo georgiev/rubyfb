@@ -42,16 +42,16 @@ class CharacterSetTest < Test::Unit::TestCase
     win1251_str = 'Кириличка'
     db.connect("SYSDBA", "masterkey") do |cxn|
       cxn.start_transaction do |tr|
-        cxn.execute("CREATE TABLE SAMPLE_TABLE(SAMPLE_FIELD VARCHAR(100))", tr)
+        cxn.execute("CREATE TABLE SAMPLE_TABLE(SAMPLE_FIELD VARCHAR(100) CHARACTER SET UTF8)", tr)
       end  
       cxn.start_transaction do |tr|
         cxn.execute("INSERT INTO SAMPLE_TABLE VALUES ('#{win1251_str}')", tr)
         row_count = 0
         cxn.execute("SELECT * FROM SAMPLE_TABLE WHERE SAMPLE_FIELD = '#{win1251_str}'", tr) do |row|
-          assert("Database char set test failed", row['SAMPLE_FIELD']==win1251_str)
+          assert(row['SAMPLE_FIELD']==win1251_str, "Database encoding failed")
           row_count += 1
         end
-        assert("Database char set test failed (WHERE clause)", 1==row_count)
+        assert(1==row_count)
       end
     end
   end
