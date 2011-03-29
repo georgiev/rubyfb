@@ -11,16 +11,24 @@ class BackupRestoreTest < Test::Unit::TestCase
    DB_FILE     = File.join(DB_DIR, "backup_restore_unit_test.fdb")
    BACKUP_FILE = File.join(DB_DIR, "database.bak")
 
+  def cleanup
+    # Remove existing database files.
+    if File.exist?(DB_FILE)
+      db = Database.new(DB_FILE).drop(DB_USER_NAME, DB_PASSWORD)
+    end
+
+    if File.exist?(BACKUP_FILE)
+      begin
+        File.delete(BACKUP_FILE)
+      rescue
+        # ignore file permissions may cause this
+      end
+    end
+  end
+
    def setup
       puts "#{self.class.name} started." if TEST_LOGGING
-      # Remove existing database files.
-      if File.exist?(DB_FILE)
-         db = Database.new(DB_FILE).drop(DB_USER_NAME, DB_PASSWORD)
-      end
-
-      if File.exist?(BACKUP_FILE)
-         File.delete(BACKUP_FILE)
-      end
+      cleanup
 
       # Create and populate the database files.
       @database = Database.create(DB_FILE, DB_USER_NAME, DB_PASSWORD)
@@ -34,17 +42,10 @@ class BackupRestoreTest < Test::Unit::TestCase
       end
    end
 
-   def teardown
-      # Remove existing database files.
-      if File.exist?(DB_FILE)
-         db = Database.new(DB_FILE).drop(DB_USER_NAME, DB_PASSWORD)
-      end
-
-      if File.exist?(BACKUP_FILE)
-         File.delete(BACKUP_FILE)
-      end
-      puts "#{self.class.name} finished." if TEST_LOGGING
-   end
+  def teardown
+    cleanup
+    puts "#{self.class.name} finished." if TEST_LOGGING
+  end
 
    def test01
       sm = ServiceManager.new('localhost')
