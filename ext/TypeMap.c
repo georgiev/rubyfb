@@ -41,7 +41,6 @@ VALUE createDate(const struct tm *);
 VALUE createDateTime(VALUE dt);
 VALUE createTime(VALUE dt);
 VALUE createSafeTime(const struct tm*);
-VALUE createString(const char *, short, short);
 VALUE getConstant(const char *, VALUE);
 VALUE toDateTime(VALUE);
 VALUE rescueConvert(VALUE, VALUE);
@@ -59,21 +58,45 @@ void populateTimestampField(VALUE, XSQLVAR *);
 
 
 /**
+ * This function converts a sql data into ruby string
+ * respecting data encoding
+ *
+ * @param connection  The connection object relating to the data
+ * @param sqlsubtype  SQL subtype of the field (fot character types - used to hold encoding information)
+ * @param data  A pointer to the sql data
+ * @param length  Length of the sql data
+ *
+ * @return  A Ruby String object with correct encoding
+ *
+ */
+VALUE createString(VALUE connection, short sqlsubtype, const char *data, short length) {
+  VALUE value = Qnil;
+  if (length >= 0) {
+    char *array  = ALLOC_N(char, length + 1);
+    memcpy(array, data, length);
+    array[length] = 0;
+    value = rb_str_new2(array);
+    free(array);
+    value = rb_funcall(connection, rb_intern("force_encoding"), 2, value, INT2FIX(sqlsubtype));
+  }
+  return value;
+}
+
+/**
  * This function converts a single XSQLVAR entry to a Ruby VALUE type.
  *
  * @param  entry        A pointer to the SQLVAR type containing the data to be
  *                      converted.
- * @param  database     A pointer to the database handle relating to the data.
- * @param  transaction  A pointer to the transaction handle relating to the
- *                      data.
+ * @param  connection   The connection object relating to the data.
+ * @param  transaction  The transaction handle relating to the data.
  *
  * @return  A Ruby type for the XSQLVAR entry. The actual type will depend on
  *          the field type referenced.
  *
  */
 VALUE toValue(XSQLVAR *entry,
-              isc_db_handle *database,
-              isc_tr_handle *transaction) {
+              VALUE connection, 
+              VALUE transaction) {
   VALUE value  = rb_ary_new();
 
   /* Check for NULL values. */
@@ -99,7 +122,7 @@ VALUE toValue(XSQLVAR *entry,
       memset(table, 0, 256);
       memcpy(column, entry->sqlname, entry->sqlname_length);
       memcpy(table, entry->relname, entry->relname_length);
-      blob = openBlob(*(ISC_QUAD *)entry->sqldata, column, table, database,
+      blob = openBlob(*(ISC_QUAD *)entry->sqldata, column, table, connection,
                       transaction);
       working = Data_Wrap_Struct(cBlob, NULL, blobFree, blob);
       rb_ary_push(value, initializeBlob(working));
@@ -167,7 +190,7 @@ VALUE toValue(XSQLVAR *entry,
       break;
 
     case SQL_TEXT:       /* Type: CHAR */
-      rb_ary_push(value, createString(entry->sqldata, entry->sqllen, entry->sqlsubtype));
+      rb_ary_push(value, createString(connection, entry->sqlsubtype, entry->sqldata, entry->sqllen));
       rb_ary_push(value, getColumnType(entry));
       break;
 
@@ -188,7 +211,7 @@ VALUE toValue(XSQLVAR *entry,
 
     case SQL_VARYING:
       memcpy(&length, entry->sqldata, 2);
-      rb_ary_push(value, createString(&entry->sqldata[2], length, entry->sqlsubtype));
+      rb_ary_push(value, createString(connection, entry->sqlsubtype, &entry->sqldata[2], length));
       rb_ary_push(value, getColumnType(entry));
       break;
 
@@ -220,17 +243,13 @@ VALUE toArray(VALUE results) {
         transaction = rb_iv_get(results, "@transaction"),
         connection  = rb_iv_get(results, "@connection");
   XSQLVAR           *entry      = NULL;
-  ConnectionHandle  *cHandle    = NULL;
   ResultsHandle     *rHandle    = NULL;
-  TransactionHandle *tHandle    = NULL;
   int i;
 
-  Data_Get_Struct(connection, ConnectionHandle, cHandle);
   Data_Get_Struct(results, ResultsHandle, rHandle);
-  Data_Get_Struct(transaction, TransactionHandle, tHandle);
   entry = rHandle->output->sqlvar;
   for(i = 0; i < rHandle->output->sqln; i++, entry++) {
-    VALUE value = toValue(entry, &cHandle->handle, &tHandle->handle);
+    VALUE value = toValue(entry, connection, transaction);
 
     rb_ary_push(array, value);
   }
@@ -480,31 +499,6 @@ VALUE createTime(VALUE dt) {
 VALUE createSafeTime(const struct tm *datetime) {
   VALUE dt = Data_Wrap_Struct(rb_cObject, NULL, NULL, (void*)datetime);
   return rb_rescue(createTime, dt, createDateTime, dt);
-}
-
-/**
- * This function converts a sql data into ruby string
- * respecting data encoding
- *
- * @param data  A pointer to the sql data
- * @param length  Length of the sql data
- * @param sqlsubtype  SQL subtype of the field (fot character types - used to hold encoding information)
- *
- * @return  A Ruby String object with correct encoding
- *
- */
-VALUE createString(const char *data, short length, short sqlsubtype) {
-  VALUE value = Qnil;
-  if (length >= 0) {
-    fprintf(stderr, "sqlsubtype => %d\n", sqlsubtype);
-    
-    char *array  = ALLOC_N(char, length + 1);
-    memcpy(array, data, length);
-    array[length] = 0;
-    value = rb_str_new2(array);
-    free(array);
-  }
-  return value;
 }
 
 /**

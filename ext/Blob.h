@@ -39,6 +39,8 @@
       #include "ruby.h"
       #define RUBY_H_INCLUDED
    #endif
+  #include "Connection.h"
+  #include "Transaction.h"
 
 /* Type definitions. */
 typedef struct {
@@ -55,8 +57,8 @@ extern VALUE cBlob;
 BlobHandle *openBlob(ISC_QUAD,
                      char *,
                      char *,
-                     isc_db_handle *,
-                     isc_tr_handle *);
+                     VALUE,
+                     VALUE);
 void Init_Blob(VALUE);
 void blobFree(void *);
 VALUE initializeBlob(VALUE);

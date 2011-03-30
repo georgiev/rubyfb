@@ -40,7 +40,6 @@
    #endif
 
 /* Function prototypes. */
-VALUE toValue(XSQLVAR *, isc_db_handle *, isc_tr_handle *);
 VALUE toArray(VALUE);
 void setParameters(XSQLDA *, VALUE, VALUE);
 VALUE getModule(const char *);

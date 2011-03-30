@@ -143,7 +143,8 @@ static VALUE initializeConnection(int argc, VALUE *argv, VALUE self) {
   rb_iv_set(self, "@database", argv[0]);
   rb_iv_set(self, "@user", user);
   rb_iv_set(self, "@transactions", rb_ary_new());
-
+  rb_funcall(self, rb_intern("init_m17n"), 0);
+  
   return(self);
 }
 

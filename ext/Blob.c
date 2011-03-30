@@ -179,10 +179,8 @@ static VALUE eachBlobSegment(VALUE self) {
  * @param  table        The name of the table containing the blob being opened.
  * @param  column       The name of the column in the table that contains the
  *                      blob.
- * @param  connection   A pointer to the connection to be used in accessing the
- *                      blob.
- * @param  transaction  A pointer to the transaction to be used in accessing
- *                      the blob.
+ * @param  connection   The connection to be used in accessing the blob.
+ * @param  transaction  The transaction to be used in accessing the blob.
  *
  * @return  A pointer to an allocated and opened BlobHandle structure.
  *
@@ -190,8 +188,13 @@ static VALUE eachBlobSegment(VALUE self) {
 BlobHandle *openBlob(ISC_QUAD blobId,
                      char *table,
                      char *column,
-                     isc_db_handle *connection,
-                     isc_tr_handle *transaction) {
+                     VALUE connection,
+                     VALUE transaction) {
+  ConnectionHandle  *cHandle    = NULL;
+  TransactionHandle *tHandle    = NULL;
+  Data_Get_Struct(connection, ConnectionHandle, cHandle);
+  Data_Get_Struct(transaction, TransactionHandle, tHandle);
+                     
   BlobHandle *blob = ALLOC(BlobHandle);
 
   if(blob != NULL) {
@@ -202,7 +205,7 @@ BlobHandle *openBlob(ISC_QUAD blobId,
     isc_blob_default_desc(&blob->description,
                           (unsigned char *)table,
                           (unsigned char *)column);
-    if(isc_open_blob2(status, connection, transaction, &blob->handle, &blobId,
+    if(isc_open_blob2(status, &cHandle->handle, &tHandle->handle, &blob->handle, &blobId,
                       0, NULL) == 0) {
       char items[] = {isc_info_blob_num_segments,
                       isc_info_blob_total_length},
