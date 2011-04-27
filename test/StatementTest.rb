@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# encoding: utf-8
 
 require './TestSetup'
 require 'test/unit'
@@ -128,6 +129,29 @@ class StatementTest < Test::Unit::TestCase
             r.close
          end
          assert(d[0] == '0123456789')
+         cxn.execute_immediate('DROP TABLE STRING_TEST')
+      end
+   end
+   
+   def test04
+      d = nil
+      @database.connect(DB_USER_NAME, DB_PASSWORD) do |cxn|
+         utf_str = 'utf кирилица';
+         cxn.execute_immediate('CREATE TABLE STRING_TEST(TEXT VARCHAR(100) CHARACTER SET UTF8)')
+         cxn.start_transaction do |tx|
+            # Perform an truncated insert.
+            s = Statement.new(cxn, tx, 'INSERT INTO STRING_TEST VALUES(?)', 3)
+            s.execute_for([utf_str])
+            
+            # Perform a select of the value inserted.
+            r = cxn.execute('SELECT * FROM STRING_TEST', tx)
+            d = r.fetch
+            
+            # Clean up.
+            s.close
+            r.close
+         end
+         assert(d[0] == utf_str)
          cxn.execute_immediate('DROP TABLE STRING_TEST')
       end
    end
