@@ -35,6 +35,7 @@
 #include "Statement.h"
 #include "FireRuby.h"
 #include "rfbint.h"
+#include "rfbstr.h"
 
 /* Function prototypes. */
 VALUE createDate(const struct tm *);
@@ -55,32 +56,6 @@ void populateTextField(VALUE, XSQLVAR *);
 void populateDateField(VALUE, XSQLVAR *);
 void populateTimeField(VALUE, XSQLVAR *);
 void populateTimestampField(VALUE, XSQLVAR *);
-
-
-/**
- * This function converts a sql data into ruby string
- * respecting data encoding
- *
- * @param connection  The connection object relating to the data
- * @param sqlsubtype  SQL subtype of the field (fot character types - used to hold encoding information)
- * @param data  A pointer to the sql data
- * @param length  Length of the sql data
- *
- * @return  A Ruby String object with correct encoding
- *
- */
-VALUE createString(VALUE connection, short sqlsubtype, const char *data, short length) {
-  VALUE value = Qnil;
-  if (length >= 0) {
-    char *array  = ALLOC_N(char, length + 1);
-    memcpy(array, data, length);
-    array[length] = 0;
-    value = rb_str_new2(array);
-    free(array);
-    value = rb_funcall(connection, rb_intern("force_encoding"), 2, value, INT2FIX(sqlsubtype));
-  }
-  return value;
-}
 
 /**
  * This function converts a single XSQLVAR entry to a Ruby VALUE type.
@@ -122,10 +97,10 @@ VALUE toValue(XSQLVAR *entry,
       memset(table, 0, 256);
       memcpy(column, entry->sqlname, entry->sqlname_length);
       memcpy(table, entry->relname, entry->relname_length);
-      blob = openBlob(*(ISC_QUAD *)entry->sqldata, column, table, connection,
+      blob = openBlob(entry, column, table, connection,
                       transaction);
       working = Data_Wrap_Struct(cBlob, NULL, blobFree, blob);
-      rb_ary_push(value, initializeBlob(working));
+      rb_ary_push(value, initializeBlob(working, connection));
       rb_ary_push(value, getColumnType(entry));
       break;
 
@@ -190,7 +165,7 @@ VALUE toValue(XSQLVAR *entry,
       break;
 
     case SQL_TEXT:       /* Type: CHAR */
-      rb_ary_push(value, createString(connection, entry->sqlsubtype, entry->sqldata, entry->sqllen));
+      rb_ary_push(value, rfbstr(connection, entry->sqlsubtype, entry->sqldata, entry->sqllen));
       rb_ary_push(value, getColumnType(entry));
       break;
 
@@ -211,7 +186,7 @@ VALUE toValue(XSQLVAR *entry,
 
     case SQL_VARYING:
       memcpy(&length, entry->sqldata, 2);
-      rb_ary_push(value, createString(connection, entry->sqlsubtype, &entry->sqldata[2], length));
+      rb_ary_push(value, rfbstr(connection, entry->sqlsubtype, &entry->sqldata[2], length));
       rb_ary_push(value, getColumnType(entry));
       break;
 
@@ -731,21 +706,23 @@ void storeBlob(VALUE info,
   ISC_STATUS status[ISC_STATUS_LENGTH];
   isc_blob_handle handle  = 0;
   ISC_QUAD        *blobId = (ISC_QUAD *)field->sqldata;
+  char *data   = StringValuePtr(info);
   VALUE number  = rb_funcall(info, rb_intern("length"), 0);
-  long length  = 0;
-  char            *data   = StringValuePtr(info);
-
-  length = TYPE(number) == T_FIXNUM ? FIX2INT(number) : NUM2INT(number);
+  long charLength = TYPE(number) == T_FIXNUM ? FIX2INT(number) : NUM2INT(number);
+  long byteLength = strlen(data);
+  short charSize = byteLength/charLength;
   field->sqltype = SQL_BLOB;
+
   if(isc_create_blob(status, &connection->handle, &transaction->handle,
                      &handle, blobId) == 0) {
     long offset = 0;
     unsigned short size   = 0;
 
-    while(offset < length) {
+    while(offset < byteLength) {
       char *buffer = &data[offset];
 
-      size = (length - offset) > USHRT_MAX ? USHRT_MAX : length - offset;
+      size = (byteLength - offset) > USHRT_MAX ? USHRT_MAX : byteLength - offset;
+      size = (size/charSize)*charSize; // align
       if(isc_put_segment(status, &handle, size, buffer) != 0) {
         ISC_STATUS other[20];
 
@@ -991,7 +968,7 @@ void populateTextField(VALUE value, XSQLVAR *field) {
   char  *text  = NULL;
   short length = 0;
 
-  if(TYPE(value) != T_STRING) {
+  if(TYPE(value) == T_STRING) {
     actual = value;
   } else {
     actual = rb_funcall(value, rb_intern("to_s"), 0);

@@ -27,6 +27,7 @@
 #include "Blob.h"
 #include <limits.h>
 #include "Common.h"
+#include "rfbstr.h"
 
 /* Function prototypes. */
 static VALUE allocateBlob(VALUE);
@@ -67,12 +68,14 @@ static VALUE allocateBlob(VALUE klass) {
 /**
  * This function provides the initialize method for the Blob class.
  *
- * @param  self  A reference to the Blob object to be initialized.
+ * @param  self       A reference to the Blob object to be initialized.
+ * @param  connection A reference to the Connection object owning the blob.
  *
  * @return  A reference to the newly initialized Blob object.
  *
  */
-VALUE initializeBlob(VALUE self) {
+VALUE initializeBlob(VALUE self, VALUE connection) {
+  rb_iv_set(self, "@connection", connection);
   rb_iv_set(self, "@data", Qnil);
   return(self);
 }
@@ -89,6 +92,7 @@ VALUE initializeBlob(VALUE self) {
  */
 static VALUE getBlobData(VALUE self) {
   VALUE data = rb_iv_get(self, "@data");
+  VALUE connection = rb_iv_get(self, "@connection");
 
   if(data == Qnil) {
     BlobHandle *blob   = NULL;
@@ -98,7 +102,7 @@ static VALUE getBlobData(VALUE self) {
       char *buffer = loadBlobData(blob);
 
       if(buffer != NULL) {
-        data = rb_str_new(buffer, blob->size);
+        data = rfbstr(connection, blob->charset, buffer, blob->size);
       }
       free(buffer);
     }
@@ -154,6 +158,7 @@ static VALUE eachBlobSegment(VALUE self) {
   VALUE result = Qnil;
 
   if(rb_block_given_p()) {
+    VALUE connection = rb_iv_get(self, "@connection");
     BlobHandle     *blob    = NULL;
     char           *segment = NULL;
     unsigned short size     = 0;
@@ -161,7 +166,7 @@ static VALUE eachBlobSegment(VALUE self) {
     Data_Get_Struct(self, BlobHandle, blob);
     segment = loadBlobSegment(blob, &size);
     while(segment != NULL) {
-      result = rb_yield(rb_str_new(segment, size));
+      result = rb_yield(rfbstr(connection, blob->charset, segment, size));
       free(segment);
       segment = loadBlobSegment(blob, &size);
     }
@@ -175,7 +180,7 @@ static VALUE eachBlobSegment(VALUE self) {
  * This function allocates a BlobHandle structure and opens the structure for
  * use.
  *
- * @param  blobId       The unique identifier for the blob to be opened.
+ * @param  blobEntry    The blob SQLVAR data.
  * @param  table        The name of the table containing the blob being opened.
  * @param  column       The name of the column in the table that contains the
  *                      blob.
@@ -185,7 +190,7 @@ static VALUE eachBlobSegment(VALUE self) {
  * @return  A pointer to an allocated and opened BlobHandle structure.
  *
  */
-BlobHandle *openBlob(ISC_QUAD blobId,
+BlobHandle *openBlob(XSQLVAR *blobEntry,
                      char *table,
                      char *column,
                      VALUE connection,
@@ -194,6 +199,7 @@ BlobHandle *openBlob(ISC_QUAD blobId,
   TransactionHandle *tHandle    = NULL;
   Data_Get_Struct(connection, ConnectionHandle, cHandle);
   Data_Get_Struct(transaction, TransactionHandle, tHandle);
+  ISC_QUAD blobId = *(ISC_QUAD *)blobEntry->sqldata;
                      
   BlobHandle *blob = ALLOC(BlobHandle);
 
@@ -202,6 +208,7 @@ BlobHandle *openBlob(ISC_QUAD blobId,
 
     /* Extract the blob details and open it. */
     blob->handle = 0;
+    blob->charset = blobEntry->sqlscale;
     isc_blob_default_desc(&blob->description,
                           (unsigned char *)table,
                           (unsigned char *)column);
@@ -365,7 +372,7 @@ void blobFree(void *blob) {
 void Init_Blob(VALUE module) {
   cBlob = rb_define_class_under(module, "Blob", rb_cObject);
   rb_define_alloc_func(cBlob, allocateBlob);
-  rb_define_method(cBlob, "initialize", initializeBlob, 0);
+  rb_define_method(cBlob, "initialize", initializeBlob, 1);
   rb_define_method(cBlob, "initialize_copy", forbidObjectCopy, 1);
   rb_define_method(cBlob, "to_s", getBlobData, 0);
   rb_define_method(cBlob, "close", closeBlob, 0);

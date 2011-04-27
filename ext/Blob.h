@@ -42,25 +42,27 @@
   #include "Connection.h"
   #include "Transaction.h"
 
+#include "rfbint.h"
 /* Type definitions. */
 typedef struct {
   ISC_BLOB_DESC description;
   ISC_LONG segments,
            size;
   isc_blob_handle handle;
+  short charset;
 } BlobHandle;
 
 /* Data elements. */
 extern VALUE cBlob;
 
 /* Function prototypes. */
-BlobHandle *openBlob(ISC_QUAD,
+BlobHandle *openBlob(XSQLVAR *,
                      char *,
                      char *,
                      VALUE,
                      VALUE);
 void Init_Blob(VALUE);
 void blobFree(void *);
-VALUE initializeBlob(VALUE);
+VALUE initializeBlob(VALUE, VALUE);
 
 #endif /* FIRERUBY_BLOB_H */
