@@ -45,6 +45,8 @@ ext/TypeMap.h
 ext/extconf.rb
 ext/rfbint.h
 ext/rfbsleep.h
+ext/rfbstr.c
+ext/rfbstr.h
 ext/uncrustify.cfg
 lib/Connection.rb
 lib/ProcedureCall.rb
@@ -69,6 +71,7 @@ test/CharacterSetTest.rb
 test/ConnectionTest.rb
 test/DDLTest.rb
 test/DatabaseTest.rb
+test/FieldCharacterSetTest.rb
 test/GeneratorTest.rb
 test/KeyTest.rb
 test/ResultSetTest.rb
