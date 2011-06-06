@@ -1,3 +1,7 @@
+v0.5.9 ==
+Fix multibyte string handling for BLOB parameters
+Pipe up BLOB encoding when converting to string, or iterating over segments
+
 v0.5.8 ==
 Merge duplicated code in transaction.execute() and connection.execute()
 Make #fetch() *always* return nil if #exhausted? - pilcrow/look-before-you-leap
