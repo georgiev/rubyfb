@@ -51,8 +51,8 @@ void prepare(isc_db_handle *, isc_tr_handle *, char *, isc_stmt_handle *,
 void execute(isc_tr_handle *, isc_stmt_handle *, short, XSQLDA *,
              int, long *);
 VALUE rb_statement_new(VALUE, VALUE, VALUE, VALUE);
-VALUE rb_execute_statement(VALUE);
-VALUE rb_execute_statement_for(VALUE, VALUE);
+VALUE rb_execute_statement(VALUE, VALUE);
+VALUE rb_execute_statement_for(VALUE, VALUE, VALUE);
 VALUE rb_execute_sql(VALUE, VALUE, VALUE);
 VALUE rb_get_statement_type(VALUE);
 void rb_statement_close(VALUE);

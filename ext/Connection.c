@@ -417,7 +417,7 @@ VALUE executeBlock(VALUE array) {
         sql         = rb_ary_entry(array, 2),
         statement   = rb_ary_entry(array, 3);
 
-  result = rb_execute_statement(statement);
+  result = rb_execute_statement(statement, transaction);
   rb_statement_close(statement);
 
   return(result);

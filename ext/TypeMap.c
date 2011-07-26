@@ -46,7 +46,7 @@ VALUE getConstant(const char *, VALUE);
 VALUE toDateTime(VALUE);
 VALUE rescueConvert(VALUE, VALUE);
 void storeBlob(VALUE, XSQLVAR *, ConnectionHandle *, TransactionHandle *);
-void populateBlobField(VALUE, XSQLVAR *, VALUE);
+void populateBlobField(VALUE, XSQLVAR *, VALUE, VALUE);
 void populateDoubleField(VALUE, XSQLVAR *);
 void populateFloatField(VALUE, XSQLVAR *);
 void populateInt64Field(VALUE, XSQLVAR *);
@@ -247,7 +247,7 @@ VALUE toArray(VALUE results) {
  *                     to get connection and transaction details.
  *
  */
-void setParameters(XSQLDA *parameters, VALUE array, VALUE source) {
+void setParameters(XSQLDA *parameters, VALUE array, VALUE transaction, VALUE connection) {
   VALUE value;
   int index,
       size;
@@ -282,7 +282,7 @@ void setParameters(XSQLDA *parameters, VALUE array, VALUE source) {
         break;
 
       case SQL_BLOB:         /* Type: BLOB */
-        populateBlobField(value, parameter, source);
+        populateBlobField(value, parameter, transaction, connection);
         break;
 
       case SQL_DOUBLE:        /* Type: DOUBLE PRECISION, DECIMAL, NUMERIC */
@@ -760,21 +760,18 @@ void storeBlob(VALUE info,
  *                 contains the connection and transaction details.
  *
  */
-void populateBlobField(VALUE value, XSQLVAR *field, VALUE source) {
-  VALUE attribute;
-  ConnectionHandle  *connection = NULL;
-  TransactionHandle *transaction = NULL;
+void populateBlobField(VALUE value, XSQLVAR *field, VALUE transaction, VALUE connection) {
+  ConnectionHandle  *hConnection = NULL;
+  TransactionHandle *hTransaction = NULL;
 
   if(TYPE(value) != T_STRING) {
     rb_fireruby_raise(NULL, "Error converting input parameter to blob.");
   }
 
   /* Fetch the connection and transaction details. */
-  attribute = rb_iv_get(source, "@connection");
-  Data_Get_Struct(attribute, ConnectionHandle, connection);
-  attribute = rb_iv_get(source, "@transaction");
-  Data_Get_Struct(attribute, TransactionHandle, transaction);
-  storeBlob(value, field, connection, transaction);
+  Data_Get_Struct(connection, ConnectionHandle, hConnection);
+  Data_Get_Struct(transaction, TransactionHandle, hTransaction);
+  storeBlob(value, field, hConnection, hTransaction);
   field->sqltype = SQL_BLOB;
 }
 

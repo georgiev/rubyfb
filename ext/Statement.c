@@ -36,13 +36,12 @@
 static VALUE allocateStatement(VALUE);
 static VALUE initializeStatement(VALUE, VALUE, VALUE, VALUE, VALUE);
 static VALUE getStatementSQL(VALUE);
-static VALUE getStatementTransaction(VALUE);
 static VALUE getStatementConnection(VALUE);
 static VALUE getStatementDialect(VALUE);
 static VALUE getStatementType(VALUE);
 static VALUE getStatementParameterCount(VALUE);
-static VALUE executeStatement(VALUE);
-static VALUE executeStatementFor(VALUE, VALUE);
+static VALUE executeStatement(int, VALUE*, VALUE);
+static VALUE executeStatementFor(int, VALUE*, VALUE);
 static VALUE closeStatement(VALUE);
 
 /* Globals. */
@@ -95,10 +94,15 @@ VALUE allocateStatement(VALUE klass) {
  */
 VALUE initializeStatement(VALUE self, VALUE connection, VALUE transaction,
                           VALUE sql, VALUE dialect) {
-  StatementHandle *statement = NULL;
+  ConnectionHandle  *hConnection  = NULL;
+  TransactionHandle *hTransaction = NULL;
+  StatementHandle *hStatement = NULL;
+  int outputs      = 0;
   short setting    = 0;
-  VALUE value      = Qnil;
 
+  dialect = rb_funcall(dialect, rb_intern("to_i"), 0);
+  sql = rb_funcall(sql, rb_intern("to_s"), 0);
+  
   /* Validate the inputs. */
   if(TYPE(connection) == T_DATA &&
      RDATA(connection)->dfree == (RUBY_DATA_FUNC)connectionFree) {
@@ -118,9 +122,8 @@ VALUE initializeStatement(VALUE self, VALUE connection, VALUE transaction,
     rb_fireruby_raise(NULL, "Invalid transaction specified for statement.");
   }
 
-  value = rb_funcall(dialect, rb_intern("to_i"), 0);
-  if(TYPE(value) == T_FIXNUM) {
-    setting = FIX2INT(value);
+  if(TYPE(dialect) == T_FIXNUM) {
+    setting = FIX2INT(dialect);
     if(setting < 1 || setting > 3) {
       rb_fireruby_raise(NULL,
                         "Invalid dialect value specified for statement. " \
@@ -132,12 +135,27 @@ VALUE initializeStatement(VALUE self, VALUE connection, VALUE transaction,
                       "dialect value must be between 1 and 3.");
   }
 
-  Data_Get_Struct(self, StatementHandle, statement);
+  Data_Get_Struct(self, StatementHandle, hStatement);
   rb_iv_set(self, "@connection", connection);
-  rb_iv_set(self, "@transaction", transaction);
-  rb_iv_set(self, "@sql", rb_funcall(sql, rb_intern("to_s"), 0));
-  rb_iv_set(self, "@dialect", value);
-  statement->dialect = setting;
+  rb_iv_set(self, "@sql", sql);
+  rb_iv_set(self, "@dialect", dialect);
+  hStatement->dialect = setting;
+
+  /* prepare */  
+  Data_Get_Struct(connection, ConnectionHandle, hConnection);
+  Data_Get_Struct(transaction, TransactionHandle, hTransaction);
+  prepare(&hConnection->handle, &hTransaction->handle,
+          StringValuePtr(sql), &hStatement->handle,
+          hStatement->dialect, &hStatement->type, &hStatement->inputs,
+          &outputs);
+
+  if(hStatement->inputs > 0) {
+    /* Allocate the XSQLDA */
+    hStatement->parameters = allocateInXSQLDA(hStatement->inputs,
+                                             &hStatement->handle,
+                                             hStatement->dialect);
+    prepareDataArea(hStatement->parameters);
+  }
 
   return(self);
 }
@@ -172,20 +190,6 @@ VALUE getStatementConnection(VALUE self) {
 
 
 /**
- * This function provides the transaction sttribute accessor method for the
- * Statement class.
- *
- * @param  self  A reference to the Statement object to call the method on.
- *
- * @return  A reference to a Transaction object.
- *
- */
-VALUE getStatementTransaction(VALUE self) {
-  return(rb_iv_get(self, "@transaction"));
-}
-
-
-/**
  * This function provides the dialect sttribute accessor method for the
  * Statement class.
  *
@@ -198,8 +202,6 @@ VALUE getStatementDialect(VALUE self) {
   return(rb_iv_get(self, "@dialect"));
 }
 
-
-
 /**
  * This function provides the type attribute accessor method for the Statement
  * class.
@@ -210,24 +212,9 @@ VALUE getStatementDialect(VALUE self) {
  *
  */
 VALUE getStatementType(VALUE self) {
-  StatementHandle   *statement   = NULL;
-  ConnectionHandle  *connection  = NULL;
-  TransactionHandle *transaction = NULL;
-  int outputs      = 0;
-  VALUE tmp_str      = Qnil;
-
-  Data_Get_Struct(self, StatementHandle, statement);
-  Data_Get_Struct(rb_iv_get(self, "@connection"), ConnectionHandle, connection);
-  Data_Get_Struct(rb_iv_get(self, "@transaction"), TransactionHandle, transaction);
-  if(statement->handle == 0) {
-    tmp_str = rb_iv_get(self, "@sql");
-    prepare(&connection->handle, &transaction->handle,
-            StringValuePtr(tmp_str), &statement->handle,
-            statement->dialect, &statement->type, &statement->inputs,
-            &outputs);
-  }
-
-  return(INT2FIX(statement->type));
+  StatementHandle *hStatement = NULL;
+  Data_Get_Struct(self, StatementHandle, hStatement);
+  return(INT2FIX(hStatement->type));
 }
 
 
@@ -242,13 +229,61 @@ VALUE getStatementType(VALUE self) {
  */
 VALUE getStatementParameterCount(VALUE self) {
   StatementHandle *statement = NULL;
-
   Data_Get_Struct(self, StatementHandle, statement);
-  if(statement->handle == 0) {
-    getStatementType(self);
+  return(INT2NUM(statement->inputs));
+}
+
+VALUE executeInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
+  VALUE result       = Qnil;
+  long affected     = 0;
+  StatementHandle   *hStatement   = NULL;
+  TransactionHandle *hTransaction = NULL;
+
+  Data_Get_Struct(self, StatementHandle, hStatement);
+  switch(hStatement->type) {
+  case isc_info_sql_stmt_select:
+  case isc_info_sql_stmt_select_for_upd:
+  case isc_info_sql_stmt_exec_procedure:
+    /* Execute the statement via a ResultSet object. */
+    result = rb_result_set_new(rb_iv_get(self, "@connection"),
+                               transaction,
+                               rb_iv_get(self, "@sql"),
+                               rb_iv_get(self, "@dialect"),
+                               parameters);
+  break;
+  default:
+    /* Check that sufficient parameters have been specified. */
+    if(hStatement->inputs > 0) {
+      VALUE value = Qnil;
+      int size  = 0;
+
+      if(parameters == Qnil) {
+        rb_fireruby_raise(NULL,
+                          "Empty parameter list specified for statement.");
+      }
+
+      value = rb_funcall(parameters, rb_intern("size"), 0);
+      size  = TYPE(value) == T_FIXNUM ? FIX2INT(value) : NUM2INT(value);
+      if(size < hStatement->inputs) {
+        rb_fireruby_raise(NULL,
+                          "Insufficient parameters specified for statement.");
+      }
+      setParameters(hStatement->parameters, parameters, transaction, rb_iv_get(self, "@connection"));
+    }
+
+    /* Execute the statement. */
+    Data_Get_Struct(transaction, TransactionHandle, hTransaction);
+    execute(&hTransaction->handle, &hStatement->handle, hStatement->dialect,
+            hStatement->parameters, hStatement->type, &affected);
+    switch(hStatement->type) {
+      case isc_info_sql_stmt_select:
+      case isc_info_sql_stmt_select_for_upd:
+      case isc_info_sql_stmt_exec_procedure:
+        result = INT2NUM(affected);
+    }
   }
 
-  return(INT2NUM(statement->inputs));
+  return(result);
 }
 
 
@@ -261,45 +296,10 @@ VALUE getStatementParameterCount(VALUE self) {
  *          a ResultSet object for a query or nil.
  *
  */
-VALUE executeStatement(VALUE self) {
-  VALUE result;
-  int type         = FIX2INT(getStatementType(self));
-  long affected     = 0;
-  StatementHandle   *statement   = NULL;
-  TransactionHandle *transaction = NULL;
-
-  switch(type) {
-  case isc_info_sql_stmt_select:
-  case isc_info_sql_stmt_select_for_upd:
-  case isc_info_sql_stmt_exec_procedure:
-    result = rb_result_set_new(rb_iv_get(self, "@connection"),
-                               rb_iv_get(self, "@transaction"),
-                               rb_iv_get(self, "@sql"),
-                               rb_iv_get(self, "@dialect"),
-                               rb_ary_new());
-    break;
-
-  case isc_info_sql_stmt_insert:
-  case isc_info_sql_stmt_update:
-  case isc_info_sql_stmt_delete:
-    Data_Get_Struct(self, StatementHandle, statement);
-    Data_Get_Struct(rb_iv_get(self, "@transaction"), TransactionHandle,
-                    transaction);
-    execute(&transaction->handle, &statement->handle, statement->dialect,
-            NULL, statement->type, &affected);
-    result = INT2NUM(affected);
-    break;
-
-  default:
-    Data_Get_Struct(self, StatementHandle, statement);
-    Data_Get_Struct(rb_iv_get(self, "@transaction"), TransactionHandle,
-                    transaction);
-    execute(&transaction->handle, &statement->handle, statement->dialect,
-            NULL, statement->type, &affected);
-    result = Qnil;
-  }
-
-  return(result);
+VALUE executeStatement(int argc, VALUE *argv, VALUE self) {
+  VALUE transaction = Qnil;
+  rb_scan_args(argc, argv, "01", &transaction);
+  return(executeInTransaction(self, transaction, rb_ary_new()));
 }
 
 
@@ -315,65 +315,11 @@ VALUE executeStatement(VALUE self) {
  *          a ResultSet object for a query or nil.
  *
  */
-VALUE executeStatementFor(VALUE self, VALUE parameters) {
-  VALUE result       = Qnil;
-  int type         = FIX2INT(getStatementType(self));
-  long affected     = 0;
-  StatementHandle   *statement   = NULL;
-  TransactionHandle *transaction = NULL;
-
-  if(type == isc_info_sql_stmt_select ||
-     type == isc_info_sql_stmt_select_for_upd) {
-    /* Execute the statement via a ResultSet object. */
-    result = rb_result_set_new(rb_iv_get(self, "@connection"),
-                               rb_iv_get(self, "@transaction"),
-                               rb_iv_get(self, "@sql"),
-                               rb_iv_get(self, "@dialect"),
-                               parameters);
-  } else {
-    /* Check that sufficient parameters have been specified. */
-    Data_Get_Struct(self, StatementHandle, statement);
-    if(statement->inputs > 0) {
-      VALUE value = Qnil;
-      int size  = 0;
-
-      if(parameters == Qnil) {
-        rb_fireruby_raise(NULL,
-                          "Empty parameter list specified for statement.");
-      }
-
-      value = rb_funcall(parameters, rb_intern("size"), 0);
-      size  = TYPE(value) == T_FIXNUM ? FIX2INT(value) : NUM2INT(value);
-      if(size < statement->inputs) {
-        rb_fireruby_raise(NULL,
-                          "Insufficient parameters specified for statement.");
-      }
-
-      /* Allocate the XSQLDA and populate it. */
-      statement->parameters = allocateInXSQLDA(statement->inputs,
-                                               &statement->handle,
-                                               statement->dialect);
-      prepareDataArea(statement->parameters);
-      setParameters(statement->parameters, parameters, self);
-    }
-
-    /* Execute the statement. */
-    Data_Get_Struct(self, StatementHandle, statement);
-    Data_Get_Struct(rb_iv_get(self, "@transaction"), TransactionHandle,
-                    transaction);
-    execute(&transaction->handle, &statement->handle, statement->dialect,
-            statement->parameters, statement->type, &affected);
-    if(type == isc_info_sql_stmt_insert ||
-       type == isc_info_sql_stmt_update ||
-       type == isc_info_sql_stmt_delete) {
-      result = INT2NUM(affected);
-    }
-  }
-
-  return(result);
+VALUE executeStatementFor(int argc, VALUE *argv, VALUE self) {
+  VALUE transaction, parameters = Qnil;
+  rb_scan_args(argc, argv, "11", &parameters, &transaction);
+  return(executeInTransaction(self, transaction, parameters));
 }
-
-
 
 /**
  * This function provides the close method for the Statement class.
@@ -600,8 +546,8 @@ VALUE rb_statement_new(VALUE connection, VALUE transaction, VALUE sql,
  * @return  A reference to the results of executing the statement.
  *
  */
-VALUE rb_execute_statement(VALUE statement) {
-  return(executeStatement(statement));
+VALUE rb_execute_statement(VALUE statement, VALUE transaction) {
+  return(executeInTransaction(statement, transaction, rb_ary_new()));
 }
 
 
@@ -616,8 +562,8 @@ VALUE rb_execute_statement(VALUE statement) {
  * @return  A reference to the results of executing the statement.
  *
  */
-VALUE rb_execute_statement_for(VALUE statement, VALUE parameters) {
-  return(executeStatementFor(statement, parameters));
+VALUE rb_execute_statement_for(VALUE statement, VALUE transaction, VALUE parameters) {
+  return(executeInTransaction(statement, transaction, parameters));
 }
 
 
@@ -636,7 +582,7 @@ VALUE rb_execute_sql(VALUE connection, VALUE transaction, VALUE sql) {
   VALUE results   = Qnil,
         statement = rb_statement_new(connection, transaction, sql, INT2FIX(3));
 
-  results = rb_execute_statement(statement);
+  results = rb_execute_statement(statement, transaction);
   if(results != Qnil && rb_obj_is_kind_of(results, rb_cInteger) == Qfalse) {
     if(rb_block_given_p()) {
       VALUE row  = rb_funcall(results, rb_intern("fetch"), 0),
@@ -705,8 +651,6 @@ void statementFree(void *handle) {
 }
 
 
-
-
 /**
  * This function initializes the Statement class within the Ruby environment.
  * The class is established under the module specified to the function.
@@ -721,11 +665,10 @@ void Init_Statement(VALUE module) {
   rb_define_method(cStatement, "initialize_copy", forbidObjectCopy, 1);
   rb_define_method(cStatement, "sql", getStatementSQL, 0);
   rb_define_method(cStatement, "connection", getStatementConnection, 0);
-  rb_define_method(cStatement, "transaction", getStatementTransaction, 0);
   rb_define_method(cStatement, "dialect", getStatementDialect, 0);
   rb_define_method(cStatement, "type", getStatementType, 0);
-  rb_define_method(cStatement, "execute", executeStatement, 0);
-  rb_define_method(cStatement, "execute_for", executeStatementFor, 1);
+  rb_define_method(cStatement, "execute", executeStatement, -1);
+  rb_define_method(cStatement, "execute_for", executeStatementFor, -1);
   rb_define_method(cStatement, "close", closeStatement, 0);
   rb_define_method(cStatement, "parameter_count", getStatementParameterCount, 0);
 

@@ -197,7 +197,7 @@ VALUE initializeResultSet(VALUE self, VALUE connection, VALUE transaction,
     /* Allocate the XSQLDA and populate it. */
     params = allocateInXSQLDA(inputs, &results->handle, setting);
     prepareDataArea(params);
-    setParameters(params, parameters, self);
+    setParameters(params, parameters, transaction, connection);
   }
 
   /* Allocate output storage. */
