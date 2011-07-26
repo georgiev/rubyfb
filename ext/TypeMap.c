@@ -867,26 +867,20 @@ void populateFloatField(VALUE value, XSQLVAR *field) {
  *
  */
 void populateInt64Field(VALUE value, XSQLVAR *field) {
-  VALUE actual = Qnil;
+  VALUE actual = value;
   long long store  = 0;
 
-  if(rb_obj_is_kind_of(value, rb_cInteger)) {
-    actual = value;
-  } else if(TYPE(value) == T_FLOAT) {
-    double number = NUM2DBL(value);
-
+  if(TYPE(value) == T_STRING) {
     if(field->sqlscale != 0) {
-      number = number * pow(10, abs(field->sqlscale));
-      actual = INT2NUM((long)number);
+      actual = rb_funcall(value, rb_intern("to_f"), 0);
+    } else {
+      actual = rb_funcall(value, rb_intern("to_i"), 0);
     }
-  } else if(TYPE(value) == T_STRING) {
-    actual = rb_funcall(value, rb_intern("to_i"), 0);
-  } else {
-    rb_fireruby_raise(NULL,
-                      "Error converting input parameter to 64 bit integer.");
   }
-
-  store = TYPE(actual) == T_FIXNUM ? FIX2INT(actual) : NUM2INT(actual);
+  if(field->sqlscale != 0) {
+    actual = rb_funcall(actual, rb_intern("*"), 1, INT2NUM((long)pow(10, abs(field->sqlscale))));
+  }
+  store = NUM2LL(actual);
   memcpy(field->sqldata, &store, field->sqllen);
   field->sqltype = SQL_INT64;
 }
