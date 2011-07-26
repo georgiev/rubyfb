@@ -1,6 +1,7 @@
 # Author: Ken Kunz <kennethkunz@gmail.com>
 require 'active_record/connection_adapters/abstract_adapter'
 require 'active_support/core_ext/kernel/requires'
+require 'rubyfb_options'
 
 if defined?(Arel) then
   if Rubyfb::Options.fb15_compat
@@ -28,15 +29,15 @@ module Rubyfb # :nodoc: all
     end
   end
 
-  class ProcedureCall
-    class SQLParser < ActiveRecord::Base
-      def self.bind_params(sql_array)
-        sanitize_sql_array(sql_array)
-      end
+  class SQLBinder < ActiveRecord::Base
+    def self.bind(sql, binds)
+      sanitize_sql_array([sql] + binds)
     end
-
+  end
+  
+  class ProcedureCall
     def sql_value_list(values)
-      SQLParser.bind_params([param_names.collect{|p| '?'}.join(',')] + param_names.collect{|p| values[p]})
+      Rubyfb::SQLBinder.bind(param_names.collect{|p| '?'}.join(','), param_names.collect{|p| values[p]})
     end
   end
 end
@@ -44,7 +45,7 @@ end
 module ActiveRecord
   class Base
     def self.rubyfb_connection(config) # :nodoc:
-      require_library_or_gem 'rubyfb'
+      require 'rubyfb'
       config.symbolize_keys!
       db = Rubyfb::Database.new_from_config(config)
       connection_params = config.values_at(:username, :password)
@@ -56,12 +57,12 @@ module ActiveRecord
     end
 
     after_save :write_blobs
+    
     def write_blobs #:nodoc:
-      if connection.is_a?(ConnectionAdapters::RubyfbAdapter)
-        connection.write_blobs(self.class.table_name, self.class, attributes)
+      if connection.is_a?(ConnectionAdapters::RubyfbAdapter) 
+        connection.write_blobs(self.class.table_name, self.class, attributes, true)
       end
     end
-
     private :write_blobs
   end
 
@@ -71,18 +72,19 @@ module ActiveRecord
 
       def initialize(connection, name, domain, type, sub_type, length, precision, scale, default_source, null_flag)
         @firebird_type = Rubyfb::SQLType.to_base_type(type, sub_type).to_s
+        @domain, @sub_type = domain, sub_type
 
         super(name.downcase, nil, @firebird_type, !null_flag)
-        
+
+        @precision, @scale = precision, (scale.nil? ? 0 : scale.abs)
         @limit = decide_limit(length)
-        @domain, @sub_type, @precision, @scale = domain, sub_type, precision, (scale.nil? ? 0 : scale.abs)
         @type = simplified_type(@firebird_type)
         @default = parse_default(default_source) if default_source
         @default = type_cast(decide_default(connection)) if @default
       end
 
       def self.value_to_boolean(value)
-        %W(#{RubyfbAdapter.boolean_domain[:true]} true t 1).include? value.to_s.downcase
+        (TRUE_VALUES + [RubyfbAdapter.boolean_domain[:true]]).include?(value) || super
       end
 
       private
@@ -131,7 +133,7 @@ module ActiveRecord
             when /decimal|numeric|number/i
               @scale == 0 ? :integer : :decimal
             when /blob/i
-              @subtype == 1 ? :text : :binary
+              @sub_type == 1 ? :text : :binary
             else
               if @domain =~ RubyfbAdapter.boolean_domain[:domain_pattern] || name =~ RubyfbAdapter.boolean_domain[:name_pattern]
                 :boolean
@@ -297,14 +299,22 @@ module ActiveRecord
       def initialize(connection, logger, connection_params = nil)
         super(connection, logger)
         @connection_params = connection_params
+        @transaction = nil
+        @blobs_disabled = 0
       end
 
-      def adapter_name # :nodoc:
-        'Rubyfb'
+      ADAPTER_NAME = 'Rubyfb'.freeze
+      
+      def adapter_name #:nodoc:
+        ADAPTER_NAME
       end
 
-      def supports_migrations? # :nodoc:
+      def supports_migrations? #:nodoc:
         true
+      end
+
+      def supports_statement_cache?
+        super #TODO
       end
 
       def native_database_types # :nodoc:
@@ -340,14 +350,11 @@ module ActiveRecord
 
       # We use quoting in order to implement BLOB handling. In order to
       # do this we quote a BLOB to an empty string which will force Firebird
-      # to create an empty BLOB in the db for us. Quoting is used in some
-      # other places besides insert/update like for column defaults. That is
-      # why we are checking caller to see where we're coming from. This isn't
-      # perfect but It works.
+      # to create an empty BLOB in the db for us.
       def quote(value, column = nil) # :nodoc:
-        if [Time, DateTime].include?(value.class)
-          "CAST('#{value.strftime("%Y-%m-%d %H:%M:%S")}' AS TIMESTAMP)"
-        elsif value && column && [:text, :binary].include?(column.type) && caller.to_s !~ /add_column_options!/i 
+        if [Date, Time].include?(value.class)
+          "CAST('#{type_cast(value, column).to_s(:db)}' AS #{value.acts_like?(:time) ? 'TIMESTAMP' : 'DATE'})"
+        elsif @blobs_disabled.nonzero? && value && column && [:text, :binary].include?(column.type)
           "''"
         else
           super
@@ -370,17 +377,31 @@ module ActiveRecord
         quote(boolean_domain[:false])
       end
 
+      def type_cast(value, column)
+        case value
+          when true, false
+            value ? boolean_domain[:true] : boolean_domain[:false]
+          when Date, Time
+            if value.acts_like?(:time)
+              zone_conversion_method = ActiveRecord::Base.default_timezone == :utc ? :getutc : :getlocal
+              value = value.send(zone_conversion_method) if value.respond_to?(zone_conversion_method)
+            else
+              value
+            end          
+          else
+            super
+        end
+      end
 
       # CONNECTION MANAGEMENT ====================================
-
       def active? # :nodoc:
-	return false if @connection.closed?
-	begin
-		execute('select first 1 cast(1 as smallint) from rdb$database')
-		true
-	rescue
-		false
-	end
+        return false if @connection.closed?
+        begin
+	        execute('select first 1 cast(1 as smallint) from rdb$database')
+	        true
+        rescue
+	        false
+        end
       end
 
       def disconnect! # :nodoc:
@@ -392,20 +413,43 @@ module ActiveRecord
         @connection = @connection.database.connect(*@connection_params)
       end
 
-
       # DATABASE STATEMENTS ======================================
-
       def select_rows(sql, name = nil)
         select_raw(sql, name).last
       end
 
       def execute(sql, name = nil, &block) # :nodoc:
-        exec_result = execute_statement(sql, name, &block)
+        exec_result = exec_query(sql, name, [], &block)
         if exec_result.instance_of?(Rubyfb::ResultSet)
           exec_result.close
           exec_result = nil
         end
         return exec_result
+      end
+
+      def exec_query(sql, name = 'SQL', binds = [], &block)
+        log(sql, name) do
+          binds = binds.map do |col, val|
+            type_cast(val, col)
+          end
+          sql = Rubyfb::SQLBinder.bind(sql, binds) unless binds.empty?
+          if @transaction
+            @connection.execute(sql, @transaction, &block)
+          else
+            @connection.execute_immediate(sql, &block)
+          end
+        end
+      end
+
+      def exec_insert(sql, name, binds)
+        with_blobs_disabled do
+          super
+        end
+      end
+      alias :exec_update :exec_insert
+
+      def last_inserted_id(result)
+        nil
       end
 
       def begin_db_transaction() # :nodoc:
@@ -436,36 +480,58 @@ module ActiveRecord
       # called directly; used by ActiveRecord to get the next primary key value
       # when inserting a new database record (see #prefetch_primary_key?).
       def next_sequence_value(sequence_name)
-        Rubyfb::Generator.new(sequence_name, @connection).next(1)
+        Rubyfb::Generator.new(quote_generator_name(sequence_name), @connection).next(1)
       end
 
       # Inserts the given fixture into the table. Overridden to properly handle blobs.
-      def insert_fixture(fixture, table_name)
-        super
-
-        klass = fixture.class_name.constantize rescue nil
+      def insert_fixture(fixture, table_name) #:nodoc:
+        if ActiveRecord::Base.pluralize_table_names
+          klass = table_name.singularize.camelize
+        else
+          klass = table_name.camelize
+        end
+        klass = klass.constantize rescue nil
         if klass.respond_to?(:ancestors) && klass.ancestors.include?(ActiveRecord::Base)
-          write_blobs(table_name, klass, fixture)
+          with_blobs_disabled do
+            super
+          end
+          write_blobs(table_name, klass, fixture, false)
+        else
+          super
         end
       end
-
+  
       # Writes BLOB values from attributes, as indicated by the BLOB columns of klass.      
-      def write_blobs(table_name, klass, attributes)
-        id = quote(attributes[klass.primary_key])
+      def write_blobs(table_name, klass, attributes, enable_coders) #:nodoc:
+        # is class with composite primary key>
+        is_with_cpk = klass.respond_to?(:composite?) && klass.composite?
+        if is_with_cpk
+          id = klass.primary_key.map {|pk| attributes[pk.to_s] }
+        else
+          id = quote(attributes[klass.primary_key])
+        end
         klass.columns.select { |col| col.sql_type =~ /BLOB$/i }.each do |col|
           value = attributes[col.name]
-          value = value.to_yaml if col.text? && klass.serialized_attributes[col.name]
-          value = value.read if value.respond_to?(:read)
           next if value.nil?  || (value == '')
-          s = Rubyfb::Statement.new(@connection, @transaction, "UPDATE #{table_name} set #{col.name} = ? WHERE #{klass.primary_key} = #{id}", 3)       
-          s.execute_for([value.to_s])
-          s.close
+
+          klass.serialized_attributes[col.name].tap do |coder|
+            if enable_coders && coder
+              value = coder.dump(value)
+            elsif value.respond_to?(:read)
+              value = value.read
+            end
+          end
+          uncached do
+            sql = is_with_cpk ? "UPDATE #{quote_table_name(table_name)} set #{quote_column_name(col.name)} = ? WHERE #{klass.composite_where_clause(id)}" :
+              "UPDATE #{quote_table_name(table_name)} set #{quote_column_name(col.name)} = ? WHERE #{quote_column_name(klass.primary_key)} = #{id}"
+            s = Rubyfb::Statement.new(@connection, @transaction, sql, 3)
+            s.execute_for([value.to_s])
+            s.close
+          end
         end
       end
 
-
       # SCHEMA STATEMENTS ========================================
-
       def current_database # :nodoc:
         file = @connection.database.file.split(':').last
         File.basename(file, '.*')
@@ -528,18 +594,35 @@ module ActiveRecord
         end
       end
 
-      def create_table(name, options = {}) # :nodoc:
-        begin
-          super
-        rescue StatementInvalid
-          raise unless non_existent_domain_error?
-          create_boolean_domain
-          super
+      alias_method :super_create_table, :create_table
+      def create_table_and_sequence(name, options = {}, &block) # :nodoc:
+        create_sequence = options[:id] != false
+        table_td = nil
+        super_create_table(name, options) do |td|
+          unless create_sequence
+            class << td
+              attr_accessor :create_sequence
+              def primary_key(*args)
+                self.create_sequence = true
+                super(*args)
+              end
+            end
+            table_td = td
+          end
+          yield td if block_given?            
         end
-        unless options[:id] == false or options[:sequence] == false
+        if create_sequence || table_td.create_sequence
           sequence_name = options[:sequence] || default_sequence_name(name)
           create_sequence(sequence_name)
         end
+      end
+      
+      def create_table(name, options = {}, &block) # :nodoc:
+        create_table_and_sequence(name, options, &block)
+      rescue StatementInvalid
+        raise unless non_existent_domain_error?
+        create_boolean_domain
+        create_table_and_sequence(name, options, &block)
       end
 
       def drop_table(name, options = {}) # :nodoc:
@@ -582,7 +665,7 @@ module ActiveRecord
         end_sql
         transaction do
           add_column(table_name, TEMP_COLUMN_NAME, :string, :default => default)
-          execute_statement(sql)
+          exec_query(sql)
           remove_column(table_name, TEMP_COLUMN_NAME)
         end
       end
@@ -592,17 +675,17 @@ module ActiveRecord
         column_name = column_name.to_s.upcase
 
         unless null || default.nil?
-          execute_statement("UPDATE #{quote_table_name(table_name)} SET #{quote_column_name(column_name)}=#{quote(default)} WHERE #{quote_column_name(column_name)} IS NULL")
+          exec_query("UPDATE #{quote_table_name(table_name)} SET #{quote_column_name(column_name)}=#{quote(default)} WHERE #{quote_column_name(column_name)} IS NULL")
         end
-        execute_statement("UPDATE RDB$RELATION_FIELDS SET RDB$NULL_FLAG = #{null ? 'null' : '1'} WHERE (RDB$FIELD_NAME = '#{column_name}') and (RDB$RELATION_NAME = '#{table_name}')")
+        exec_query("UPDATE RDB$RELATION_FIELDS SET RDB$NULL_FLAG = #{null ? 'null' : '1'} WHERE (RDB$FIELD_NAME = '#{column_name}') and (RDB$RELATION_NAME = '#{table_name}')")
       end
 
       def rename_column(table_name, column_name, new_column_name) # :nodoc:
-        execute_statement("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} TO #{quote_column_name(new_column_name)}")
+        exec_query("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} TO #{quote_column_name(new_column_name)}")
       end
 
       def remove_index(table_name, options) #:nodoc:
-        execute_statement("DROP INDEX #{quote_column_name(index_name(table_name, options))}")
+        exec_query("DROP INDEX #{quote_column_name(index_name(table_name, options))}")
       end
 
       def rename_table(name, new_name) # :nodoc:
@@ -644,30 +727,29 @@ module ActiveRecord
         @connection.prepare_call(procedure_name).execute(values, @transaction)
       end
 
-      private
-        def execute_statement(sql, name = nil, &block) # :nodoc:
-	  @fbe = nil
-          log(sql, name) do
-	    begin
-              if @transaction
-                @connection.execute(sql, @transaction, &block)
-              else
-                @connection.execute_immediate(sql, &block)
-              end
-	    rescue Exception => e
-	      @fbe = e
-              raise e
-	    end
+      protected
+      
+      def translate_exception(exception, message)
+        if exception.kind_of?(Rubyfb::FireRubyException)
+          case exception.sql_code
+          when -803 
+            RecordNotUnique.new(message, exception)
+          when -530 
+            InvalidForeignKey.new(message, exception)
+          else
+            super
           end
-	rescue Exception => se
-	  def se.nested=value
-	    @nested=value
-	  end
-	  def se.nested
-	    @nested
-	  end
-	  se.nested = @fbe
-	  raise se
+        else
+          super
+        end
+      end
+      
+      private
+        def with_blobs_disabled
+          @blobs_disabled += 1
+          yield if block_given?
+        ensure
+          @blobs_disabled -= 1
         end
 
         def integer_sql_type(limit)
@@ -682,8 +764,8 @@ module ActiveRecord
           limit.to_i <= 4 ? 'float' : 'double precision'
         end
 
-        def select(sql, name = nil)
-          fields, rows = select_raw(sql, name)
+        def select(sql, name = nil, binds = [])
+          fields, rows = select_raw(sql, name, binds)
           result = []
           for row in rows
             row_hash = {}
@@ -695,18 +777,36 @@ module ActiveRecord
           result
         end
 
-        def select_raw(sql, name = nil)
+        def create_time_with_default_timezone(value)
+          year, month, day, hour, min, sec, usec = case value
+          when Time
+            [value.year, value.month, value.day, value.hour, value.min, value.sec, value.usec]
+          else
+            [value.year, value.month, value.day, value.hour, value.min, value.sec, 0]
+          end
+          # code from Time.time_with_datetime_fallback
+          begin
+            Time.send(Base.default_timezone, year, month, day, hour, min, sec, usec)
+          rescue
+            offset = Base.default_timezone.to_sym == :local ? ::DateTime.local_offset : 0
+            ::DateTime.civil(year, month, day, hour, min, sec, offset)
+          end
+        end
+
+        def select_raw(sql, name = nil, binds = [])
           fields = []
           rows = []
-          execute_statement(sql, name) do |row|
+          exec_query(sql, name, binds) do |row|
             array_row = []
             row.each do |column, value|
               fields << fb_to_ar_case(column) if row.number == 1
-
-              if Rubyfb::Blob === value
-                temp = value.to_s
-                value.close
-                value = temp
+              case value
+                when Rubyfb::Blob
+                  temp = value.to_s
+                  value.close
+                  value = temp
+                when Time, DateTime
+                  value = create_time_with_default_timezone(value)
               end
               array_row << value
             end
@@ -729,20 +829,20 @@ module ActiveRecord
             sql << "AND (c.rdb$constraint_type IS NULL OR c.rdb$constraint_type != 'PRIMARY KEY')\n"
           end
           sql << "ORDER BY i.rdb$index_name, s.rdb$field_position\n"
-          execute_statement(sql, name)
+          exec_query(sql, name)
         end
 
         def change_column_type(table_name, column_name, type, options = {})
           sql = "ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} TYPE #{type_to_sql(type, options[:limit])}"
-          execute_statement(sql)
+          exec_query(sql)
         rescue StatementInvalid
           raise unless non_existent_domain_error?
           create_boolean_domain
-          execute_statement(sql)
+          exec_query(sql)
         end
 
         def change_column_position(table_name, column_name, position)
-          execute_statement("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} POSITION #{position}")
+          exec_query("ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} POSITION #{position}")
         end
 
         def copy_table(from, to)
@@ -777,24 +877,30 @@ module ActiveRecord
         end
 
         def copy_table_data(from, to)
-          execute_statement("INSERT INTO #{to} SELECT * FROM #{from}", "Copy #{from} data to #{to}")
+          exec_query("INSERT INTO #{to} SELECT * FROM #{from}", "Copy #{from} data to #{to}")
         end
 
         def copy_sequence_value(from, to)
-          sequence_value = Rubyfb::Generator.new(default_sequence_name(from), @connection).last
-          execute_statement("SET GENERATOR #{default_sequence_name(to)} TO #{sequence_value}")
+          sequence_value = Rubyfb::Generator.new(quote_generator_name(default_sequence_name(from)), @connection).last
+          exec_query("SET GENERATOR #{quote_generator_name(default_sequence_name(to))} TO #{sequence_value}")
+        end
+
+        def quote_generator_name(generator_name)
+          quote_table_name(generator_name.to_s)
         end
 
         def sequence_exists?(sequence_name)
+          #don't quote - here the generatod name is used as data not as metadata
           Rubyfb::Generator.exists?(sequence_name, @connection)
         end
 
         def create_sequence(sequence_name)
-          Rubyfb::Generator.create(sequence_name.to_s, @connection)
+          Rubyfb::Generator.create(quote_generator_name(sequence_name), @connection)
+          Rubyfb::Generator.new(quote_generator_name(sequence_name), @connection).next(1000) #FIXME
         end
 
         def drop_sequence(sequence_name)
-          Rubyfb::Generator.new(sequence_name.to_s, @connection).drop
+          Rubyfb::Generator.new(quote_generator_name(sequence_name), @connection).drop
         end
 
         def create_boolean_domain
@@ -802,7 +908,7 @@ module ActiveRecord
             CREATE DOMAIN #{boolean_domain[:name]} AS #{boolean_domain[:type]}
             CHECK (VALUE IN (#{quoted_true}, #{quoted_false}) OR VALUE IS NULL)
           end_sql
-          execute_statement(sql) rescue nil
+          exec_query(sql) rescue nil
         end
 
         def table_has_constraints_or_dependencies?(table_name)
