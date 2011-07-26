@@ -319,12 +319,11 @@ int checkForGenerator(const char *name, isc_db_handle *connection) {
       XSQLDA *da = (XSQLDA *)ALLOC_N(char, XSQLDA_LENGTH(1));
 
       if(da != NULL) {
-        char sql[100];
+        char sql[200]; // 84(statement) + 2*(31)max_generator_name = 146
 
         da->version = SQLDA_VERSION1;
         da->sqln    = 1;
-        sprintf(sql, "SELECT COUNT(*) FROM %sS WHERE %s_NAME = UPPER('%s')",
-                "RDB$GENERATOR", "RDB$GENERATOR", name);
+        sprintf(sql, "SELECT COUNT(*) FROM RDB$GENERATORS WHERE RDB$GENERATOR_NAME in ('%s', UPPER('%s'))", name, name);
         if(isc_dsql_prepare(status, &transaction, &statement, strlen(sql),
                             sql, 3, da) == 0) {
           /* Prepare the XSQLDA and provide it with data room. */
