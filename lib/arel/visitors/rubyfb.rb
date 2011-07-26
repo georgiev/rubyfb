@@ -3,10 +3,14 @@ module Arel
     class RubyFB < Arel::Visitors::ToSql
     	Arel::Visitors::VISITORS['rubyfb'] = Arel::Visitors::RubyFB
     private
+      def visit_Arel_Nodes_Limit o
+      end
+
+      def visit_Arel_Nodes_Offset o
+      end
+    
       def visit_Arel_Nodes_SelectStatement o
-      	limit = o.limit; o.limit = nil;
-      	offset = o.offset; o.offset = nil;
-      	limit || offset ? "SELECT #{fb_limit(limit)} #{fb_offset(offset)} * FROM (#{super})" : super
+      	o.limit || o.offset ? "SELECT #{fb_limit(o.limit)} #{fb_offset(o.offset)} * FROM (#{super})" : super
       end
 
       def fb_limit limit

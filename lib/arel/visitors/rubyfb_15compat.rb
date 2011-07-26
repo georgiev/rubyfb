@@ -3,12 +3,16 @@ module Arel
     class RubyFB_15Compat < Arel::Visitors::ToSql
     	Arel::Visitors::VISITORS['rubyfb'] = Arel::Visitors::RubyFB_15Compat
     private
+      def visit_Arel_Nodes_Limit o
+      end
+
+      def visit_Arel_Nodes_Offset o
+      end
+      
       def visit_Arel_Nodes_SelectStatement o
-      	limit = o.limit; o.limit = nil;
-      	offset = o.offset; o.offset = nil;
       	super.tap do |s|
-      	  if limit || offset  
-      	    s.gsub!(/^\s*select/i, "SELECT #{fb_limit(limit)} #{fb_offset(offset)} ")
+      	  if o.limit || o.offset  
+      	    s.gsub!(/^\s*select/i, "SELECT #{fb_limit(o.limit)} #{fb_offset(o.offset)} ")
       	  end
       	end
       end
