@@ -684,6 +684,10 @@ VALUE rescueConvert(VALUE arguments, VALUE error) {
   return(rb_funcall(rb_eException, rb_intern("exception"), 1, &message));
 }
 
+long getLongProperty(VALUE obj, const char* name) {
+  VALUE number  = rb_funcall(obj, rb_intern(name), 0);
+  return TYPE(number) == T_FIXNUM ? FIX2INT(number) : NUM2INT(number);
+}
 
 /**
  * This function creates a new blob and returns the identifier for it.
@@ -707,10 +711,15 @@ void storeBlob(VALUE info,
   isc_blob_handle handle  = 0;
   ISC_QUAD        *blobId = (ISC_QUAD *)field->sqldata;
   char *data   = StringValuePtr(info);
-  VALUE number  = rb_funcall(info, rb_intern("length"), 0);
-  long charLength = TYPE(number) == T_FIXNUM ? FIX2INT(number) : NUM2INT(number);
-  long byteLength = strlen(data);
-  short charSize = byteLength/charLength;
+  long dataLength = getLongProperty(info, "length");
+  short charSize = 1;
+
+  if(Qtrue == rb_funcall(info, rb_intern("respond_to?"), 1, ID2SYM(rb_intern("bytesize")))) {
+    /* 1.9 strings */
+    charSize = getLongProperty(info, "bytesize") / dataLength;
+    dataLength = dataLength * charSize;
+  }
+
   field->sqltype = SQL_BLOB;
 
   if(isc_create_blob(status, &connection->handle, &transaction->handle,
@@ -718,10 +727,10 @@ void storeBlob(VALUE info,
     long offset = 0;
     unsigned short size   = 0;
 
-    while(offset < byteLength) {
+    while(offset < dataLength) {
       char *buffer = &data[offset];
 
-      size = (byteLength - offset) > USHRT_MAX ? USHRT_MAX : byteLength - offset;
+      size = (dataLength - offset) > USHRT_MAX ? USHRT_MAX : dataLength - offset;
       size = (size/charSize)*charSize; // align
       if(isc_put_segment(status, &handle, size, buffer) != 0) {
         ISC_STATUS other[20];
