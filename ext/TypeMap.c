@@ -712,12 +712,10 @@ void storeBlob(VALUE info,
   ISC_QUAD        *blobId = (ISC_QUAD *)field->sqldata;
   char *data   = StringValuePtr(info);
   long dataLength = getLongProperty(info, "length");
-  short charSize = 1;
 
   if(Qtrue == rb_funcall(info, rb_intern("respond_to?"), 1, ID2SYM(rb_intern("bytesize")))) {
     /* 1.9 strings */
-    charSize = getLongProperty(info, "bytesize") / dataLength;
-    dataLength = dataLength * charSize;
+    dataLength = getLongProperty(info, "bytesize");
   }
 
   field->sqltype = SQL_BLOB;
@@ -731,7 +729,6 @@ void storeBlob(VALUE info,
       char *buffer = &data[offset];
 
       size = (dataLength - offset) > USHRT_MAX ? USHRT_MAX : dataLength - offset;
-      size = (size/charSize)*charSize; // align
       if(isc_put_segment(status, &handle, size, buffer) != 0) {
         ISC_STATUS other[20];
 
