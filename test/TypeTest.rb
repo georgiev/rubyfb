@@ -31,7 +31,7 @@ class TypeTest < Test::Unit::TestCase
                                        "(?, ?, ?, ?, ?, ?, ?, ?, ?)", 3)
          stmt.execute_for([10, 100.2, 2378.65, 192.345,
                            Date.new(2005, 10, 21), Time.new, 'La la la',
-                           Time.new, "Oobly Joobly"])
+                           Time.new, "Oobly Joobly"], tx)
          stmt.close
       end
       cxn.close

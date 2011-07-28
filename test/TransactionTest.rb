@@ -96,7 +96,7 @@ class TransactionTest < Test::Unit::TestCase
       sql.push("SELECT * FROM RDB$DATABASE")
       @transactions.push(Transaction.new(@connections[0]))
       
-      assert(@transactions[0].execute(sql[0]) == 0)
+      assert_equal(0, @transactions[0].execute(sql[0]))
       r = @transactions[0].execute(sql[1])
       assert(r != nil)
       assert(r.class == ResultSet)

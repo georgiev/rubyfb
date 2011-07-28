@@ -46,7 +46,6 @@ class StatementTest < Test::Unit::TestCase
       assert(s1 != nil)
       assert(s1.sql == "SELECT RDB$FIELD_NAME FROM RDB$FIELDS")
       assert(s1.connection == @connections[0])
-      assert(s1.transaction == @transactions[0])
       assert(s1.dialect == 3)
       assert(s1.type == Statement::SELECT_STATEMENT)
       s1.close
@@ -57,7 +56,6 @@ class StatementTest < Test::Unit::TestCase
       assert(s2 != nil)
       assert(s2.sql == "DELETE FROM RDB$EXCEPTIONS")
       assert(s2.connection == @connections[0])
-      assert(s2.transaction == @transactions[0])
       assert(s2.dialect == 1)
       assert(s2.type == Statement::DELETE_STATEMENT)
       s2.close
@@ -81,7 +79,7 @@ class StatementTest < Test::Unit::TestCase
       end
       
       begin
-         r = s.execute_for([])
+         r = s.execute_for([], @transactions[0])
          r.close
          assert(false,
                 "Executed statement that required a parameter with an empty "\
@@ -90,7 +88,7 @@ class StatementTest < Test::Unit::TestCase
       end
       
       begin
-         r = s.execute_for(['LALALA', 25])
+         r = s.execute_for(['LALALA', 25], @transactions[0])
          r.close
          assert(false,
                 "Executed statement that required a parameter with too many "\
@@ -98,13 +96,13 @@ class StatementTest < Test::Unit::TestCase
       rescue Exception => error
       end
       
-      r = s.execute_for(['LALALA'])
+      r = s.execute_for(['LALALA'], @transactions[0])
       assert(r != nil)
       assert(r.class == ResultSet)
       r.close
       
       total = 0
-      s.execute_for(["%"]) do |row|
+      s.execute_for(["%"], @transactions[0]) do |row|
          total = total + 1
       end
       assert(total = 88)
@@ -118,7 +116,7 @@ class StatementTest < Test::Unit::TestCase
          cxn.start_transaction do |tx|
             # Perform an truncated insert.
             s = Statement.new(cxn, tx, 'INSERT INTO STRING_TEST VALUES(?)', 3)
-            s.execute_for(['012345678901234'])
+            s.execute_for(['012345678901234'], tx)
             
             # Perform a select of the value inserted.
             r = cxn.execute('SELECT * FROM STRING_TEST', tx)
@@ -141,7 +139,7 @@ class StatementTest < Test::Unit::TestCase
          cxn.start_transaction do |tx|
             # Perform an truncated insert.
             s = Statement.new(cxn, tx, 'INSERT INTO STRING_TEST VALUES(?)', 3)
-            s.execute_for([utf_str])
+            s.execute_for([utf_str], tx)
             
             # Perform a select of the value inserted.
             r = cxn.execute('SELECT * FROM STRING_TEST', tx)
