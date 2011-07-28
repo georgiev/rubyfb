@@ -166,7 +166,7 @@ static VALUE eachBlobSegment(VALUE self) {
     Data_Get_Struct(self, BlobHandle, blob);
     segment = loadBlobSegment(blob, &size);
     while(segment != NULL) {
-      result = rb_yield(rfbstr(connection, blob->charset, segment, size));
+      result = rb_yield(rb_str_new(segment, size));
       free(segment);
       segment = loadBlobSegment(blob, &size);
     }
