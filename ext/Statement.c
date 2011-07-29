@@ -222,14 +222,6 @@ void prepareInTransaction(VALUE self, VALUE transaction) {
             StringValuePtr(sql), &hStatement->handle,
             hStatement->dialect, &hStatement->type, &hStatement->inputs,
             &hStatement->outputs);
-
-    if(hStatement->inputs > 0) {
-      /* Allocate the XSQLDA */
-      hStatement->parameters = allocateInXSQLDA(hStatement->inputs,
-                                               &hStatement->handle,
-                                               hStatement->dialect);
-      prepareDataArea(hStatement->parameters);
-    }
     if(hStatement->outputs > 0) {
       /* Allocate the XSQLDA */
       hStatement->output = allocateOutXSQLDA(hStatement->outputs,
@@ -264,6 +256,7 @@ VALUE allocateStatement(VALUE klass) {
   statement->dialect    = 0;
   statement->parameters = NULL;
   statement->output     = NULL;
+  statement->cursor_allocated = 0;
 
   return(Data_Wrap_Struct(klass, NULL, statementFree, statement));
 }
@@ -424,7 +417,15 @@ VALUE executeInTransactionFromArray(VALUE args) {
   return(executeInTransaction(self, transaction, parameters));
 }
 
+void cleanUpInputDataArea(StatementHandle *statement) {
+  if(statement->parameters != NULL) {
+    releaseDataArea(statement->parameters);
+    statement->parameters = NULL;
+  }
+}
+
 VALUE executeInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
+VALUE sql = rb_iv_get(self, "@sql");
   VALUE result       = Qnil;
   long affected     = 0;
   StatementHandle   *hStatement   = NULL;
@@ -433,6 +434,16 @@ VALUE executeInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
   prepareInTransaction(self, transaction);
 
   Data_Get_Struct(self, StatementHandle, hStatement);
+
+  cleanUpInputDataArea(hStatement);
+  if(hStatement->inputs > 0) {
+    /* Allocate the XSQLDA */
+    hStatement->parameters = allocateInXSQLDA(hStatement->inputs,
+                                             &hStatement->handle,
+                                             hStatement->dialect);
+    prepareDataArea(hStatement->parameters);
+  }
+
   /* Check that sufficient parameters have been specified. */
   if(hStatement->inputs > 0) {
     VALUE value = Qnil;
@@ -458,12 +469,19 @@ VALUE executeInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
     fb_execute(&hTransaction->handle, &hStatement->handle, hStatement->dialect, hStatement->parameters, hStatement->type,
               &affected, hStatement->output);
   } else {
+    if (hStatement->cursor_allocated) {
+      ISC_STATUS status[ISC_STATUS_LENGTH];
+      if(isc_dsql_free_statement(status, &hStatement->handle, DSQL_close)) {
+        rb_fireruby_raise(status, "Error closing cursor.");
+      }
+    }
     fb_execute(&hTransaction->handle, &hStatement->handle, hStatement->dialect, hStatement->parameters, hStatement->type,
               &affected, NULL);
   }
 
   if (hStatement->output) {
     result = rb_result_set_new(self, transaction);
+    hStatement->cursor_allocated = 1;
     if(rb_block_given_p()) {
       result = yieldResultsRows(result);
     }
@@ -517,11 +535,10 @@ void cleanUpStatement(StatementHandle *statement, int raise_errors) {
         rb_fireruby_raise(status, "Error closing statement.");
       }
     }
-    if(statement->parameters != NULL) {
-      releaseDataArea(statement->parameters);
-    }
+    cleanUpInputDataArea(statement);
     if(statement->output != NULL) {
       releaseDataArea(statement->output);
+      statement->output = NULL;
     }
     statement->handle = 0;
   }
