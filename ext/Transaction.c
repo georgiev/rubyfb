@@ -133,7 +133,7 @@ static VALUE commitTransaction(VALUE self) {
   TransactionHandle *transaction = NULL;
 
   Data_Get_Struct(self, TransactionHandle, transaction);
-
+  
   /* Commit the transaction. */
   if(transaction->handle != 0) {
     ISC_STATUS status[ISC_STATUS_LENGTH];
@@ -306,7 +306,7 @@ static VALUE executeOnTransaction(VALUE self, VALUE sql) {
   }
 
   connection = rb_ary_entry(list, 0);
-  return rb_execute_sql(connection, self, sql);
+  return rb_execute_sql(connection, sql, rb_ary_new(), self);
 }
 
 
@@ -480,6 +480,7 @@ void startTransaction(TransactionHandle *transaction,
   if(teb != NULL) {
     free(teb);
   }
+  
 }
 
 

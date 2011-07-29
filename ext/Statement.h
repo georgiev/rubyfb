@@ -40,23 +40,20 @@
 typedef struct {
   isc_stmt_handle handle;
   int type,
-      inputs;
+      inputs,
+      outputs;
   short dialect;
   XSQLDA          *parameters;
+  XSQLDA          *output;
 } StatementHandle;
 
 /* Function prototypes. */
-void prepare(isc_db_handle *, isc_tr_handle *, char *, isc_stmt_handle *,
+/*void prepare(isc_db_handle *, isc_tr_handle *, char *, isc_stmt_handle *,
              short, int *, int *, int *);
 void execute(isc_tr_handle *, isc_stmt_handle *, short, XSQLDA *,
-             int, long *);
-VALUE rb_statement_new(VALUE, VALUE, VALUE, VALUE);
-VALUE rb_execute_statement(VALUE, VALUE);
-VALUE rb_execute_statement_for(VALUE, VALUE, VALUE);
-VALUE rb_execute_sql(VALUE, VALUE, VALUE);
-VALUE rb_get_statement_type(VALUE);
-void rb_statement_close(VALUE);
-void statementFree(void *);
+             int, long *);*/
+VALUE rb_statement_new(VALUE, VALUE);
+VALUE rb_execute_sql(VALUE, VALUE, VALUE, VALUE);
 void Init_Statement(VALUE);
 
 #endif /* FIRERUBY_STATEMENT_H */

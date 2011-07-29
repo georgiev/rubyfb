@@ -38,21 +38,20 @@
 
 /* Type definitions. */
 typedef struct {
-  isc_stmt_handle handle;
-  XSQLDA          *output;
-  int exhausted;
   long fetched;
-  short dialect;
-  short procedure_output_fetch_state;
-  VALUE transaction;
-  /*char            sql[1000];*/
+  short active,
+        manage_transaction,
+        manage_statement;
 } ResultsHandle;
 
 /* Function prototypes. */
-VALUE rb_result_set_new(VALUE, VALUE, VALUE, VALUE, VALUE);
-void rb_assign_transaction(VALUE, VALUE);
+VALUE rb_result_set_new(VALUE, VALUE);
 void  resultSetFree(void *);
 void Init_ResultSet(VALUE);
+short isActiveResultSet(VALUE);
+VALUE yieldResultsRows(VALUE);
+void resultSetManageTransaction(VALUE);
+void resultSetManageStatement(VALUE);
 
 #endif /* FIRERUBY_RESULT_SET_H */
 

@@ -215,15 +215,15 @@ VALUE toValue(XSQLVAR *entry,
  */
 VALUE toArray(VALUE results) {
   VALUE array       = rb_ary_new(),
-        transaction = rb_iv_get(results, "@transaction"),
-        connection  = rb_iv_get(results, "@connection");
+        transaction = rb_funcall(results, rb_intern("transaction"), 0),
+        connection  = rb_funcall(results, rb_intern("connection"), 0);
   XSQLVAR           *entry      = NULL;
-  ResultsHandle     *rHandle    = NULL;
+  StatementHandle *hStatement = NULL;
   int i;
 
-  Data_Get_Struct(results, ResultsHandle, rHandle);
-  entry = rHandle->output->sqlvar;
-  for(i = 0; i < rHandle->output->sqln; i++, entry++) {
+  Data_Get_Struct(rb_funcall(results, rb_intern("statement"), 0), StatementHandle, hStatement);
+  entry = hStatement->output->sqlvar;
+  for(i = 0; i < hStatement->output->sqln; i++, entry++) {
     VALUE value = toValue(entry, connection, transaction);
 
     rb_ary_push(array, value);
