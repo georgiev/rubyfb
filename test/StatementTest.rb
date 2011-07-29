@@ -66,7 +66,7 @@ class StatementTest < Test::Unit::TestCase
                         "WHERE RDB$FIELD_NAME LIKE ?")
 
       begin
-         r = s.execute
+         r = s.execute(@transactions[0])
          r.close
          assert(false,
                 "Executed statement that required parameter without the "\
@@ -93,15 +93,15 @@ class StatementTest < Test::Unit::TestCase
       end
       
       r = s.execute_for(['LALALA'], @transactions[0])
-      assert(r != nil)
-      assert(r.class == ResultSet)
+      assert_not_nil(r)
+      assert_equal(ResultSet, r.class)
       r.close
       
       total = 0
       s.execute_for(["%"], @transactions[0]) do |row|
-         total = total + 1
+         total += 1
       end
-      assert(total = 88)
+      assert_equal(88, total)
       s.close
    end
    
