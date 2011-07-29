@@ -301,6 +301,7 @@ module ActiveRecord
         @connection_params = connection_params
         @transaction = nil
         @blobs_disabled = 0
+        @statements = {}
       end
 
       ADAPTER_NAME = 'Rubyfb'.freeze
@@ -314,7 +315,7 @@ module ActiveRecord
       end
 
       def supports_statement_cache?
-        super #TODO
+        true
       end
 
       def native_database_types # :nodoc:
@@ -405,7 +406,13 @@ module ActiveRecord
       end
 
       def disconnect! # :nodoc:
+        clear_cache!
         @connection.close rescue nil
+      end
+
+      def reset!
+        clear_cache!
+        super
       end
 
       def reconnect! # :nodoc:
@@ -427,16 +434,28 @@ module ActiveRecord
         return exec_result
       end
 
+      def clear_cache!
+        @statements.each_value do |s|
+          s.close
+        end
+        @statements.clear
+      end
+
       def exec_query(sql, name = 'SQL', binds = [], &block)
         log(sql, name) do
-          binds = binds.map do |col, val|
-            type_cast(val, col)
-          end
-          sql = Rubyfb::SQLBinder.bind(sql, binds) unless binds.empty?
-          if @transaction
+          if binds.empty?
             @connection.execute(sql, @transaction, &block)
           else
-            @connection.execute_immediate(sql, &block)
+            binds = binds.map do |col, val|
+              type_cast(val, col)
+            end
+            s = @statements[sql]
+            if s.nil?
+              s = @connection.create_statement(sql)
+              @statements[sql] = s
+            end
+
+            s.execute_for(binds, @transaction, &block)
           end
         end
       end
@@ -524,9 +543,7 @@ module ActiveRecord
           uncached do
             sql = is_with_cpk ? "UPDATE #{quote_table_name(table_name)} set #{quote_column_name(col.name)} = ? WHERE #{klass.composite_where_clause(id)}" :
               "UPDATE #{quote_table_name(table_name)} set #{quote_column_name(col.name)} = ? WHERE #{quote_column_name(klass.primary_key)} = #{id}"
-            s = @connection.create_statement(sql)
-            s.execute_for([value.to_s], @transaction)
-            s.close
+            @connection.execute_for(sql, [value.to_s], @transaction)
           end
         end
       end
