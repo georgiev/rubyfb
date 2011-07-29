@@ -524,7 +524,7 @@ module ActiveRecord
           uncached do
             sql = is_with_cpk ? "UPDATE #{quote_table_name(table_name)} set #{quote_column_name(col.name)} = ? WHERE #{klass.composite_where_clause(id)}" :
               "UPDATE #{quote_table_name(table_name)} set #{quote_column_name(col.name)} = ? WHERE #{quote_column_name(klass.primary_key)} = #{id}"
-            s = Rubyfb::Statement.new(@connection, @transaction, sql, 3)
+            s = @connection.create_statement(sql)
             s.execute_for([value.to_s], @transaction)
             s.close
           end
