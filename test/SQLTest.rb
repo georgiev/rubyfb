@@ -48,7 +48,7 @@ class SQLTest < Test::Unit::TestCase
    def test01
       @database.connect(DB_USER_NAME, DB_PASSWORD) do |cxn|
          cxn.start_transaction do |tx|
-            s = Statement.new(cxn, tx, INSERT_SQL, 3)
+            s = cxn.create_statement(INSERT_SQL)
             f = 0.0
             t = Time.new
             
@@ -129,8 +129,7 @@ class SQLTest < Test::Unit::TestCase
       @transactions[0].commit
       
       @connections[0].start_transaction do |tx|
-         s = Statement.new(@connections[0], tx,
-                           "UPDATE TEST_TABLE SET TESTSTAMP = NULL", 3)
+         s = @connections[0].create_statement("UPDATE TEST_TABLE SET TESTSTAMP = NULL")
          s.execute(tx)
          s.close
          
@@ -148,9 +147,9 @@ class SQLTest < Test::Unit::TestCase
       t = nil
       @connections[0].start_transaction do |tx|
          # Perform an insert via a parameterized statement.
-         s = Statement.new(@connections[0], tx,
+         s = @connections[0].create_statement(
                            "INSERT INTO TEST_TABLE (TESTID, TESTTEXT, "\
-                           "TESTFLOAT, TESTSTAMP) VALUES(?, ?, ?, ?)", 3)
+                           "TESTFLOAT, TESTSTAMP) VALUES(?, ?, ?, ?)")
          t = Time.new
          s.execute_for([25000, 'La la la', 3.14, t], tx)
          s.close

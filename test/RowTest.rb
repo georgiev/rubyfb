@@ -19,8 +19,7 @@ class RowTest < Test::Unit::TestCase
       database     = Database::create(DB_FILE, DB_USER_NAME, DB_PASSWORD)
       @connection  = database.connect(DB_USER_NAME, DB_PASSWORD)
       @transaction = @connection.start_transaction
-      @results     = ResultSet.new(@connection, @transaction,
-                                   'SELECT * FROM RDB$FIELDS', 3, nil)
+      @results     = @connection.execute('SELECT * FROM RDB$FIELDS', @transaction)
       @empty       = [[0, SQLType::INTEGER], [0, SQLType::INTEGER],
                       [0, SQLType::INTEGER], [0, SQLType::INTEGER],
                       [0, SQLType::INTEGER], [0, SQLType::INTEGER],
@@ -48,10 +47,10 @@ class RowTest < Test::Unit::TestCase
       @connection.start_transaction do |tx|
          tx.execute("insert into rowtest values (1, 'Two', 3)")
          
-         stmt = Statement.new(@connection, tx,
+         stmt = @connection.create_statement(
                               "insert into all_types values(?, ?, ?, ?, ?, ?, "\
-                              "?, ?, ?, ?, ?, ?, ?)",
-                              3)
+                              "?, ?, ?, ?, ?, ?, ?)"
+         )
          #stmt.execute_for([nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil])
          stmt.execute_for([100000, nil, 'La la la', Date.new(2005, 10, 29),
                            10.23, 100.751, 56.25, 12345, 19863.21, 123,

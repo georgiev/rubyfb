@@ -27,8 +27,8 @@ class TypeTest < Test::Unit::TestCase
       end
          
       cxn.start_transaction do |tx|
-         stmt = Statement.new(cxn, tx, "insert into types_table values "\
-                                       "(?, ?, ?, ?, ?, ?, ?, ?, ?)", 3)
+         stmt = cxn.create_statement("insert into types_table values "\
+                                       "(?, ?, ?, ?, ?, ?, ?, ?, ?)")
          stmt.execute_for([10, 100.2, 2378.65, 192.345,
                            Date.new(2005, 10, 21), Time.new, 'La la la',
                            Time.new, "Oobly Joobly"], tx)

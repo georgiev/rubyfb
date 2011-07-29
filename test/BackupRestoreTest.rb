@@ -69,7 +69,7 @@ class BackupRestoreTest < Test::Unit::TestCase
             assert([1000, 2000, 3000, 4000, nil].include?(row[0]))
             total += 1
          end
-         assert(total == 5)
+         assert_equal(5, total)
       end
    end
 

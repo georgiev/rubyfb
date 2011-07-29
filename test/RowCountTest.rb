@@ -50,8 +50,8 @@ class RowCountTest < Test::Unit::TestCase
                                tx))
             assert_equal(2, tx.execute('update test set id = 30000 where id = 3000'))
             
-            s = Statement.new(cxn, tx, 'update test set id = 40000 where id = ?',
-                              3)
+            s = cxn.create_statement('update test set id = 40000 where id = ?')
+            
             assert_equal(2, s.execute_for([4000], tx))
 
             

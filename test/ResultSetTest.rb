@@ -64,8 +64,8 @@ class ResultSetTest < Test::Unit::TestCase
    end
    
    def test01
-      r = ResultSet.new(@connections[0], @transactions[0],
-                        "SELECT * FROM TEST_TABLE ORDER BY TESTID", 3, nil)
+      r = @connections[0].execute("SELECT * FROM TEST_TABLE ORDER BY TESTID", @transactions[0])
+      assert_equal(Rubyfb::ResultSet, r.class)
       
       assert(r.connection == @connections[0])
       assert(r.transaction == @transactions[0])
@@ -80,8 +80,8 @@ class ResultSetTest < Test::Unit::TestCase
       assert(r.fetch == nil)
       r.close
       
-      r = ResultSet.new(@connections[0], @transactions[0],
-                        "SELECT * FROM TEST_TABLE ORDER BY TESTID", 3, nil)
+      r = @connections[0].execute("SELECT * FROM TEST_TABLE ORDER BY TESTID", @transactions[0])
+      assert_equal(Rubyfb::ResultSet, r.class)
       assert(r.column_count == 2)
       assert(r.column_name(0) == 'TESTID')
       assert(r.column_name(1) == 'TESTINFO')
@@ -97,8 +97,9 @@ class ResultSetTest < Test::Unit::TestCase
       assert(r.column_alias(-1) == nil)
       r.close
       
-      r = ResultSet.new(@connections[0], @transactions[0],
-                        "SELECT * FROM TEST_TABLE ORDER BY TESTID", 3, nil)
+      r = @connections[0].execute("SELECT * FROM TEST_TABLE ORDER BY TESTID", @transactions[0])
+      assert_equal(Rubyfb::ResultSet, r.class)
+      
       total = 0
       r.each do |row|
          total += 1
@@ -108,9 +109,9 @@ class ResultSetTest < Test::Unit::TestCase
    end
 
    def test02
-      r = ResultSet.new(@connections[0], @transactions[0],
-                        'select * from test_table where testid between ? and ?',
-                        3, [20, 40])
+      r = @connections[0].execute_for('select * from test_table where testid between ? and ?',
+                        [20, 40], @transactions[0])
+      assert_equal(Rubyfb::ResultSet, r.class)
       assert(r.exhausted? == false)
       total = 0
       r.each {|row| total += 1}
@@ -120,17 +121,14 @@ class ResultSetTest < Test::Unit::TestCase
 
    def test03
       begin
-         ResultSet.new(@connections[0], @transactions[0],
-                       "insert into test_table values(?, ?)", 3,
-                       [100, 'Should fail.'])
-         assert(false, "Created result set with non-query SQL statement.")
+         r = @connections[0].execute_for("insert into test_table values(?, ?)",
+                       [100, 'Should fail.'], @transactions[0])
+         assert_not_equal(Rubyfb::ResultSet, r.class, "Created result set with non-query SQL statement.")
       rescue FireRubyException
       end
 
       begin
-         ResultSet.new(@connections[0], @transactions[0],
-                       "select * from test_table where testid = ?", 3,
-                       [])
+         r = @connections[0].execute_for("select * from test_table where testid = ?", [], @transactions[0])
          assert(false, 'Created result set with insufficient parameters.')
       rescue FireRubyException
       end

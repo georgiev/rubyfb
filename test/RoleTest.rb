@@ -52,7 +52,7 @@ class RoleTest < Test::Unit::TestCase
       cxn = @database.connect('user1', 'password')      
       assert_raise FireRubyException do
         t1 = cxn.start_transaction
-        r = ResultSet.new(cxn, t1, "select * from test", 3, nil)
+        r = cxn.execute("select * from test", t1)
         r.fetch
         r.close
         t1.commit
@@ -62,7 +62,7 @@ class RoleTest < Test::Unit::TestCase
       cxn = @database.connect('user1', 'password', {Connection::SQL_ROLE_NAME => "myrole"})
       assert_nothing_raised do
         t1 = cxn.start_transaction
-        r = ResultSet.new(cxn, t1, "select * from test", 3, nil)
+        r = cxn.execute("select * from test", t1)
         r.fetch
         r.close
         t1.commit

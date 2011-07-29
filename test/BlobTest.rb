@@ -39,7 +39,7 @@ class BlobTest < Test::Unit::TestCase
          cxn.execute_immediate('create table blob_test (data blob sub_type 0)')
          cxn.start_transaction do |tx|
 
-            s = Statement.new(cxn, tx, 'INSERT INTO BLOB_TEST VALUES(?)', 3)
+            s = cxn.create_statement('INSERT INTO BLOB_TEST VALUES(?)')
             s.execute_for([DATA], tx)
             
             # Perform a select of the value inserted.
@@ -62,7 +62,7 @@ class BlobTest < Test::Unit::TestCase
          cxn.execute_immediate('create table blob_test (data blob sub_type 1 segment size 10 CHARACTER SET UTF8)')
          cxn.start_transaction do |tx|
 
-            s = Statement.new(cxn, tx, 'INSERT INTO BLOB_TEST VALUES(?)', 3)
+            s = cxn.create_statement('INSERT INTO BLOB_TEST VALUES(?)')
             s.execute_for([UTF_DATA], tx)
             
             # Perform a select of the value inserted.

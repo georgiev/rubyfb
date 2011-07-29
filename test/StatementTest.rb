@@ -40,9 +40,7 @@ class StatementTest < Test::Unit::TestCase
       @connections.push(@database.connect(DB_USER_NAME, DB_PASSWORD))
       @transactions.push(@connections.last.start_transaction)
       
-      s1 = Statement.new(@connections[0],
-                         @transactions[0],
-                         "SELECT RDB$FIELD_NAME FROM RDB$FIELDS", 3)
+      s1 = @connections[0].create_statement("SELECT RDB$FIELD_NAME FROM RDB$FIELDS")
       assert(s1 != nil)
       assert(s1.sql == "SELECT RDB$FIELD_NAME FROM RDB$FIELDS")
       assert(s1.connection == @connections[0])
@@ -50,13 +48,11 @@ class StatementTest < Test::Unit::TestCase
       assert(s1.type == Statement::SELECT_STATEMENT)
       s1.close
       
-      s2 = Statement.new(@connections[0],
-                         @transactions[0],
-                         "DELETE FROM RDB$EXCEPTIONS", 1)
+      s2 = @connections[0].create_statement("DELETE FROM RDB$EXCEPTIONS")
       assert(s2 != nil)
       assert(s2.sql == "DELETE FROM RDB$EXCEPTIONS")
       assert(s2.connection == @connections[0])
-      assert(s2.dialect == 1)
+      assert(s2.dialect == 3)
       assert(s2.type == Statement::DELETE_STATEMENT)
       s2.close
    end
@@ -65,9 +61,9 @@ class StatementTest < Test::Unit::TestCase
       @connections.push(@database.connect(DB_USER_NAME, DB_PASSWORD))
       @transactions.push(@connections[0].start_transaction)
       
-      s = Statement.new(@connections[0], @transactions[0],
+      s = @connections[0].create_statement(
                         "SELECT RDB$FIELD_NAME FROM RDB$FIELDS "\
-                        "WHERE RDB$FIELD_NAME LIKE ?", 3)
+                        "WHERE RDB$FIELD_NAME LIKE ?")
 
       begin
          r = s.execute
@@ -115,7 +111,7 @@ class StatementTest < Test::Unit::TestCase
          cxn.execute_immediate('CREATE TABLE STRING_TEST(TEXT VARCHAR(10))')
          cxn.start_transaction do |tx|
             # Perform an truncated insert.
-            s = Statement.new(cxn, tx, 'INSERT INTO STRING_TEST VALUES(?)', 3)
+            s = cxn.create_statement('INSERT INTO STRING_TEST VALUES(?)')
             s.execute_for(['012345678901234'], tx)
             
             # Perform a select of the value inserted.
@@ -138,7 +134,7 @@ class StatementTest < Test::Unit::TestCase
          cxn.execute_immediate('CREATE TABLE STRING_TEST(TEXT VARCHAR(100) CHARACTER SET UTF8)')
          cxn.start_transaction do |tx|
             # Perform an truncated insert.
-            s = Statement.new(cxn, tx, 'INSERT INTO STRING_TEST VALUES(?)', 3)
+            s = cxn.create_statement('INSERT INTO STRING_TEST VALUES(?)')
             s.execute_for([utf_str], tx)
             
             # Perform a select of the value inserted.

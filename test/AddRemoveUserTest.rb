@@ -32,6 +32,13 @@ class AddRemoveUserTest < Test::Unit::TestCase
       sm = ServiceManager.new('localhost')
       sm.connect(DB_USER_NAME, DB_PASSWORD)
 
+      begin
+        ru = RemoveUser.new('newuser')
+        ru.execute(sm)
+        sleep(3)
+      rescue
+      end
+
       au = AddUser.new('newuser', 'password', 'first', 'middle', 'last')
       au.execute(sm)
       sleep(3)

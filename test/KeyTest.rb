@@ -22,8 +22,7 @@ class KeyTest < Test::Unit::TestCase
       database     = Database::create(DB_FILE, DB_USER_NAME, DB_PASSWORD)
       @connection  = database.connect(DB_USER_NAME, DB_PASSWORD)
       @transaction = @connection.start_transaction
-      @results     = ResultSet.new(@connection, @transaction,
-                                   'SELECT * FROM RDB$FIELDS', 3, nil)
+      @results     = @connection.execute('SELECT * FROM RDB$FIELDS', @transaction)
       @empty       = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                       0, 0, 0, 0, 0, 0, 0, 0, 0]
       
