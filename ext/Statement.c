@@ -122,6 +122,52 @@ void fb_prepare(isc_db_handle *connection, isc_tr_handle *transaction,
   *type = isc_vax_integer(&info[3], isc_vax_integer(&info[1], 2));
 }
 
+long fb_query_affected(StatementHandle *statement) {
+  ISC_STATUS status[ISC_STATUS_LENGTH];
+  ISC_STATUS execute_result;
+  long result = 0;
+  int info      = 0,
+      done      = 0;
+  char items[]   = {isc_info_sql_records},
+       buffer[40],
+  *position = buffer + 3;
+
+  switch(statement->type) {
+  case isc_info_sql_stmt_update:
+    info = isc_info_req_update_count;
+    break;
+  case isc_info_sql_stmt_delete:
+    info = isc_info_req_delete_count;
+    break;
+  case isc_info_sql_stmt_insert:
+    info = isc_info_req_insert_count;
+    break;
+  default:
+    return (result);
+  }
+    
+  if(isc_dsql_sql_info(status, &statement->handle, sizeof(items), items,
+                       sizeof(buffer), buffer)) {
+    rb_fireruby_raise(status, "Error retrieving affected row count.");
+  }
+
+  while(*position != isc_info_end && done == 0) {
+    char current = *position++;
+    long temp[]  = {0, 0};
+
+    temp[0]  = isc_vax_integer(position, 2);
+    position += 2;
+    temp[1]  = isc_vax_integer(position, temp[0]);
+    position += temp[0];
+
+    if(current == info) {
+      result = temp[1];
+      done      = 1;
+    }
+  }
+  return (result);
+}
+
 /**
  * This function executes a previously prepare SQL statement.
  *
@@ -254,7 +300,6 @@ VALUE allocateStatement(VALUE klass) {
   statement->inputs     = 0;
   statement->outputs    = 0;
   statement->dialect    = 0;
-  statement->parameters = NULL;
   statement->output     = NULL;
   statement->cursor_allocated = 0;
 
@@ -417,34 +462,17 @@ VALUE executeInTransactionFromArray(VALUE args) {
   return(executeInTransaction(self, transaction, parameters));
 }
 
-void cleanUpInputDataArea(StatementHandle *statement) {
-  if(statement->parameters != NULL) {
-    releaseDataArea(statement->parameters);
-    statement->parameters = NULL;
-  }
-}
-
 VALUE executeInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
-VALUE sql = rb_iv_get(self, "@sql");
   VALUE result       = Qnil;
   long affected     = 0;
   StatementHandle   *hStatement   = NULL;
   TransactionHandle *hTransaction = NULL;
+  XSQLDA            *bindings = NULL;
+  ISC_STATUS status[ISC_STATUS_LENGTH];
+  ISC_STATUS execute_result;
 
   prepareInTransaction(self, transaction);
-
   Data_Get_Struct(self, StatementHandle, hStatement);
-
-  cleanUpInputDataArea(hStatement);
-  if(hStatement->inputs > 0) {
-    /* Allocate the XSQLDA */
-    hStatement->parameters = allocateInXSQLDA(hStatement->inputs,
-                                             &hStatement->handle,
-                                             hStatement->dialect);
-    prepareDataArea(hStatement->parameters);
-  }
-
-  /* Check that sufficient parameters have been specified. */
   if(hStatement->inputs > 0) {
     VALUE value = Qnil;
     int size  = 0;
@@ -460,25 +488,31 @@ VALUE sql = rb_iv_get(self, "@sql");
       rb_fireruby_raise(NULL,
                         "Insufficient parameters specified for statement.");
     }
-    setParameters(hStatement->parameters, parameters, transaction, getStatementConnection(self));
+
+    /* Allocate the XSQLDA */
+    bindings = allocateInXSQLDA(hStatement->inputs, &hStatement->handle, hStatement->dialect);
+    prepareDataArea(bindings);
+    setParameters(bindings, parameters, transaction, getStatementConnection(self));
   }
 
   /* Execute the statement. */
   Data_Get_Struct(transaction, TransactionHandle, hTransaction);
   if (isc_info_sql_stmt_exec_procedure == hStatement->type) {
-    fb_execute(&hTransaction->handle, &hStatement->handle, hStatement->dialect, hStatement->parameters, hStatement->type,
-              &affected, hStatement->output);
+    execute_result = isc_dsql_execute2(status, &hTransaction->handle, &hStatement->handle, hStatement->dialect, bindings, hStatement->output);
   } else {
     if (hStatement->cursor_allocated) {
-      ISC_STATUS status[ISC_STATUS_LENGTH];
       if(isc_dsql_free_statement(status, &hStatement->handle, DSQL_close)) {
         rb_fireruby_raise(status, "Error closing cursor.");
       }
     }
-    fb_execute(&hTransaction->handle, &hStatement->handle, hStatement->dialect, hStatement->parameters, hStatement->type,
-              &affected, NULL);
+    execute_result = isc_dsql_execute(status, &hTransaction->handle, &hStatement->handle, hStatement->dialect, bindings);
   }
-
+  if(bindings) {
+    releaseDataArea(bindings);
+  }
+  if(execute_result) {
+    rb_fireruby_raise(status, "Error executing SQL statement.");
+  }
   if (hStatement->output) {
     result = rb_result_set_new(self, transaction);
     hStatement->cursor_allocated = 1;
@@ -486,7 +520,7 @@ VALUE sql = rb_iv_get(self, "@sql");
       result = yieldResultsRows(result);
     }
   } else {
-    result = INT2NUM(affected);
+    result = INT2NUM(fb_query_affected(hStatement));
   }
 
   return(result);
@@ -535,7 +569,6 @@ void cleanUpStatement(StatementHandle *statement, int raise_errors) {
         rb_fireruby_raise(status, "Error closing statement.");
       }
     }
-    cleanUpInputDataArea(statement);
     if(statement->output != NULL) {
       releaseDataArea(statement->output);
       statement->output = NULL;
