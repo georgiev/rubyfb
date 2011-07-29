@@ -274,7 +274,7 @@ void setParameters(XSQLDA *parameters, VALUE array, VALUE transaction, VALUE con
     if(value != Qnil) {
       VALUE name = rb_funcall(value, rb_intern("class"), 0);
 
-      parameter->sqlind = 0;
+      *parameter->sqlind = 0;
       name = rb_funcall(name, rb_intern("name"), 0);
       switch(type) {
       case SQL_ARRAY:        /* Type: ARRAY */
