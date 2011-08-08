@@ -630,7 +630,7 @@ module ActiveRecord
         end
         if create_sequence || table_td.create_sequence
           sequence_name = options[:sequence] || default_sequence_name(name)
-          create_sequence(sequence_name)
+          create_sequence(name, sequence_name)
         end
       end
       
@@ -919,9 +919,31 @@ module ActiveRecord
           Rubyfb::Generator.exists?(sequence_name, @connection)
         end
 
-        def create_sequence(sequence_name)
+        def create_sequence(table_name, sequence_name)
           Rubyfb::Generator.create(quote_generator_name(sequence_name), @connection)
           Rubyfb::Generator.new(quote_generator_name(sequence_name), @connection).next(1000) #FIXME
+          
+          pk_sql = <<-end_sql
+            SELECT s.rdb$field_name as field_name
+            from RDB$RELATION_CONSTRAINTS c
+            join rdb$index_segments s on s.rdb$index_name=c.RDB$INDEX_NAME
+            WHERE c.RDB$CONSTRAINT_TYPE = 'PRIMARY KEY'
+              and c.rdb$relation_name='#{table_name.to_s.upcase}'
+            order by s.rdb$field_position
+          end_sql
+          pk_fields = select_values(pk_sql)
+          if 1 == pk_fields.size
+            trigger_sql = <<-end_sql
+              CREATE TRIGGER #{quote_table_name(table_name.to_s + '_arsq')} FOR #{quote_table_name(table_name)}
+              ACTIVE BEFORE INSERT POSITION 0
+              AS
+              BEGIN
+                IF (NEW.#{quote_column_name(pk_fields[0].strip)} IS NULL) THEN
+                  NEW.#{quote_column_name(pk_fields[0].strip)} = GEN_ID(#{quote_generator_name(sequence_name)},1);
+              END            
+            end_sql
+            execute(trigger_sql)
+          end
         end
 
         def drop_sequence(sequence_name)
