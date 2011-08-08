@@ -171,11 +171,7 @@ VALUE fetchResultSetEntry(VALUE self) {
 
   Data_Get_Struct(self, ResultsHandle, hResults);
   if(hResults->active) {
-    if(isc_info_sql_stmt_exec_procedure == hStatement->type) {
-      hResults->active = 0;
-      hResults->fetched = 1;
-      row = getResultSetRow(self);
-    } else {
+    if (isCursorStatement(hStatement)) {
       fetch_result = isc_dsql_fetch(status, &hStatement->handle, hStatement->dialect,
                              hStatement->output);
       switch(fetch_result) {
@@ -189,6 +185,10 @@ VALUE fetchResultSetEntry(VALUE self) {
       default:
         rb_fireruby_raise(status, "Error fetching query row.");
       }
+    } else {
+      hResults->active = 0;
+      hResults->fetched = 1;
+      row = getResultSetRow(self);
     }
   }
   return (row);

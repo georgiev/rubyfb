@@ -54,5 +54,6 @@ void execute(isc_tr_handle *, isc_stmt_handle *, short, XSQLDA *,
 VALUE rb_statement_new(VALUE, VALUE);
 VALUE rb_execute_sql(VALUE, VALUE, VALUE, VALUE);
 void Init_Statement(VALUE);
+short isCursorStatement(StatementHandle*);
 
 #endif /* FIRERUBY_STATEMENT_H */

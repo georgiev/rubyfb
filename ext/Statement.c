@@ -384,6 +384,16 @@ VALUE executeInTransactionFromArray(VALUE args) {
   return(executeInTransaction(self, transaction, parameters));
 }
 
+short isCursorStatement(StatementHandle *hStatement) {
+  switch(hStatement->type) {
+    case isc_info_sql_stmt_select:
+    case isc_info_sql_stmt_select_for_upd:
+      return 1;
+    default:
+      return 0;
+  }
+}
+
 VALUE executeInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
   VALUE result       = Qnil;
   long affected     = 0;
@@ -419,10 +429,10 @@ VALUE executeInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
 
   /* Execute the statement. */
   Data_Get_Struct(transaction, TransactionHandle, hTransaction);
-  if (isc_info_sql_stmt_exec_procedure == hStatement->type) {
-    execute_result = isc_dsql_execute2(status, &hTransaction->handle, &hStatement->handle, hStatement->dialect, bindings, hStatement->output);
-  } else {
+  if (isCursorStatement(hStatement)) {
     execute_result = isc_dsql_execute(status, &hTransaction->handle, &hStatement->handle, hStatement->dialect, bindings);
+  } else {
+    execute_result = isc_dsql_execute2(status, &hTransaction->handle, &hStatement->handle, hStatement->dialect, bindings, hStatement->output);
   }
   if(bindings) {
     releaseDataArea(bindings);
