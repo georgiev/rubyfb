@@ -42,8 +42,7 @@ typedef struct {
   int type,
       inputs,
       outputs;
-  short dialect,
-        cursor_allocated;
+  short dialect;
   XSQLDA          *output;
 } StatementHandle;
 

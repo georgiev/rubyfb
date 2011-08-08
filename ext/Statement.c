@@ -224,7 +224,6 @@ VALUE allocateStatement(VALUE klass) {
   statement->outputs    = 0;
   statement->dialect    = 0;
   statement->output     = NULL;
-  statement->cursor_allocated = 0;
 
   return(Data_Wrap_Struct(klass, NULL, statementFree, statement));
 }
@@ -423,11 +422,6 @@ VALUE executeInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
   if (isc_info_sql_stmt_exec_procedure == hStatement->type) {
     execute_result = isc_dsql_execute2(status, &hTransaction->handle, &hStatement->handle, hStatement->dialect, bindings, hStatement->output);
   } else {
-    if (hStatement->cursor_allocated) {
-      if(isc_dsql_free_statement(status, &hStatement->handle, DSQL_close)) {
-        rb_fireruby_raise(status, "Error closing cursor.");
-      }
-    }
     execute_result = isc_dsql_execute(status, &hTransaction->handle, &hStatement->handle, hStatement->dialect, bindings);
   }
   if(bindings) {
@@ -438,7 +432,6 @@ VALUE executeInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
   }
   if (hStatement->output) {
     result = rb_result_set_new(self, transaction);
-    hStatement->cursor_allocated = 1;
     if(rb_block_given_p()) {
       result = yieldResultsRows(result);
     }

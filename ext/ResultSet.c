@@ -204,10 +204,15 @@ VALUE fetchResultSetEntry(VALUE self) {
  *
  */
 VALUE closeResultSet(VALUE self) {
+  StatementHandle   *hStatement   = getStatementHandle(self);
   ResultsHandle     *hResults = NULL;
   Data_Get_Struct(self, ResultsHandle, hResults);
+  ISC_STATUS status[ISC_STATUS_LENGTH];
 
   hResults->active = 0;
+  if(isc_dsql_free_statement(status, &hStatement->handle, DSQL_close)) {
+    rb_fireruby_raise(status, "Error closing cursor.");
+  }
   if(hResults->manage_statement) {
     VALUE statement = getResultSetStatement(self),
           menagement_required = rb_funcall(statement, rb_intern("prepared?"), 0);
