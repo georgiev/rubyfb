@@ -442,7 +442,7 @@ module ActiveRecord
       end
 
       def exec_query(sql, name = 'SQL', binds = [], &block)
-        log(sql, name) do
+        log(sql, name, binds) do
           if binds.empty?
             @connection.execute(sql, @transaction, &block)
           else
@@ -745,7 +745,15 @@ module ActiveRecord
       end
 
       protected
-      
+
+      def log(sql, name, binds = nil) #:nodoc:
+        if binds
+          super sql, name, binds
+        else
+          super sql, name
+        end
+      end
+
       def translate_exception(exception, message)
         if exception.kind_of?(Rubyfb::FireRubyException)
           case exception.sql_code
