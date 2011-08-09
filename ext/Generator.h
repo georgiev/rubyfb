@@ -39,11 +39,6 @@
       #define RUBY_H_INCLUDED
    #endif
 
-/* Type definitions. */
-typedef struct {
-  isc_db_handle *connection;
-} GeneratorHandle;
-
 /* Function prototypes. */
 void Init_Generator(VALUE);
 VALUE rb_generator_new(VALUE, VALUE);

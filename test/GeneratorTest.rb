@@ -33,17 +33,17 @@ class GeneratorTest < Test::Unit::TestCase
    end
    
    def test01
-      assert(Generator::exists?('TEST_GEN', @connections[0]) == false)
+      assert(!Generator::exists?('TEST_GEN', @connections[0]))
       g = Generator::create('TEST_GEN', @connections[0])
       assert(Generator::exists?('TEST_GEN', @connections[0]))
-      assert(g.last == 0)
-      assert(g.next(1) == 1)
-      assert(g.last == 1)
-      assert(g.next(10) == 11)
-      assert(g.connection == @connections[0])
-      assert(g.name == 'TEST_GEN')
+      assert_equal(0, g.last)
+      assert_equal(1, g.next(1))
+      assert_equal(1, g.last)
+      assert_equal(11, g.next(10))
+      assert_equal(@connections[0], g.connection)
+      assert_equal('TEST_GEN', g.name)
       
       g.drop
-      assert(Generator::exists?('TEST_GEN', @connections[0]) == false)
+      assert(!Generator::exists?('TEST_GEN', @connections[0]))
    end
 end
