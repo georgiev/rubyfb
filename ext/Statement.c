@@ -343,7 +343,7 @@ VALUE getStatementParameterCount(VALUE self) {
   return(INT2NUM(statement->inputs));
 }
 
-VALUE execAndManageTransaction(VALUE self, VALUE transaction, VALUE parameters) {
+VALUE execAndManageTransaction(VALUE self, VALUE parameters, VALUE transaction) {
   VALUE result = Qnil;
   
   if(Qnil == transaction) {
@@ -488,7 +488,7 @@ VALUE execStatement(int argc, VALUE *argv, VALUE self) {
   VALUE transaction, parameters = Qnil;
 
   rb_scan_args(argc, argv, "02", &parameters, &transaction);
-  return execAndManageTransaction(self, transaction, parameters);
+  return execAndManageTransaction(self, parameters, transaction);
 }
 
 /**
@@ -605,7 +605,7 @@ VALUE execStatementFromArray(VALUE args) {
   VALUE params = rb_ary_entry(args, 1);
   VALUE transaction = rb_ary_entry(args, 2);
 
-  return execAndManageTransaction(self, transaction, params);
+  return execAndManageTransaction(self, params, transaction);
 }
 
 /**
