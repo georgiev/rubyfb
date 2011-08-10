@@ -55,7 +55,7 @@ class SQLTest < Test::Unit::TestCase
             1.upto(ITERATIONS) do |i|
                f += 0.321
                t = Time.at(t.to_i + 5)
-               s.execute_for([i, i.to_s, f, t, nil, t], tx)
+               s.exec([i, i.to_s, f, t, nil, t], tx)
             end
 
             s.close
@@ -130,7 +130,7 @@ class SQLTest < Test::Unit::TestCase
       
       @connections[0].start_transaction do |tx|
          s = @connections[0].create_statement("UPDATE TEST_TABLE SET TESTSTAMP = NULL")
-         s.execute(tx)
+         s.exec(nil, tx)
          s.close
          
          r = tx.execute("SELECT TESTSTAMP FROM TEST_TABLE")
@@ -151,7 +151,7 @@ class SQLTest < Test::Unit::TestCase
                            "INSERT INTO TEST_TABLE (TESTID, TESTTEXT, "\
                            "TESTFLOAT, TESTSTAMP) VALUES(?, ?, ?, ?)")
          t = Time.new
-         s.execute_for([25000, 'La la la', 3.14, t], tx)
+         s.exec([25000, 'La la la', 3.14, t], tx)
          s.close
          
          # Fetch the record and check the data.

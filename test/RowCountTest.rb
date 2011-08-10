@@ -52,7 +52,7 @@ class RowCountTest < Test::Unit::TestCase
             
             s = cxn.create_statement('update test set id = 40000 where id = ?')
             
-            assert_equal(2, s.execute_for([4000], tx))
+            assert_equal(2, s.exec([4000], tx))
 
             
             assert_equal(2, cxn.execute_immediate('delete from test where id = 10000'))

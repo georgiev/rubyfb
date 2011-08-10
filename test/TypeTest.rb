@@ -29,7 +29,7 @@ class TypeTest < Test::Unit::TestCase
       cxn.start_transaction do |tx|
          stmt = cxn.create_statement("insert into types_table values "\
                                        "(?, ?, ?, ?, ?, ?, ?, ?, ?)")
-         stmt.execute_for([10, 100.2, 2378.65, 192.345,
+         stmt.exec([10, 100.2, 2378.65, 192.345,
                            Date.new(2005, 10, 21), Time.new, 'La la la',
                            Time.new, "Oobly Joobly"], tx)
          stmt.close
@@ -81,7 +81,6 @@ class TypeTest < Test::Unit::TestCase
          assert(row[6].instance_of?(String))
          assert(row[7].instance_of?(Time))
          assert(row[8].instance_of?(String))
-         rows.close
       ensure
          rows.close if rows != nil
          cxn.close if cxn != nil

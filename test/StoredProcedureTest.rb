@@ -59,7 +59,7 @@ class StoredProcedureTest < Test::Unit::TestCase
             test_data = ["SP1", 7]
             
             s = cxn.create_statement('execute procedure SP1(?, ?)')
-            result = s.execute_for(test_data, tx)
+            result = s.exec(test_data, tx)
             
             assert_equal(Rubyfb::ResultSet, result.class)
             row = result.fetch

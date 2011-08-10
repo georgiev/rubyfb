@@ -40,7 +40,7 @@ class BlobTest < Test::Unit::TestCase
          cxn.start_transaction do |tx|
 
             s = cxn.create_statement('INSERT INTO BLOB_TEST VALUES(?)')
-            s.execute_for([DATA], tx)
+            s.exec([DATA], tx)
             
             # Perform a select of the value inserted.
             r = cxn.execute('SELECT * FROM BLOB_TEST', tx)
@@ -63,7 +63,7 @@ class BlobTest < Test::Unit::TestCase
          cxn.start_transaction do |tx|
 
             s = cxn.create_statement('INSERT INTO BLOB_TEST VALUES(?)')
-            s.execute_for([UTF_DATA], tx)
+            s.exec([UTF_DATA], tx)
             
             # Perform a select of the value inserted.
             r = cxn.execute('SELECT * FROM BLOB_TEST', tx)

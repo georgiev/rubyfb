@@ -51,8 +51,8 @@ class RowTest < Test::Unit::TestCase
                               "insert into all_types values(?, ?, ?, ?, ?, ?, "\
                               "?, ?, ?, ?, ?, ?, ?)"
          )
-         #stmt.execute_for([nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil])
-         stmt.execute_for([100000, nil, 'La la la', Date.new(2005, 10, 29),
+         #stmt.exec([nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil])
+         stmt.exec([100000, nil, 'La la la', Date.new(2005, 10, 29),
                            10.23, 100.751, 56.25, 12345, 19863.21, 123,
                            Time.new, Time.new, 'The End!'], tx)
       end
