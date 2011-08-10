@@ -36,11 +36,11 @@
 static VALUE initializeGenerator(VALUE, VALUE, VALUE);
 static VALUE getGeneratorName(VALUE);
 static VALUE getGeneratorConnection(VALUE);
-static VALUE getLastGeneratorValue(VALUE);
-static VALUE getNextGeneratorValue(VALUE, VALUE);
-static VALUE dropGenerator(VALUE);
-static VALUE doesGeneratorExist(VALUE, VALUE, VALUE);
-static VALUE createGenerator(VALUE, VALUE, VALUE);
+static VALUE getLastGeneratorValue(int, VALUE*, VALUE);
+static VALUE getNextGeneratorValue(int, VALUE*, VALUE);
+static VALUE dropGenerator(int, VALUE*, VALUE);
+static VALUE doesGeneratorExist(int, VALUE*, VALUE);
+static VALUE createGenerator(int, VALUE*, VALUE);
 XSQLDA *createStorage(void);
 
 /* Globals. */
@@ -105,6 +105,21 @@ static VALUE getGeneratorConnection(VALUE self) {
   return(rb_iv_get(self, "@connection"));
 }
 
+VALUE selectGeneratorValue(VALUE self, int step, VALUE transaction) {
+  VALUE  result_set = Qnil,
+         row        = Qnil,
+         connection = rb_iv_get(self, "@connection"),
+         name       = rb_iv_get(self, "@name");
+  char sql[100];
+
+  sprintf(sql, "SELECT GEN_ID(%s, %d) FROM RDB$DATABASE", StringValuePtr(name), step);
+  result_set = rb_execute_sql(connection, rb_str_new2(sql), Qnil, transaction);
+  row = rb_funcall(result_set, rb_intern("fetch"), 0);
+  rb_funcall(result_set, rb_intern("close"), 0);
+  
+  row = rb_funcall(row, rb_intern("values"), 0);
+  return rb_funcall(row, rb_intern("first"), 0);
+}
 
 /**
  * This function fetches the last value retrieved from a Generator.
@@ -114,8 +129,11 @@ static VALUE getGeneratorConnection(VALUE self) {
  * @return  A reference to the last value retrieved from the generator.
  *
  */
-static VALUE getLastGeneratorValue(VALUE self) {
-  return getNextGeneratorValue(self, INT2NUM(0));
+static VALUE getLastGeneratorValue(int argc, VALUE *argv, VALUE self) {
+  VALUE  transaction= Qnil;
+  rb_scan_args(argc, argv, "01", &transaction);
+
+  return selectGeneratorValue(self, 0, transaction);
 }
 
 
@@ -129,25 +147,16 @@ static VALUE getLastGeneratorValue(VALUE self) {
  * @return  A reference to an integer containing the next generator value.
  *
  */
-static VALUE getNextGeneratorValue(VALUE self, VALUE step) {
-  VALUE  result_set = Qnil,
-         row        = Qnil,
-         connection = rb_iv_get(self, "@connection"),
-         name       = rb_iv_get(self, "@name");
-  char sql[100];
+static VALUE getNextGeneratorValue(int argc, VALUE *argv, VALUE self) {
+  VALUE step, transaction= Qnil;
+  rb_scan_args(argc, argv, "11", &step, &transaction);
 
   /* Check the step type. */
   if(TYPE(step) != T_FIXNUM) {
     rb_fireruby_raise(NULL, "Invalid generator step value.");
   }
 
-  sprintf(sql, "SELECT GEN_ID(%s, %d) FROM RDB$DATABASE", StringValuePtr(name), FIX2INT(step));
-  result_set = rb_execute_sql(connection, rb_str_new2(sql), Qnil, Qnil);
-  row = rb_funcall(result_set, rb_intern("fetch"), 0);
-  rb_funcall(result_set, rb_intern("close"), 0);
-  
-  row = rb_funcall(row, rb_intern("values"), 0);
-  return rb_funcall(row, rb_intern("first"), 0);
+  return selectGeneratorValue(self, FIX2INT(step), transaction);
 }
 
 
@@ -159,15 +168,16 @@ static VALUE getNextGeneratorValue(VALUE self, VALUE step) {
  * @return  A reference to the Generator object dropped.
  *
  */
-static VALUE dropGenerator(VALUE self) {
-  VALUE connection, name;
+static VALUE dropGenerator(int argc, VALUE *argv, VALUE self) {
+  VALUE name, connection, transaction = Qnil;
   char sql[100];
 
-  connection = rb_iv_get(self, "@connection");
   name = rb_iv_get(self, "@name");
+  connection = rb_iv_get(self, "@connection");
+  rb_scan_args(argc, argv, "01", &transaction);
 
   sprintf(sql, "DROP GENERATOR %s", StringValuePtr(name));
-  rb_execute_sql(connection, rb_str_new2(sql), Qnil, Qnil);
+  rb_execute_sql(connection, rb_str_new2(sql), Qnil, transaction);
 
   return(self);
 }
@@ -186,18 +196,20 @@ static VALUE dropGenerator(VALUE self) {
  *          otherwise.
  *
  */
-static VALUE doesGeneratorExist(VALUE klass, VALUE name, VALUE connection) {
-  VALUE exists = Qfalse,
+static VALUE doesGeneratorExist(int argc, VALUE *argv, VALUE klass) {
+  VALUE name, connection, transaction = Qnil,
+        exists = Qfalse,
         result_set = Qnil;
   char sql[200]; // 93(statement) + 2*(31)max_generator_name = 155
 
+  rb_scan_args(argc, argv, "21", &name, &connection, &transaction);
   if(TYPE(connection) != T_DATA ||
      RDATA(connection)->dfree != (RUBY_DATA_FUNC)connectionFree) {
     rb_fireruby_raise(NULL, "Invalid connection specified.");
   }
 
   sprintf(sql, "SELECT RDB$GENERATOR_NAME FROM RDB$GENERATORS WHERE RDB$GENERATOR_NAME in ('%s', UPPER('%s'))", StringValuePtr(name), StringValuePtr(name));
-  result_set = rb_execute_sql(connection, rb_str_new2(sql), Qnil, Qnil);
+  result_set = rb_execute_sql(connection, rb_str_new2(sql), Qnil, transaction);
   if(Qnil != rb_funcall(result_set, rb_intern("fetch"), 0)) {
     exists = Qtrue;
   }
@@ -221,9 +233,11 @@ static VALUE doesGeneratorExist(VALUE klass, VALUE name, VALUE connection) {
  * @return  A reference to a Generator object.
  *
  */
-static VALUE createGenerator(VALUE klass, VALUE name, VALUE connection) {
+static VALUE createGenerator(int argc, VALUE *argv, VALUE klass) {
+  VALUE name, connection, transaction = Qnil;
   char sql[100];
 
+  rb_scan_args(argc, argv, "21", &name, &connection, &transaction);
   if(TYPE(name) != T_STRING) {
     rb_fireruby_raise(NULL, "Invalid generator name specified.");
   }
@@ -235,7 +249,7 @@ static VALUE createGenerator(VALUE klass, VALUE name, VALUE connection) {
   }
 
   sprintf(sql, "CREATE GENERATOR %s", StringValuePtr(name));
-  rb_execute_sql(connection, rb_str_new2(sql), Qnil, Qnil);
+  rb_execute_sql(connection, rb_str_new2(sql), Qnil, transaction);
 
   return rb_generator_new(name, connection);
 }
@@ -300,11 +314,11 @@ void Init_Generator(VALUE module) {
   cGenerator = rb_define_class_under(module, "Generator", rb_cObject);
   rb_define_method(cGenerator, "initialize", initializeGenerator, 2);
   rb_define_method(cGenerator, "initialize_copy", forbidObjectCopy, 1);
-  rb_define_method(cGenerator, "last", getLastGeneratorValue, 0);
-  rb_define_method(cGenerator, "next", getNextGeneratorValue, 1);
+  rb_define_method(cGenerator, "last", getLastGeneratorValue, -1);
+  rb_define_method(cGenerator, "next", getNextGeneratorValue, -1);
   rb_define_method(cGenerator, "connection", getGeneratorConnection, 0);
   rb_define_method(cGenerator, "name", getGeneratorName, 0);
-  rb_define_method(cGenerator, "drop", dropGenerator, 0);
-  rb_define_module_function(cGenerator, "exists?", doesGeneratorExist, 2);
-  rb_define_module_function(cGenerator, "create", createGenerator, 2);
+  rb_define_method(cGenerator, "drop", dropGenerator, -1);
+  rb_define_module_function(cGenerator, "exists?", doesGeneratorExist, -1);
+  rb_define_module_function(cGenerator, "create", createGenerator, -1);
 }
