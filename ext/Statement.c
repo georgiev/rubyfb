@@ -40,17 +40,19 @@ static VALUE getStatementConnection(VALUE);
 static VALUE getStatementDialect(VALUE);
 static VALUE getStatementType(VALUE);
 static VALUE getStatementParameterCount(VALUE);
-static VALUE executeStatement(int, VALUE*, VALUE);
-static VALUE executeStatementFor(int, VALUE*, VALUE);
+static VALUE execStatement(int, VALUE*, VALUE);
+static VALUE execAndCloseStatement(int, VALUE*, VALUE);
 static VALUE closeStatement(VALUE);
 static VALUE getStatementPrepared(VALUE);
-static VALUE prepareStatement(VALUE);
+static VALUE prepareStatement(int, VALUE*, VALUE);
 
-VALUE executeAndManageTransaction(VALUE, VALUE, VALUE);
+VALUE execAndManageTransaction(VALUE, VALUE, VALUE);
+VALUE execAndManageStatement(VALUE, VALUE, VALUE);
 VALUE rescueLocalTransaction(VALUE, VALUE);
+VALUE execStatementFromArray(VALUE);
 VALUE rescueStatement(VALUE, VALUE);
-VALUE executeInTransactionFromArray(VALUE);
-VALUE executeInTransaction(VALUE, VALUE, VALUE);
+VALUE execInTransactionFromArray(VALUE);
+VALUE execInTransaction(VALUE, VALUE, VALUE);
 void prepareInTransaction(VALUE, VALUE);
 VALUE prepareFromArray(VALUE);
 void statementFree(void *);
@@ -341,7 +343,7 @@ VALUE getStatementParameterCount(VALUE self) {
   return(INT2NUM(statement->inputs));
 }
 
-VALUE executeAndManageTransaction(VALUE self, VALUE transaction, VALUE parameters) {
+VALUE execAndManageTransaction(VALUE self, VALUE transaction, VALUE parameters) {
   VALUE result = Qnil;
   
   if(Qnil == transaction) {
@@ -352,14 +354,30 @@ VALUE executeAndManageTransaction(VALUE self, VALUE transaction, VALUE parameter
     rb_ary_push(args, transaction);
     rb_ary_push(args, parameters);
     
-    result = rb_rescue(executeInTransactionFromArray, args, rescueLocalTransaction, transaction);
+    result = rb_rescue(execInTransactionFromArray, args, rescueLocalTransaction, transaction);
     if(isActiveResultSet(result)) {
       resultSetManageTransaction(result);
     } else {
       rb_funcall(transaction, rb_intern("commit"), 0);
     }
   } else {
-    result = executeInTransaction(self, transaction, parameters);
+    result = execInTransaction(self, transaction, parameters);
+  }
+  return (result);
+}
+
+VALUE execAndManageStatement(VALUE self, VALUE parameters, VALUE transaction) {
+  VALUE result = Qnil,
+        args = rb_ary_new();
+
+  rb_ary_push(args, self);
+  rb_ary_push(args, parameters);
+  rb_ary_push(args, transaction);
+  result = rb_rescue(execStatementFromArray, args, rescueStatement, self);
+  if(isActiveResultSet(result)) {
+    resultSetManageStatement(result);
+  } else {
+    closeStatement(self);
   }
   return (result);
 }
@@ -376,12 +394,12 @@ VALUE rescueStatement(VALUE statement, VALUE error) {
   return(Qnil);
 }
 
-VALUE executeInTransactionFromArray(VALUE args) {
+VALUE execInTransactionFromArray(VALUE args) {
   VALUE self = rb_ary_entry(args, 0);
   VALUE transaction = rb_ary_entry(args, 1);
   VALUE parameters = rb_ary_entry(args, 2);
 
-  return(executeInTransaction(self, transaction, parameters));
+  return(execInTransaction(self, transaction, parameters));
 }
 
 short isCursorStatement(StatementHandle *hStatement) {
@@ -394,7 +412,7 @@ short isCursorStatement(StatementHandle *hStatement) {
   }
 }
 
-VALUE executeInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
+VALUE execInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
   VALUE result       = Qnil;
   long affected     = 0;
   StatementHandle   *hStatement   = NULL;
@@ -429,6 +447,7 @@ VALUE executeInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
 
   /* Execute the statement. */
   Data_Get_Struct(transaction, TransactionHandle, hTransaction);
+
   if (isCursorStatement(hStatement)) {
     execute_result = isc_dsql_execute(status, &hTransaction->handle, &hStatement->handle, hStatement->dialect, bindings);
   } else {
@@ -452,39 +471,44 @@ VALUE executeInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
   return(result);
 }
 
-
 /**
- * This method provides the execute method for the Statement class.
- *
- * @param  self  A reference to the Statement object to call the method on.
- *
- * @return  One of a count of the number of rows affected by the SQL statement,
- *          a ResultSet object for a query or nil.
- *
- */
-VALUE executeStatement(int argc, VALUE *argv, VALUE self) {
-  VALUE transaction = Qnil;
-  rb_scan_args(argc, argv, "01", &transaction);
-  return(executeAndManageTransaction(self, transaction, rb_ary_new()));
-}
-
-
-/**
- * This method provides the execute method for the Statement class.
+ * This method provides the exec method for the Statement class.
  *
  * @param  self        A reference to the Statement object to call the method
  *                     on.
  * @param  parameters  An array containing the parameters to be used in
  *                     executing the statement.
+ * @param  transaction Reference to the transaction object
  *
  * @return  One of a count of the number of rows affected by the SQL statement,
  *          a ResultSet object for a query or nil.
  *
  */
-VALUE executeStatementFor(int argc, VALUE *argv, VALUE self) {
+VALUE execStatement(int argc, VALUE *argv, VALUE self) {
   VALUE transaction, parameters = Qnil;
-  rb_scan_args(argc, argv, "11", &parameters, &transaction);
-  return(executeAndManageTransaction(self, transaction, parameters));
+
+  rb_scan_args(argc, argv, "02", &parameters, &transaction);
+  return execAndManageTransaction(self, transaction, parameters);
+}
+
+/**
+ * This method provides the exec method for the Statement class.
+ *
+ * @param  self        A reference to the Statement object to call the method
+ *                     on.
+ * @param  parameters  An array containing the parameters to be used in
+ *                     executing the statement.
+ * @param  transaction Reference to the transaction object
+ *
+ * @return  One of a count of the number of rows affected by the SQL statement,
+ *          a ResultSet object for a query or nil.
+ *
+ */
+VALUE execAndCloseStatement(int argc, VALUE *argv, VALUE self) {
+  VALUE parameters, transaction = Qnil;
+
+  rb_scan_args(argc, argv, "02", &parameters, &transaction);
+  return execAndManageStatement(self, parameters, transaction);
 }
 
 void cleanUpStatement(StatementHandle *statement, int raise_errors) {
@@ -546,8 +570,14 @@ VALUE getStatementPrepared(VALUE self) {
  * @return  A reference to the statement object
  *
  */
-static VALUE prepareStatement(VALUE self) {
-  getPreparedHandle(self);
+static VALUE prepareStatement(int argc, VALUE *argv, VALUE self) {
+  VALUE transaction = Qnil;
+  rb_scan_args(argc, argv, "01", &transaction);
+  if(Qnil == transaction) {
+    getPreparedHandle(self);
+  } else {
+    prepareInTransaction(self, transaction);
+  }
   return (self);
 }
 
@@ -570,12 +600,12 @@ VALUE rb_statement_new(VALUE connection, VALUE sql) {
   return(statement);
 }
 
-VALUE executeSQLFromArray(VALUE args) {
+VALUE execStatementFromArray(VALUE args) {
   VALUE self = rb_ary_entry(args, 0);
   VALUE params = rb_ary_entry(args, 1);
   VALUE transaction = rb_ary_entry(args, 2);
 
-  return executeAndManageTransaction(self, transaction, params);
+  return execAndManageTransaction(self, transaction, params);
 }
 
 /**
@@ -591,20 +621,7 @@ VALUE executeSQLFromArray(VALUE args) {
  *
  */
 VALUE rb_execute_sql(VALUE connection, VALUE sql, VALUE params, VALUE transaction) {
-  VALUE result = Qnil,
-        statement = rb_statement_new(connection, sql),
-        args = rb_ary_new();
-  rb_ary_push(args, statement);
-  rb_ary_push(args, params);
-  rb_ary_push(args, transaction);
-
-  result = rb_rescue(executeSQLFromArray, args, rescueStatement, statement);
-  if(isActiveResultSet(result)) {
-    resultSetManageStatement(result);
-  } else {
-    closeStatement(statement);
-  }
-  return (result);
+  return execAndManageStatement(rb_statement_new(connection, sql), params, transaction);
 }
 
 /**
@@ -660,11 +677,11 @@ void Init_Statement(VALUE module) {
   rb_define_method(cStatement, "connection", getStatementConnection, 0);
   rb_define_method(cStatement, "dialect", getStatementDialect, 0);
   rb_define_method(cStatement, "type", getStatementType, 0);
-  rb_define_method(cStatement, "execute", executeStatement, -1);
-  rb_define_method(cStatement, "execute_for", executeStatementFor, -1);
+  rb_define_method(cStatement, "exec", execStatement, -1);
+  rb_define_method(cStatement, "exec_and_close", execAndCloseStatement, -1);
   rb_define_method(cStatement, "close", closeStatement, 0);
   rb_define_method(cStatement, "parameter_count", getStatementParameterCount, 0);
-  rb_define_method(cStatement, "prepare", prepareStatement, 0);
+  rb_define_method(cStatement, "prepare", prepareStatement, -1);
   rb_define_method(cStatement, "prepared?", getStatementPrepared, 0);
 
   rb_define_const(cStatement, "SELECT_STATEMENT",
