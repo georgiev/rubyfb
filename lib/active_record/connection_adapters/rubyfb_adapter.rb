@@ -981,8 +981,8 @@ module ActiveRecord
         end
 
         def create_sequence(table_name, sequence_name)
-          Rubyfb::Generator.create(quote_generator_name(sequence_name), @connection, @transaction)
-          Rubyfb::Generator.new(quote_generator_name(sequence_name), @connection).next(1000, @transaction) #FIXME
+          g = Rubyfb::Generator.create(quote_generator_name(sequence_name), @connection, @transaction)
+          g.next(1000, @transaction) #leave a gap for tests
           
           pk_sql = <<-end_sql
             SELECT s.rdb$field_name as field_name
