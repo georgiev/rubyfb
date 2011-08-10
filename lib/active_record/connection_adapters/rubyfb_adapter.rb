@@ -1,4 +1,5 @@
 # Author: Ken Kunz <kennethkunz@gmail.com>
+require 'digest/sha1'
 require 'active_record/connection_adapters/abstract_adapter'
 require 'active_support/core_ext/kernel/requires'
 require 'rubyfb_options'
@@ -318,6 +319,37 @@ module ActiveRecord
         true
       end
 
+      def supports_ddl_transactions?
+        true
+      end
+
+      # maximum length of identifiers
+      IDENTIFIER_MAX_LENGTH = 30
+
+      def table_alias_length #:nodoc:
+        IDENTIFIER_MAX_LENGTH
+      end
+
+      # the maximum length of a table name
+      def table_name_length
+        IDENTIFIER_MAX_LENGTH
+      end
+
+      # the maximum length of a column name
+      def column_name_length
+        IDENTIFIER_MAX_LENGTH
+      end
+
+      # the maximum length of an index name
+      def index_name_length
+        IDENTIFIER_MAX_LENGTH
+      end
+
+      def in_clause_length
+        1000
+      end
+      alias ids_in_list_limit in_clause_length
+
       def native_database_types # :nodoc:
         {
           :primary_key => "BIGINT NOT NULL PRIMARY KEY",
@@ -443,19 +475,23 @@ module ActiveRecord
 
       def exec_query(sql, name = 'SQL', binds = [], &block)
         log(sql, name, binds) do
-          if binds.empty?
-            @connection.execute(sql, @transaction, &block)
-          else
+          unless binds.empty?
+            cache = @statements[sql]
             binds = binds.map do |col, val|
               type_cast(val, col)
             end
-            s = @statements[sql]
-            if s.nil?
-              s = @connection.create_statement(sql)
-              @statements[sql] = s
-            end
-
-            s.execute_for(binds, @transaction, &block)
+          end
+          s = cache || @connection.create_statement(sql)
+          s.prepare(@transaction) unless s.prepared?
+          if Rubyfb::Statement::DDL_STATEMENT == s.type
+            clear_cache!
+          elsif cache.nil? && !binds.empty?
+            @statements[sql] = cache = s
+          end
+          if cache
+            s.exec(binds, @transaction, &block)
+          else
+            s.exec_and_close(binds, @transaction, &block)
           end
         end
       end
@@ -499,7 +535,7 @@ module ActiveRecord
       # called directly; used by ActiveRecord to get the next primary key value
       # when inserting a new database record (see #prefetch_primary_key?).
       def next_sequence_value(sequence_name)
-        Rubyfb::Generator.new(quote_generator_name(sequence_name), @connection).next(1)
+        Rubyfb::Generator.new(quote_generator_name(sequence_name), @connection).next(1, @transaction)
       end
 
       # Inserts the given fixture into the table. Overridden to properly handle blobs.
@@ -591,9 +627,9 @@ module ActiveRecord
       def columns(table_name, name = nil) # :nodoc:
         sql = <<-end_sql
           SELECT r.rdb$field_name, r.rdb$field_source, f.rdb$field_type, f.rdb$field_sub_type,
-                 f.rdb$field_length, f.rdb$field_precision, f.rdb$field_scale,
-                 COALESCE(r.rdb$default_source, f.rdb$default_source) rdb$default_source,
-                 COALESCE(r.rdb$null_flag, f.rdb$null_flag) rdb$null_flag
+                 COALESCE(f.rdb$character_length, f.rdb$field_length) as rdb$field_length, f.rdb$field_precision, f.rdb$field_scale,
+                 COALESCE(r.rdb$default_source, f.rdb$default_source) as rdb$default_source,
+                 COALESCE(r.rdb$null_flag, f.rdb$null_flag) as rdb$null_flag
           FROM rdb$relation_fields r
           JOIN rdb$fields f ON r.rdb$field_source = f.rdb$field_name
           WHERE r.rdb$relation_name = '#{table_name.to_s.upcase}'
@@ -646,8 +682,33 @@ module ActiveRecord
         super(name)
         unless options[:sequence] == false
           sequence_name = options[:sequence] || default_sequence_name(name)
-          drop_sequence(sequence_name) if sequence_exists?(sequence_name)
+          if sequence_exists?(sequence_name)
+            drop_sequence(sequence_name) 
+          end
         end
+      end
+
+      # returned shortened index name if default is too large (from oracle-enhanced)
+      def index_name(table_name, options) #:nodoc:
+        default_name = super(table_name, options).to_s
+        # sometimes options can be String or Array with column names
+        options = {} unless options.is_a?(Hash)
+        identifier_max_length = options[:identifier_max_length] || index_name_length
+        return default_name if default_name.length <= identifier_max_length
+        
+        # remove 'index', 'on' and 'and' keywords
+        shortened_name = "i_#{table_name}_#{Array(options[:column]) * '_'}"
+        
+        # leave just first three letters from each word
+        if shortened_name.length > identifier_max_length
+          shortened_name = shortened_name.split('_').map{|w| w[0,3]}.join('_')
+        end
+        # generate unique name using hash function
+        if shortened_name.length > identifier_max_length
+          shortened_name = 'i'+Digest::SHA1.hexdigest(default_name)[0,identifier_max_length-1]
+        end
+        @logger.warn "#{adapter_name} shortened default index name #{default_name} to #{shortened_name}" if @logger
+        shortened_name
       end
 
       def add_column(table_name, column_name, type, options = {}) # :nodoc:
@@ -906,7 +967,7 @@ module ActiveRecord
         end
 
         def copy_sequence_value(from, to)
-          sequence_value = Rubyfb::Generator.new(quote_generator_name(default_sequence_name(from)), @connection).last
+          sequence_value = Rubyfb::Generator.new(quote_generator_name(default_sequence_name(from)), @connection).last(@transaction)
           exec_query("SET GENERATOR #{quote_generator_name(default_sequence_name(to))} TO #{sequence_value}")
         end
 
@@ -916,12 +977,12 @@ module ActiveRecord
 
         def sequence_exists?(sequence_name)
           #don't quote - here the generatod name is used as data not as metadata
-          Rubyfb::Generator.exists?(sequence_name, @connection)
+          Rubyfb::Generator.exists?(sequence_name, @connection, @transaction)
         end
 
         def create_sequence(table_name, sequence_name)
-          Rubyfb::Generator.create(quote_generator_name(sequence_name), @connection)
-          Rubyfb::Generator.new(quote_generator_name(sequence_name), @connection).next(1000) #FIXME
+          Rubyfb::Generator.create(quote_generator_name(sequence_name), @connection, @transaction)
+          Rubyfb::Generator.new(quote_generator_name(sequence_name), @connection).next(1000, @transaction) #FIXME
           
           pk_sql = <<-end_sql
             SELECT s.rdb$field_name as field_name
@@ -947,7 +1008,7 @@ module ActiveRecord
         end
 
         def drop_sequence(sequence_name)
-          Rubyfb::Generator.new(quote_generator_name(sequence_name), @connection).drop
+          Rubyfb::Generator.new(quote_generator_name(sequence_name), @connection).drop(@transaction)
         end
 
         def create_boolean_domain
