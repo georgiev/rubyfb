@@ -619,11 +619,15 @@ VALUE getClassInModule(const char *name, VALUE owner) {
  */
 VALUE toDateTime(VALUE value) {
   VALUE result,
-        klass = rb_funcall(value, rb_intern("class"), 0);
+        klass = rb_funcall(value, rb_intern("class"), 0),
+        date_time_class = getClass("DateTime");
 
-  if(klass == rb_cTime) {
+  if((klass == rb_cTime) || (klass == date_time_class)) {
     VALUE data;
 
+    if (klass == date_time_class) {
+      value = rb_funcall(value, rb_intern("to_time"), 0);
+    }
     result = rb_ary_new();
 
     data = rb_funcall(value, rb_intern("year"), 0);
