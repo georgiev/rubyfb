@@ -611,7 +611,7 @@ module ActiveRecord
       def primary_key(table_name)
         if pk_row = index_metadata(table_name, true).to_a.first
       		pk_row[2].rstrip.downcase
- 	    	end
+        end
       end
 
       def indexes(table_name, name = nil) # :nodoc:
