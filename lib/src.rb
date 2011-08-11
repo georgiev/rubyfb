@@ -700,7 +700,7 @@ module Rubyfb
       def exec_and_close(parameters=nil, transaction=nil)
          yield row
       end
-      
+
       #
       # This method releases the database resources associated with a Statement
       # object and should be explicitly called when a Statement object is of
@@ -944,6 +944,7 @@ module Rubyfb
       #
       def column_count
       end
+
       
       
       #
@@ -1187,7 +1188,7 @@ module Rubyfb
       
       #
       # This method loads the segments of a blob one after another. The blob
-      # segments are passed as strings to the block passed to the method.
+      # segments are passed as BINARY strings to the block passed to the method.
       #
       def each
          yield segment
