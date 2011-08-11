@@ -62,14 +62,34 @@ module ActiveRecord
       end
     end
 
-    after_save :write_blobs
+    after_save :rubyfb_write_blobs
     
-    def write_blobs #:nodoc:
+    def rubyfb_write_blobs #:nodoc:
       if connection.is_a?(ConnectionAdapters::RubyfbAdapter) 
         connection.write_blobs(self.class.table_name, self.class, attributes, true)
       end
     end
-    private :write_blobs
+    private :rubyfb_write_blobs
+  end
+  
+  #FIXME ugly - but ... https://github.com/rails/rails/issues/1623
+  module FinderMethods
+    def exists?(id = nil)
+      id = id.id if ActiveRecord::Base === id
+
+      join_dependency = construct_join_dependency_for_association_find
+      relation = construct_relation_for_association_find(join_dependency)
+      relation = relation.except(:select).select("1 as o").limit(1)
+
+      case id
+      when Array, Hash
+        relation = relation.where(id)
+      else
+        relation = relation.where(table[primary_key].eq(id)) if id
+      end
+
+      connection.select_value(relation.to_sql) ? true : false
+    end
   end
 
   module ConnectionAdapters
