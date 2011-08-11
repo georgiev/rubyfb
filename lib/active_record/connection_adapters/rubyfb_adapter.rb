@@ -54,7 +54,12 @@ module ActiveRecord
         connection_params << {Rubyfb::Connection::SQL_ROLE_NAME=>config[:sql_role_name]}
       end
       connection = db.connect(*connection_params)
-      ConnectionAdapters::RubyfbAdapter.new(connection, logger, connection_params)
+      
+      if ActiveRecord::VERSION::MAJOR >= 3 && ActiveRecord::VERSION::MINOR >= 1
+        ConnectionAdapters::RubyfbAR31Adapter.new(connection, logger, connection_params)
+      else
+        ConnectionAdapters::RubyfbAdapter.new(connection, logger, connection_params)
+      end
     end
 
     after_save :write_blobs
@@ -504,7 +509,7 @@ module ActiveRecord
       alias :exec_update :exec_insert
 
       def last_inserted_id(result)
-        nil
+        nil #TODO
       end
 
       def begin_db_transaction() # :nodoc:
@@ -571,7 +576,7 @@ module ActiveRecord
 
           klass.serialized_attributes[col.name].tap do |coder|
             if enable_coders && coder
-              value = coder.dump(value)
+              value = dump_blob_value(col, coder, value)
             elsif value.respond_to?(:read)
               value = value.read
             end
@@ -808,11 +813,11 @@ module ActiveRecord
       protected
 
       def log(sql, name, binds = nil) #:nodoc:
-        if binds
-          super sql, name, binds
-        else
-          super sql, name
-        end
+        super sql, name
+      end
+
+      def dump_blob_value(column, coder, value)
+        column.text? ? value.to_yaml : value
       end
 
       def translate_exception(exception, message)
@@ -1048,6 +1053,17 @@ module ActiveRecord
         def ar_to_fb_case(column_name)
           column_name =~ /[[:upper:]]/ ? column_name : column_name.upcase
         end
+    end
+    
+    class RubyfbAR31Adapter < RubyfbAdapter
+    protected
+      def log(sql, name, binds = nil) #:nodoc:
+        super sql, name, binds
+      end
+
+      def dump_blob_value(column, coder, value)
+        coder.dump(value)
+      end
     end
   end
 end
