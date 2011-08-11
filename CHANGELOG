@@ -1,6 +1,15 @@
 v0.6.0 ==
 API changes:
-!!WARNING!! - this version breaks backward compatibility
+!!WARNING!!
+This version breaks backward compatibility
+The major change is that the statement object is no longer tied to a particular
+transaction, allowing us to have a prepared statement object for use in diffent transactions.
+The transaction is supplied as parameter to the exec*() methods. The removal of the execute()
+and execute_for() metods is an intetional API breakage, the exec() method is a direct
+drop in replacement for both methods, but the transaction context will change, and
+may yeld to unexpected results.
+For the brave - alias(:execute_for, :exec); alias(:execute, :exec); will bring back execute*() methods
+!!WARNING!!
 The Statement constructor signature is chnaged, the recomended way for 
 creating new Statement objects is through connection.create_statement() method.
 The Statement execute() and execute_for() methods are gone replaced by the new exec() method.
