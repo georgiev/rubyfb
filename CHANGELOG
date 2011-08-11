@@ -1,3 +1,26 @@
+v0.6.0 ==
+API changes:
+!!WARNING!! - this version breaks backward compatibility
+The Statement constructor signature is chnaged, the recomended way for 
+creating new Statement objects is through connection.create_statement() method.
+The Statement execute() and execute_for() methods are gone replaced by the new exec() method.
+New Statement.exec_and_close() method.
+The ResultSet constructor signature is chnaged
+The direct usage of the ResultSet constructor is discouraged
+Blob.each yields binary strings (no character set conversion is performed,
+there is no gurantee that the segments are character aligned)
+Code cleanups:
+Major rewrite of the Statement code
+Major rewrite of the ResultSet code
+Major rewrite of the Generator code
+Bug fixes:
+Fix buffer overflow in Generator code
+Fix BLOB parameters handling
+A lot of adapter related fixes - rubyfb passes the activerecord 3.1 test suite with 33 failures and 23 errors.
+New features:
+Prepared statements support
+Rails 3.1 + cached statements support
+
 v0.5.9 ==
 Fix multibyte string handling for BLOB parameters
 Pipe up BLOB encoding when converting to string, or iterating over segments
