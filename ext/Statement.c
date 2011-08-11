@@ -124,6 +124,11 @@ void fb_prepare(isc_db_handle *connection, isc_tr_handle *transaction,
   *type = isc_vax_integer(&info[3], isc_vax_integer(&info[1], 2));
 }
 
+/**
+ * Return affected row count for DML statements
+ *
+ * @param  statement   A pointer to the statement handle
+ */
 long fb_query_affected(StatementHandle *statement) {
   ISC_STATUS status[ISC_STATUS_LENGTH];
   ISC_STATUS execute_result;
@@ -170,6 +175,13 @@ long fb_query_affected(StatementHandle *statement) {
   return (result);
 }
 
+/**
+ * Prepare statement parsing arguments array
+ *
+ * @param  args   Array containing statement and transaction objects
+ *
+ * @return  Qnil
+ */
 VALUE prepareFromArray(VALUE args) {
   VALUE self = rb_ary_entry(args, 0);
   VALUE transaction = rb_ary_entry(args, 1);
@@ -177,6 +189,14 @@ VALUE prepareFromArray(VALUE args) {
   return (Qnil);
 }
 
+/**
+ * Prepare statement within transaction context
+ *
+ * @param  self         A reference to the statement object
+ *
+ * @param  transaction  A reference to the transaction object
+ *
+ */
 void prepareInTransaction(VALUE self, VALUE transaction) {
   StatementHandle *hStatement = NULL;
   Data_Get_Struct(self, StatementHandle, hStatement);
@@ -237,8 +257,6 @@ VALUE allocateStatement(VALUE klass) {
  * @param  self         A reference to the Statement object to be initialized.
  * @param  connection   A reference to the Connection object that the statement
  *                      will execute through.
- * @param  transaction  A reference to the Transaction object that the statement
- *                      will work under.
  * @param  sql          A reference to a String object containing the text of
  *                      the SQL statement to be executed.
  *
@@ -343,6 +361,20 @@ VALUE getStatementParameterCount(VALUE self) {
   return(INT2NUM(statement->inputs));
 }
 
+/**
+ * Execute statement and take care of implicit transaction management
+ *
+ * @param  self         A reference to the statement object
+ *
+ * @param  parameters   A reference to the parameter bindings object, can be Qnil
+ *
+ * @param  transaction  A reference to the transaction object, can be Qnil,
+ *                      if so - an implicit transaction is started and resolved when appropriate
+ *
+ * @return  One of a count of the number of rows affected by the SQL statement,
+ *          a ResultSet object for a query or nil.
+ *
+ */
 VALUE execAndManageTransaction(VALUE self, VALUE parameters, VALUE transaction) {
   VALUE result = Qnil;
   
@@ -366,6 +398,20 @@ VALUE execAndManageTransaction(VALUE self, VALUE parameters, VALUE transaction) 
   return (result);
 }
 
+/**
+ * Execute statement and take care of closing it when appropriate
+ *
+ * @param  self         A reference to the statement object
+ *
+ * @param  parameters   A reference to the parameter bindings object, can be Qnil
+ *
+ * @param  transaction  A reference to the transaction object, can be Qnil,
+ *                      if so - an implicit transaction is started and resolved when appropriate
+ *
+ * @return  One of a count of the number of rows affected by the SQL statement,
+ *          a ResultSet object for a query or nil.
+ *
+ */
 VALUE execAndManageStatement(VALUE self, VALUE parameters, VALUE transaction) {
   VALUE result = Qnil,
         args = rb_ary_new();
@@ -382,18 +428,46 @@ VALUE execAndManageStatement(VALUE self, VALUE parameters, VALUE transaction) {
   return (result);
 }
 
+/**
+ * Resolve (rollback) transaction in rescue block
+ *
+ * @param  transaction  A reference to the transaction object
+ *
+ * @param  error  A reference to the exception object
+ *
+ * @return  Qnil
+ *
+ */
 VALUE rescueLocalTransaction(VALUE transaction, VALUE error) {
   rb_funcall(transaction, rb_intern("rollback"), 0);
   rb_exc_raise(error);
   return(Qnil);
 }
 
+/**
+ * Close statement in rescue block
+ *
+ * @param  statement  A reference to the statement object
+ *
+ * @param  error  A reference to the exception object
+ *
+ * @return  Qnil
+ *
+ */
 VALUE rescueStatement(VALUE statement, VALUE error) {
   rb_funcall(statement, rb_intern("close"), 0);
   rb_exc_raise(error);
   return(Qnil);
 }
 
+/**
+ * Execute a statement within a transaction context parsing arguments array
+ *
+ * @param  args   Array containing statement, transaction and parameter bindings objects
+ *
+ * @return  One of a count of the number of rows affected by the SQL statement,
+ *          a ResultSet object for a query or nil.
+ */
 VALUE execInTransactionFromArray(VALUE args) {
   VALUE self = rb_ary_entry(args, 0);
   VALUE transaction = rb_ary_entry(args, 1);
@@ -402,6 +476,13 @@ VALUE execInTransactionFromArray(VALUE args) {
   return(execInTransaction(self, transaction, parameters));
 }
 
+/**
+ * Check if the statement is a select statement
+ *
+ * @param  hStatement   A pointer to the statement handle
+ *
+ * @return  1 if the statement is a select statement, 0 otherwise
+ */
 short isCursorStatement(StatementHandle *hStatement) {
   switch(hStatement->type) {
     case isc_info_sql_stmt_select:
@@ -412,6 +493,18 @@ short isCursorStatement(StatementHandle *hStatement) {
   }
 }
 
+/**
+ * Execute a statement within a transaction context
+ *
+ * @param  self   A reference to the statement object
+ *
+ * @param  transaction   A reference to the transaction object
+ *
+ * @param  parameters   A reference to the parameter bindings object
+ *
+ * @return  One of a count of the number of rows affected by the SQL statement,
+ *          a ResultSet object for a query or nil.
+ */
 VALUE execInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
   VALUE result       = Qnil;
   long affected     = 0;
@@ -474,11 +567,11 @@ VALUE execInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
 /**
  * This method provides the exec method for the Statement class.
  *
- * @param  self        A reference to the Statement object to call the method
- *                     on.
- * @param  parameters  An array containing the parameters to be used in
- *                     executing the statement.
- * @param  transaction Reference to the transaction object
+ * @param  self       A reference to the Statement object to call the method on.
+ *
+ * @param  argc       Parameters count
+ *                    
+ * @param  argv       Parameters array
  *
  * @return  One of a count of the number of rows affected by the SQL statement,
  *          a ResultSet object for a query or nil.
@@ -492,13 +585,13 @@ VALUE execStatement(int argc, VALUE *argv, VALUE self) {
 }
 
 /**
- * This method provides the exec method for the Statement class.
+ * This method provides the exec_and_close method for the Statement class.
  *
- * @param  self        A reference to the Statement object to call the method
- *                     on.
- * @param  parameters  An array containing the parameters to be used in
- *                     executing the statement.
- * @param  transaction Reference to the transaction object
+ * @param  self       A reference to the Statement object to call the method on.
+ *
+ * @param  argc       Parameters count
+ *                    
+ * @param  argv       Parameters array
  *
  * @return  One of a count of the number of rows affected by the SQL statement,
  *          a ResultSet object for a query or nil.
@@ -511,6 +604,15 @@ VALUE execAndCloseStatement(int argc, VALUE *argv, VALUE self) {
   return execAndManageStatement(self, parameters, transaction);
 }
 
+/**
+ * Clean up statement handle - release allocated resources
+ *
+ * @param  statement  A pointer to the statement handle
+ *
+ * @param  raise_errors  If this parameter is 0 - no exceptions are raised from this function,
+ *                      otherwise an exception is raised whenever a problem occurs while releasing resources.
+ *
+ */
 void cleanUpStatement(StatementHandle *statement, int raise_errors) {
   if(statement->handle) {
     ISC_STATUS status[ISC_STATUS_LENGTH];
@@ -567,6 +669,10 @@ VALUE getStatementPrepared(VALUE self) {
  *
  * @param  self  A reference to the Statement object to call the method on.
  *
+ * @param  argc       Parameters count
+ *                    
+ * @param  argv       Parameters array
+ *
  * @return  A reference to the statement object
  *
  */
@@ -600,6 +706,14 @@ VALUE rb_statement_new(VALUE connection, VALUE sql) {
   return(statement);
 }
 
+/**
+ * Execute statement parsing arguments array
+ *
+ * @param  args   Array containing statement, parameters and transaction objects
+ *
+ * @return  One of a count of the number of rows affected by the SQL statement,
+ *          a ResultSet object for a query or nil.
+ */
 VALUE execStatementFromArray(VALUE args) {
   VALUE self = rb_ary_entry(args, 0);
   VALUE params = rb_ary_entry(args, 1);
@@ -625,7 +739,7 @@ VALUE rb_execute_sql(VALUE connection, VALUE sql, VALUE params, VALUE transactio
 }
 
 /**
- * This function provides a programmatic way of preparing the statement object
+ * This function guarantess that the returned statement handle is prepared
  *
  * @param  self  A reference to the Statement object to call the method on.
  *

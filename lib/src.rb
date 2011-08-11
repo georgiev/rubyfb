@@ -360,6 +360,19 @@ module Rubyfb
       def execute_immediate(sql)
          yield(row)
       end
+      
+      #
+      # This function creates a new statement object
+      #
+      # ==== Parameters
+      # sql::  The SQL for the statement.
+      #
+      # ==== Exceptions
+      # Exception::  Generated whenever a problem occurs creating the
+      #              statement object.
+      #
+      def create_statement(sql)
+      end
    end
    
    
@@ -563,13 +576,9 @@ module Rubyfb
       # ==== Parameters
       # connection::   The Connection object that the SQL statement will be
       #                executed through.
-      # transaction::  The Transaction object that the SQL statement will be
-      #                executed under.
       # sql::          The SQL statement to be prepared for execution.
-      # dialect::      The Firebird dialect to be used in preparing the SQL
-      #                statement.
       #
-      def initialize(connection, transaction, sql, dialect)
+      def initialize(connection, sql)
       end
       
       
@@ -577,13 +586,6 @@ module Rubyfb
       # This is the accessor for the connection attribute.
       #
       def connection
-      end
-      
-      
-      #
-      # This is the accessor for the transaction attribute.
-      #
-      def transaction
       end
       
       
@@ -619,27 +621,28 @@ module Rubyfb
       
       
       #
-      # This method executes the SQL statement within a Statement object. This
-      # method returns a ResultSet object if the statement executed was a SQL
-      # query. For non-query SQL statements (insert, update or delete) it
-      # returns an Integer indicating the number of affected rows. For all other
-      # statements the method returns nil. This method accepts a block taking a
-      # single parameter. If this block is provided and the statement is a query
-      # then the rows returned by the query will be passed, one at a time, to
-      # the block.
+      # This method is used to determine whether a Statement object is prepared
+      #
+      def prepared?
+      end
+
+      #
+      # This method prepares the SQL statement
+      #
+      # ==== Parameters
+      # transaction:: A reference to the transaction object (optional). 
+      #               If this parameter is nil - the statement is prepared within 
+      #               its own (implicit) transaction.
       #
       # ==== Exception
-      # Exception::  Generated if the Statement object actual requires some
-      #              parameters or a problem occurs executing the SQL statement.
+      # Exception::  Generated whenever a problem occurspreparing the SQL statement.
       #
-      def execute
-         yield row
+      def prepare(transaction=nil)
       end
-      
-      
+
       #
-      # This method executes the SQL statement within a Statement object and
-      # passes it a set of parameters. Parameterized statements use question
+      # This method executes the SQL statement within a Statement object optionaly
+      # passing it a set of parameters. Parameterized statements use question
       # marks as place holders for values that may change between calls to
       # execute the statement. This method returns a ResultSet object if the
       # statement executed was a SQL query. If the statement was a non-query SQL
@@ -650,20 +653,53 @@ module Rubyfb
       # returned by the query will be passed, one at a time, to the block.
       #
       # ==== Parameters
-      # parameters::  An array of the parameters for the statement. An effort
+      # parameters::  An array of the parameters (optional) for the statement. An effort
       #               will be made to convert the values passed in to the
       #               appropriate types but no guarantees are made (especially
       #               in the case of text fields, which will simply use to_s
       #               if the object passed is not a String).
       #
+      # transaction:: A reference to the transaction object (optional). 
+      #               If this parameter is nil - the statement is execute within 
+      #               its own (implicit) transaction. For statements that return 
+      #               result set objects - the implicit transaction is resolved
+      #               when the result set object is closed, for the other kind of statements
+      #               the implicit transaction is resolved immediately after the execution
+      #
       # ==== Exception
       # Exception::  Generated whenever a problem occurs translating one of the
       #              input parameters or executing the SQL statement.
       #
-      def execute_for(parameters)
+      def exec(parameters=nil, transaction=nil)
          yield row
       end
       
+      #
+      # This method behaves exactly as the exec() method, except that the statement
+      # is also closed. If no result set is generated the statement is closed immediately,
+      # otherwise the statement close() call thakes place when the resul tset close() is called.
+      #
+      # ==== Parameters
+      # parameters::  An array of the parameters (optional) for the statement. An effort
+      #               will be made to convert the values passed in to the
+      #               appropriate types but no guarantees are made (especially
+      #               in the case of text fields, which will simply use to_s
+      #               if the object passed is not a String).
+      #
+      # transaction:: A reference to the transaction object (optional). 
+      #               If this parameter is nil - the statement is execute within 
+      #               its own (implicit) transaction. For statements that return 
+      #               result set objects - the implicit transaction is resolved
+      #               when the result set object is closed, for the other kind of statements
+      #               the implicit transaction is resolved immediately after the execution
+      #
+      # ==== Exception
+      # Exception::  Generated whenever a problem occurs translating one of the
+      #              input parameters or executing the SQL statement.
+      #
+      def exec_and_close(parameters=nil, transaction=nil)
+         yield row
+      end
       
       #
       # This method releases the database resources associated with a Statement
@@ -693,14 +729,9 @@ module Rubyfb
       # This is the constructor for the ResultSet object.
       #
       # ==== Parameters
-      # connection::   A reference to the Connection object that will be used
-      #                to execute the SQL query.
+      # statement::    A reference to the Statement object.
       # transaction::  A reference to the Transaction object that will be used
       #                in executing the SQL query.
-      # sql::          A reference to a String containing the SQL query that
-      #                will be executed.
-      # dialect::      A reference to an integer containing the Firebird dialect
-      #                to be used in executing the SQL statement.
       #
       # ==== Exceptions
       # FireRubyException::  Generated whenever a non-query SQL statement is
@@ -708,7 +739,7 @@ module Rubyfb
       #                      provided or a problem occurs executing the SQL
       #                      against the database.
       #
-      def initialize(connection, transaction, sql, dialect)
+      def initialize(statement, transaction)
       end
       
       
@@ -725,6 +756,11 @@ module Rubyfb
       def transaction
       end
       
+      #
+      # This is the accessor for the statement attribute.
+      #
+      def statement
+      end
       
       #
       # This is the accessor for the sql attribute.
