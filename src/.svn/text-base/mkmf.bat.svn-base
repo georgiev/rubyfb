@@ -1,1 +1,0 @@
-ruby extconf.rb "--with-firebird-dir=c:\Program Files\Firebird\Firebird_1_5" "--with-win32-dir=C:\Program Files\Microsoft Visual Studio 8" "--with-winsdk-dir=C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2" "--with-dotnet-dir=C:\Program Files\Microsoft Visual Studio 8\VC"
