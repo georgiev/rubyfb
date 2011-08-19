@@ -400,7 +400,7 @@ module ActiveRecord
       end
 
       def default_sequence_name(table_name, primary_key = nil) # :nodoc:
-        "#{table_name}_seq"
+        "#{table_name}_seq".upcase
       end
 
 
