@@ -281,7 +281,7 @@ module ActiveRecord
     # or using a view instead.)
     #
     # == Connection Options
-    # The following options are supported by the Firebird adapter. None of the
+    # The following options are supported by the Rubyfb adapter. None of the
     # options have default values.
     #
     # <tt>:database</tt>::

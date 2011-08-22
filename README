@@ -1,46 +1,15 @@
-v0.5.1 =
-Initial rubyfb release
-To use rubyfb adapter in RoR set your database adpter to "rubyfb"
+=== Objective
 
-= FireRuby Version 0.4.1
-FireRuby is an extension for the Ruby programming language that provides access
-to the Firebird open source RDBMS. The FireRuby library is release under the
-Mozilla Public Licence version 1.1 and is free for commercial use.
+The primary goal of the Rubyfb project is to provide Firebird connectivity
+for the Ruby on Rails environment (active record adapter for Firebird database).
 
----
+The project consists of two parts - the Rubyfb library it self and the adapter code.
+While the primary goal is the Firebird support in RoR, the Rubyfb library
+is kept separated, allowing standalone use and has no RoR dependencies.
 
-== Enhancements & Alterations
+=== Origin
 
-This release has been brought about as a direct result of efforts to get the
-library working on a 64 bit platform. This process exposed some code of
-questionable quality. All of the issues raised in getting a 64 bit build have
-been addressed and it's only fair that the improvements obtained be passed on
-to all platforms. Functionally nothing has changed since the last release and
-the new version should replace the old with no problems.
-
-=== Bug Fixes
-
-A number of bug fixes were implemented as part of the effort to get the library
-working on a 64 bit platform. None of these had been raised as bugs against the
-library so I have nothing specific to tick off.
-
-=== Backward Compatibility
-
-Version 0.4.0 of the library made fundamental changes to functionality that was
-available in earlier versions of the library. To help accommodate this change
-elements were added to support backward compatibility. The relevant details are
-listed here...
-
-- Row objects were switched from keying on column names to keying on column
-  aliases. To revert to the older functionality assign a value of true to the
-  $FireRubySettings[:ALIAS_KEYS] global setting.
-  
-- DATE columns were switched from being returned as Time objects to be returned
-  as Date objects. To revert to the older functionality assign a value of true
-  to the $FireRubySettings[:DATE_AS_DATE] global setting.
-  
-One other point to note is that, as of version 0.4.0, Enumerable is included in
-the Row and ResultSet classes.
+Rubyfb library is a fork of the apparently abandoned FireRuby project.
 
 === Issues
 
@@ -48,7 +17,7 @@ Nothing is perfect so this section outlines those issues that are known to
 exist as of this release.
 
 - The service manager functionality does not appear to work on the Mac OS X
-  platform. I don't believe that this is a problem in the FireRuby code as I
+  platform. I don't believe that this is a problem in the Rubyfb code as I
   have tested the Firebird gbak utility with the -service option and it gives
   the same result. If anyone knows this to be untrue or of a work around let me
   know.
@@ -74,7 +43,7 @@ exist as of this release.
 
 == Credit Where Credit Is Due
 
-Over its lifetime the FireRuby library has benefitted from input provided by a
+Over its lifetime the FireRuby library has benefited from input provided by a
 number of individuals. This section acknowledges these inputs...
 
 <b>Ken Kunz</b>: Ken has been a strong supporter of the library from early on and
@@ -93,87 +62,32 @@ library.
 
 ---
   
-== Installation & Usage
+== Installation
 
-The library is provided as a gem and built for use with Ruby 1.8+. Testing
+The library is provided as a gem for use with Ruby 1.8+. Testing
 against an earlier release of Ruby has not been performed. Installation requires
 the Ruby Gems package to be installed. Assuming that these installation criteria
-have been met the library can be installed on Windows by executing a command
+have been met the library can be installed by executing a command
 such as the following...
 
-   gem install fireruby-0.4.1-mswin32.gem
+   gem install rubyfb
    
-On the Mac OS X platform you may require super user privilege if your Ruby is
+On Linux/Mac OS X platforms you may require super user privilege if your Ruby is
 installed to the default location (i.e. /usr/local/lib). In this case you can
 use the sudo command to make the installation like this...
 
-   sudo gem install fireruby-0.4.1-powerpc-darwin.gem
+   sudo gem install rubyfb
    
-Once the gem installation is complete the FireRuby functionality can be accessed
-in code with the usual gem style requires...
+=== Ruby on Rails usage
 
-   require 'rubygems'
-   require 'fireruby'
+In your database.yml set
+  adapter: rubyfb
+
+See RubyfbAdapter documentation for supported options.
   
-=== Build Details
+=== Stand alone usage
 
-The FireRuby library is a Ruby extension written in C. The avoid build issues
-binary versions are provided for a number of platforms, including...
-
-- Windows: Built against a version of Ruby installed using the one-click
-  installer and using the freely available Microsoft development tools. This
-  version was compiled against version 1.5.2 of Firebird.
-  
-- Linux: Built on Ubuntu Linux (Breezy Badger) using a version of Ruby 1.8.2
-  installed via the Synaptic package manager. This package manager was also
-  used to make an installation of Firebird.
-  
-- Mac OS X: Build on version 10.4.3 of OS X against the 1.8.2 version of Ruby
-  that comes with the operating system. A framework installation of Firebird
-  version 1.5.1 was used to make the build.
-
-Its possible to try and build the library on other platforms so I'll provide a
-few details as to how to go about doing this. The first step is to download the
-CVS tar ball from the Ruby Forge site and expand it into a local directory. This
-will create a directory called fireruby. Change into this directory and then
-into the fireruby/src subdirectory.
-
-This directory contains a file called extconf.rb that is used to create the
-make file used to build the library. The make file is created by executing this
-file but before you do there are a number of parameters that you should be
-aware of. The main one of these is --with-firebird-dir. This parameter is used
-to indicate the whereabouts of the Firebird headers and libraries. The following
-is an example of how this might be used...
-
-   ruby extconf.rb --with-firebird-dir=/usr/local/firebird
-   
-You may need to customise the path for your own Firebird installation. The path
-specified should be a directory that contains subdirectories called 'lib' and
-'include'. The lib subdirectory should contain the fbclient shared library and
-include should contain the ibase.h header file.
-
-A note for Windows users. The library requires the free Microsoft C++ compiler,
-the Windows SDK, the .NET SDK and nmake to build. If you have all of these
-and Firebird installed to default locations then you can create a make file
-using the mkmf.bat batch file in the src directory.
-
-Once you have the make file you can attempt a library build using either make
-(on Unix/Linux) or nmake (on Windows). If it builds successfully you can move
-on to creating a gem file for installation. To do this, change into the ../gem
-directory. In this directory you can do the following (on Windows)...
-
-   make_gem
-   
-...or the following (on Unix/Linux)...
-
-   ruby make_gem.rb
-   
-This will create the gem file in the main fireruby directory. Install this and
-execute the unit tests to check whether you're version is working.
-
-=== So How Do I Use It?
-
-This section will provide some examples of usage for the the FireRuby classes.
+This section will provide some examples of usage for the the Rubyfb classes.
 Throughout the code the following set of assumptions are made.
 
 - The user name and password that will be employed to attach to the database
@@ -183,22 +97,22 @@ Throughout the code the following set of assumptions are made.
   same machine) as the test code.
   
 A database, from the Firebird perspective, is made up of one or more files. From
-a FireRuby perspective a user interaction with a database starts through the
+a Rubyfb perspective a user interaction with a database starts through the
 Database class. This class provides facilities that allow for creating, dropping
 and connecting to database instances. For example, to obtain a connection to a
 database you would use something like the following...
 
    require 'rubygems'
-   require 'fireruby'
+   require 'rubyfb'
    
-   include FireRuby
+   include Rubyfb
    
    db = Database.new('./test.fdb')
    c  = db.connect('sysdba', 'masterkey')
    
-This example starts by requiring the necessary files and including the FireRuby
+This example starts by requiring the necessary files and including the Rubyfb
 module locally - later examples will not detail these lines but they are always
-required to use the FireRuby code.
+required to use the Rubyfb code.
 
 The first line of code after the include creates a new database object. This
 process does not actually create the database file (see the Database#create
@@ -214,9 +128,9 @@ database. In doing this we had to provide two parameters, the database user
 name and password. These are required to gain access to the database.
 
 A connection represents a conduit to a database and obtaining a connection is a
-prerequisite to working with the database. The FireRuby library support having
+prerequisite to working with the database. The Rubyfb library support having
 multiple connections, to one or more databases, using one or more users, active
-simultaneously. FireRuby represents a database connection through objects of the
+simultaneously. Rubyfb represents a database connection through objects of the
 Connection class. This class provides functionality to determine the current
 state a database connection (open or closed) and for closing the connection.
 Connections take up resources, both locally and on the database server and
@@ -224,7 +138,7 @@ should be explicitly closed when they are no longer required.
 
 The connection class also provides a set of conveniences methods to allow for
 the execution of SQL against a database. These methods, execute_immediate and
-execute, represently two slightly different approaches to executing SQL against
+execute, representing two slightly different approaches to executing SQL against
 the database. Refer to the API documentation for more information.
 
 An advantage of using a relational database management system like Firebird is
@@ -234,7 +148,7 @@ of the database this means that a series of steps that make changes to the
 tables in the database can be wrapped in a transaction to insure that they
 either all complete or that none of the changes are applied.
 
-The FireRuby library represents a database transaction through instances of the
+The Rubyfb library represents a database transaction through instances of the
 Transaction class. There are two ways of obtaining a Transaction using the
 library, both requiring you to have an open database connection. The first way
 is to construct a new Transaction object like so...
@@ -245,7 +159,7 @@ The Transaction constructor takes a single parameter which must be either a
 Connection object or an array of Connection objects. If you pass an array of
 Connection objects to this constructor then the Transaction created will apply
 across all of the databases that the connections refer to, allowing you to
-have transactional control of work that must utilise more than one database. The
+have transactional control of work that must utilize more than one database. The
 second way to obtain a transaction is to simply request one from a Connection
 object, like so.
 
@@ -265,7 +179,7 @@ discard them. This can be done by calling the commit or rollback methods of the
 Transaction class respectively. Once a transaction has been committed or rolled
 back it can no longer be used and should be discarded. Note that attempts to
 close a connection that has an active transaction against it will fail, so one
-of the commit or rollback methods should be explictly called in code. The
+of the commit or rollback methods should be explicitly called in code. The
 block technique detailed above helps protect against the failure to do this and
 is a useful technique.
 
@@ -282,59 +196,46 @@ optionally, pass parameters to then you need the Statement class.
 The Statement class represents a SQL statement that has been validated and
 prepared for execution. Here's an example of creating a SQL statement...
 
-   s = Statement.new(cxn, tx, 'SELECT * FROM MY_TABLE', 3)
+   s = connection.create_statement('SELECT * FROM MY_TABLE')
    
 In this example we have created a Statement object that wraps a SQL select from
-a table called MY_TABLE. The first parameter to the constructor is a Connection
-object and the second is a Transaction, both mandatory. You may be thinking
-'why do I need a transaction here, I'm not changing anything?'. This is true
-(well sort of) but it's a requirement of the underlying database system. This
-is also the case for the final parameter to the constructor. The value 3 is
-the SQL dialect to be used with the Statement. This exists for reason arising
-from the move from closed source Interbase to open source Firebird. The
-parameter should be given a value of between 1 and 3. If you're not sure what
-this is and you're only using Firebird it's probably safe to use a value of
-3 here. Other values are for backward compatibility. Consult the Firebird and
-Interbase documentation for more details.
+a table called MY_TABLE.
 
-Anyway, now that we have our Statement how do we use it? Well, the answer is
-that we call once of the Statement objects execute methods. The one to be called
-depends on whether the Statement requires parameters or not. What are parameters
-you ask? Well, look at the following...
+Now that we have our Statement how do we use it? Well, the answer is
+that we call one of the Statement objects exec* methods. The one to be called
+depends on whether we want Rubyfb library to take care of the Statement
+object clean up (i.e. - auto clean up):
+  exec_and_close() - will perform the SQL execution and will close the 
+  Statement object when it's appropriate.
 
-   s = Statement.new(cxn, tx, 'SELECT * FROM MY_TABLE WHERE MYID = ?', 3)
-   
-Note that the SQL select for this Statement contains a '?'. This is a position
-holder for a value that the statement expects to be provided later. A Statement
-that wraps such a piece of SQL must be provided with the necessary parameters
-to execute properly. Where a Statement object represents SQL that requires a
-parameter then the execute_for method must be called, like this...
+  exec() - will perform just the SQL execution and will leave the responsibility
+  of closing the Statement object to the user.
+  
+The exec*() methods take two optional arguments:
+  parameters - an array of values for the statement parameters,
+  this parameter can be nil for statements that don't have parameters.
+  Parametrized statements look like this 'SELECT * FROM MY_TABLE WHERE MYID = ?'.
+  Note that the SQL select contains a '?'. This is a position
+  holder for a value that the statement expects to be provided later. A Statement
+  that wraps such a piece of SQL must be provided with the necessary parameters
+  to execute properly.
+  
+  transaction - the transaction that defines the scope of the execution,
+  if this parameter is nil - the statement is execute in its own transaction.
 
-   s.execute_for([25])
-   
-This code executes the SQL substituting the parameters from the array of data
-passed to the function call. If a Statement object represents SQL that does not
-require parameter values a call to the execute method will suffice, such as the
-following...
-
-   s.execute
-   
-The execute methods for the Statement class, as with all of the execute methods
-for the FireRuby library, have three potential return values. They will either
-return an Integer, a ResultSet object or nil. A ResultSet object will only be
-returned for SQL statements that constitute a query, irrespective of whether
-that query returns any data. For all other SQL statements (inserts, updates and
-deletes) the execute method will return a count of the number of rows affected
-by the statement execution. For any other SQL statements the various execute
-methods will return nil.
+The exec*() methods for the Statement class, as with all of the execute methods
+for the Rubyfb library, have three potential return values. They will either
+return an Integer, a ResultSet object or nil.
+A ResultSet object will only be returned for SQL statements that generate 
+output values (like 'select ...', 'select for update ...', 'insert .. returning', 'execute procedure ...'),
+irrespective of whether that query returns any data.
+For insert, update, and delete SQL statements that don't generate output values
+the exec*()/execute() methods will return a count of the number of rows affected by the
+statement execution. For any other SQL statements the return value is nil.
 
 A ResultSet object represents a handle by which the data retrieved for a SQL
-query can be accessed. While it's possible to obtain a ResultSet from one of the
-execute methods on the Connection, Transaction or Statement classes it is more
-efficient to create one directly. The constructor for the ResultSet class
-accepts the same arguments as the constructor for the Statement class but will
-throw an exception if the SQL statement specified is not a query.
-
+query can be accessed. The ResultSet objects are obtained from one of the
+exec*()/execute() methods on the Connection, Transaction or Statement objects.
 Once we have obtained a ResultSet we can extract the rows of data for a query
 from it. To fetch a row of data from a ResultSet object you call the fetch
 method, like the following...
@@ -349,9 +250,8 @@ method will be passed the data for the ResultSet, a row at a time.
 It should be noted that both the Statement and ResultSet objects hold resources
 while they are active. They both possess close methods and these should be
 explicitly called to release the associated resources. The exception to this
-rule is for ResultSets. If you select all of the rows from a ResultSet then the
-resources for the ResultSet are automatically released. It is still safe to call
-close on such a ResultSet as this will not cause errors.
+are Statement objects with exec_and_close() called  - in this case the statement
+objects are managed internally.
 
 Okay, so you've gotten a row of data in the form of a Row object from your
 ResultSet, how do we get the data out of it? Well, there are a number of ways
@@ -371,7 +271,7 @@ This is beneficial as it frees you from the constraint of knowing the ordering
 of the columns within the row. For more information of the Row class please
 consult the API documentation.
 
-That covers the bulk of the SQL classes provided by the FireRuby library. The
+That covers the bulk of the SQL classes provided by the Rubyfb library. The
 two which haven't been touched upon are the Generator class and the Blob class.
 
 The Generator class is a wrapper around the Firebird generator facility. A
@@ -387,15 +287,15 @@ database. Consult the API documentation for further information.
 
 === Errors
 
-Whenever a problem occurs within a FireRuby library class then it is likely that
+Whenever a problem occurs within a Rubyfb library class then it is likely that
 a FireRubyException will be thrown. The FireRubyException class is the error
-class used by the FireRuby library whenever it hits trouble. The class provides
+class used by the Rubyfb library whenever it hits trouble. The class provides
 a means of finding out a little more about what exactly has gone wrong. Again,
 consult the API documentation for more details.
 
 === Firebird Service Manager
 
-The FireRuby library provides a set of class that provide for an interaction
+The Rubyfb library provides a set of class that provide for an interaction
 with the Firebird service manager. This interaction allows for the execution of
 tasks, such as the backing up of a database, on the database server. To execute
 such tasks against the service manager for a Firebird instance you first need
@@ -408,7 +308,7 @@ the host name of the server running the Firebird instance. In the example above
 this would be a local machine but could be any machine that can be reached over
 the network (NOTE: although Firebird supports a number of underlying transport
 protocols in accessing a service manager currently only TCP/IP is supported for
-the FireRuby library).
+the Rubyfb library).
 
 The next step in executing service manager tasks involves connecting your
 ServiceManager object to the service manager for a Firebird instance. To do this
@@ -420,7 +320,7 @@ database administrator you might do the following...
    sm.connect('sysdba', 'masterkey')
    
 Assuming that this succeeds you are now ready to execute tasks through your
-ServiceManager object. Within the FireRuby library individual task are broken
+ServiceManager object. Within the Rubyfb library individual task are broken
 out into separate classes. For this release (0.4.1) there are four task classes
 provided in the library - Backup, Restore, AddUser and RemoveUser. I think the
 class names are relatively self explanatory but if you want more information
