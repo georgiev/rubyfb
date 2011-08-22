@@ -82,6 +82,7 @@ test/SQLTest.rb
 test/SQLTypeTest.rb
 test/ServiceManagerTest.rb
 test/StatementTest.rb
+test/StoredProcedureTest.rb
 test/TestSetup.rb
 test/TransactionTest.rb
 test/TypeTest.rb
