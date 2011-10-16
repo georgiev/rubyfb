@@ -57,6 +57,24 @@ void populateDateField(VALUE, XSQLVAR *);
 void populateTimeField(VALUE, XSQLVAR *);
 void populateTimestampField(VALUE, XSQLVAR *);
 
+long long sql_scale(VALUE value, XSQLVAR *field) {
+  if(field->sqlscale == 0) {
+    return NUM2LL(rb_funcall(value, rb_intern("to_i"), 0));
+  }
+  return (long long)(
+    NUM2DBL(rb_funcall(value, rb_intern("to_f"), 0)) * pow(10, abs(field->sqlscale))
+  );
+}
+
+VALUE sql_unscale(VALUE value, XSQLVAR *field) {
+  if(field->sqlscale == 0) {
+    return value;
+  }
+  return rb_float_new(
+    NUM2DBL(rb_funcall(value, rb_intern("to_f"), 0)) / pow(10, abs(field->sqlscale))
+  );
+}
+
 /**
  * This function converts a single XSQLVAR entry to a Ruby VALUE type.
  *
@@ -129,38 +147,17 @@ VALUE toValue(XSQLVAR *entry,
       break;
 
     case SQL_INT64:       /* Type: DECIMAL, NUMERIC */
-      if(entry->sqlscale != 0) {
-        double divisor  = pow(10, abs(entry->sqlscale));
-
-        actual = *((long long *)entry->sqldata);
-        rb_ary_push(value, rb_float_new(actual / divisor));
-      } else {
-        rb_ary_push(value, LL2NUM(*((long long *)entry->sqldata)));
-      }
+      rb_ary_push(value, sql_unscale(LL2NUM(*((long long *)entry->sqldata)), entry));
       rb_ary_push(value, getColumnType(entry));
       break;
 
     case SQL_LONG:       /* Type: INTEGER, DECIMAL, NUMERIC */
-      if(entry->sqlscale != 0) {
-        double divisor  = pow(10, abs(entry->sqlscale));
-
-        actual = *((int32_t *)entry->sqldata);
-        rb_ary_push(value, rb_float_new(actual / divisor));
-      } else {
-        rb_ary_push(value, LONG2NUM(*((int32_t *)entry->sqldata)));
-      }
+      rb_ary_push(value, sql_unscale(LONG2NUM(*((int32_t *)entry->sqldata)), entry));
       rb_ary_push(value, getColumnType(entry));
       break;
 
     case SQL_SHORT:       /* Type: SMALLINT, DECIMAL, NUMERIC */
-      if(entry->sqlscale != 0) {
-        double divisor  = pow(10, abs(entry->sqlscale));
-
-        actual = *((short *)entry->sqldata);
-        rb_ary_push(value, rb_float_new(actual / divisor));
-      } else {
-        rb_ary_push(value, INT2NUM(*((short *)entry->sqldata)));
-      }
+      rb_ary_push(value, sql_unscale(INT2NUM(*((short *)entry->sqldata)), entry));
       rb_ary_push(value, getColumnType(entry));
       break;
 
@@ -865,21 +862,7 @@ void populateFloatField(VALUE value, XSQLVAR *field) {
  *
  */
 void populateInt64Field(VALUE value, XSQLVAR *field) {
-  VALUE actual = value;
-  long long store  = 0;
-
-  if(TYPE(value) == T_STRING) {
-    if(field->sqlscale != 0) {
-      actual = rb_funcall(value, rb_intern("to_f"), 0);
-    } else {
-      actual = rb_funcall(value, rb_intern("to_i"), 0);
-    }
-  }
-  if(field->sqlscale != 0) {
-    actual = rb_funcall(actual, rb_intern("*"), 1, INT2NUM((long)pow(10, abs(field->sqlscale))));
-  }
-  store = NUM2LL(actual);
-  memcpy(field->sqldata, &store, field->sqllen);
+  *((long long *)field->sqldata) = sql_scale(value, field);
   field->sqltype = SQL_INT64;
 }
 
@@ -893,29 +876,7 @@ void populateInt64Field(VALUE value, XSQLVAR *field) {
  *
  */
 void populateLongField(VALUE value, XSQLVAR *field) {
-  VALUE actual = Qnil;
-  long long full   = 0;
-  long store  = 0;
-
-  if(rb_obj_is_kind_of(value, rb_cInteger)) {
-    actual = value;
-  } else if(TYPE(value) == T_FLOAT) {
-    double number = NUM2DBL(value);
-
-    if(field->sqlscale != 0) {
-      number = number * pow(10, abs(field->sqlscale));
-      actual = INT2NUM((long)number);
-    }
-  } else if(TYPE(value) == T_STRING) {
-    actual = rb_funcall(value, rb_intern("to_i"), 0);
-  } else {
-    rb_fireruby_raise(NULL,
-                      "Error converting input parameter to long integer.");
-  }
-
-  full  = TYPE(actual) == T_FIXNUM ? FIX2INT(actual) : NUM2INT(actual);
-  store = (long)full;
-  memcpy(field->sqldata, &store, field->sqllen);
+  *((long *)field->sqldata) = sql_scale(value, field);
   field->sqltype = SQL_LONG;
 }
 
@@ -929,29 +890,7 @@ void populateLongField(VALUE value, XSQLVAR *field) {
  *
  */
 void populateShortField(VALUE value, XSQLVAR *field) {
-  VALUE actual = Qnil;
-  long long full   = 0;
-  short store  = 0;
-
-  if(rb_obj_is_kind_of(value, rb_cInteger)) {
-    actual = value;
-  } else if(TYPE(value) == T_FLOAT) {
-    double number = NUM2DBL(value);
-
-    if(field->sqlscale != 0) {
-      number = number * pow(10, abs(field->sqlscale));
-      actual = INT2NUM((long)number);
-    }
-  } else if(TYPE(value) == T_STRING) {
-    actual = rb_funcall(value, rb_intern("to_i"), 0);
-  } else {
-    rb_fireruby_raise(NULL,
-                      "Error converting input parameter to short integer.");
-  }
-
-  full  = TYPE(actual) == T_FIXNUM ? FIX2INT(actual) : NUM2INT(actual);
-  store = (short)full;
-  memcpy(field->sqldata, &store, field->sqllen);
+  *((short *)field->sqldata) = sql_scale(value, field);
   field->sqltype = SQL_SHORT;
 }
 
