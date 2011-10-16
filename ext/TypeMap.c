@@ -59,11 +59,14 @@ void populateTimestampField(VALUE, XSQLVAR *);
 
 long long sql_scale(VALUE value, XSQLVAR *field) {
   if(field->sqlscale == 0) {
-    return NUM2LL(rb_funcall(value, rb_intern("to_i"), 0));
+    value = rb_funcall(value, rb_intern("to_i"), 0);
+  } else {
+    value = rb_funcall(value, rb_intern("to_f"), 0);
+    // this requires special care - decimal point shift can cause type overflow
+    // the easyest way is to use ruby arithmetics (although it's not the fastes)
+    value = rb_funcall(value, rb_intern("*"), 1, LONG2NUM((long)pow(10, abs(field->sqlscale))));
   }
-  return (long long)(
-    NUM2DBL(rb_funcall(value, rb_intern("to_f"), 0)) * pow(10, abs(field->sqlscale))
-  );
+  return NUM2LL(value);
 }
 
 VALUE sql_unscale(VALUE value, XSQLVAR *field) {
