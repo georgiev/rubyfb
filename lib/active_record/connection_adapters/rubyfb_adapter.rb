@@ -74,7 +74,10 @@ module ActiveRecord
   
   #FIXME ugly - but ... https://github.com/rails/rails/issues/1623
   module FinderMethods
+    alias :rubyfb_exists_save :exists?
     def exists?(id = nil)
+      return rubyfb_exists_save(id) unless ActiveRecord::VERSION::MAJOR >= 3 && (ActiveRecord::VERSION::MINOR > 0 || ActiveRecord::VERSION::TINY >= 9)
+
       id = id.id if ActiveRecord::Base === id
 
       join_dependency = construct_join_dependency_for_association_find
