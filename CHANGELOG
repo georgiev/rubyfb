@@ -1,3 +1,9 @@
+v0.6.1 ==
+Fix incorrect parameter scaling for fixed precision decimals stored in int32, int16 fields
+http://rubyforge.org/tracker/index.php?func=detail&aid=29406&group_id=9658&atid=37369
+Restore pre 3.0.7 rails compatibility
+http://rubyforge.org/tracker/index.php?func=detail&aid=29398&group_id=9658&atid=37369
+
 v0.6.0 ==
 API changes:
 !!WARNING!!
