@@ -90,11 +90,11 @@ class SQLTest < Test::Unit::TestCase
       r = @transactions[0].execute("SELECT * FROM TEST_TABLE WHERE TESTID IN "\
                                    "(2, 4, 6, 8, 10) ORDER BY TESTID ASCENDING")
       a = r.fetch
-      assert(a[0] == 2)
-      assert(a[1] == '3.0')
-      assert(a[2] == 3.0)
-      assert(a[3] == nil)
-      assert(a[4] == nil)
+      assert_equal(2, a[0])
+      assert_equal('3.0', a[1])
+      assert_equal(3.0, a[2])
+      assert_nil(a[3])
+      assert_nil(a[4])
 
       a = r.fetch
       assert(a[0] == 4)
@@ -155,14 +155,15 @@ class SQLTest < Test::Unit::TestCase
          s.close
          
          # Fetch the record and check the data.
-         r = tx.execute("SELECT TESTTEXT, TESTFLOAT, TESTSTAMP FROM "\
+         r = tx.execute("SELECT TESTTEXT, TESTFLOAT, TESTSTAMP, cast(TESTFLOAT as varchar(20)) as TESTFLOAT_TXT FROM "\
                         "TEST_TABLE WHERE TESTID = 25000")
          a = r.fetch
          r.close
       end
-      assert(a[0] == 'La la la')
-      assert(a[1] == 3.14)
-      assert(a[2].to_i == t.to_i)
+      assert_equal('3.14', a[3])
+      assert_equal('La la la', a[0])
+      assert_equal(3.14, a[1])
+      assert_equal(t.to_i, a[2].to_i)
       
       @connections[0].execute_immediate("DELETE FROM TEST_TABLE WHERE TESTID "\
                                         "IN (1, 3, 5, 7, 9, 12, 14, 16, 18, 20)")
