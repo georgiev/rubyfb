@@ -23,15 +23,15 @@ class TypeTest < Test::Unit::TestCase
          tx.execute("create table types_table (COL01 integer, "\
                     "COL02 float, COL03 decimal(10,2), "\
                     "COL04 numeric(5,3), COL05 date, COL06 timestamp, "\
-                    "COL07 char(10), COL08 time, COL09 varchar(30))")
+                    "COL07 char(10), COL08 time, COL09 varchar(30), COL10 decimal(9,2))")
       end
          
       cxn.start_transaction do |tx|
          stmt = cxn.create_statement("insert into types_table values "\
-                                       "(?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                                       "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
          stmt.exec([10, 100.2, 2378.65, 192.345,
                            Date.new(2005, 10, 21), Time.new, 'La la la',
-                           Time.new, "Oobly Joobly"], tx)
+                           Time.new, "Oobly Joobly", "2530.70".to_f], tx)
          stmt.close
       end
       cxn.close
@@ -59,6 +59,7 @@ class TypeTest < Test::Unit::TestCase
          assert(row[6].instance_of?(String))
          assert(row[7].instance_of?(Time))
          assert(row[8].instance_of?(String))
+         assert_equal("2530.70".to_f, row[9])
       ensure
          rows.close if rows != nil
          cxn.close if cxn != nil
@@ -81,6 +82,7 @@ class TypeTest < Test::Unit::TestCase
          assert(row[6].instance_of?(String))
          assert(row[7].instance_of?(Time))
          assert(row[8].instance_of?(String))
+         assert_equal("2530.70".to_f, row[9])
       ensure
          rows.close if rows != nil
          cxn.close if cxn != nil
