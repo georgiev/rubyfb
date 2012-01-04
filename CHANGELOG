@@ -1,3 +1,7 @@
+v0.6.2 ==
+Update arel visitors
+Use round() when scaling fixed parameter values
+
 v0.6.1 ==
 Fix incorrect parameter scaling for fixed precision decimals stored in int32, int16 fields
 http://rubyforge.org/tracker/index.php?func=detail&aid=29406&group_id=9658&atid=37369
