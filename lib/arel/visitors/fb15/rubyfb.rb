@@ -1,7 +1,6 @@
 module Arel
   module Visitors
-    class RubyFB_15Compat < Arel::Visitors::ToSql
-    	Arel::Visitors::VISITORS['rubyfb'] = Arel::Visitors::RubyFB_15Compat
+    class RubyFB < Arel::Visitors::ToSql
     private
       def visit_Arel_Nodes_Limit o
       end

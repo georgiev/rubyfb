@@ -6,10 +6,11 @@ require 'rubyfb_options'
 
 if defined?(Arel) then
   if Rubyfb::Options.fb15_compat
-    require 'arel/visitors/rubyfb_15compat'
+    require 'arel/visitors/fb15/rubyfb'
   else
     require 'arel/visitors/rubyfb'
   end
+ 	Arel::Visitors::VISITORS['rubyfb'] = Arel::Visitors::RubyFB if defined?(Arel::Visitors::VISITORS)
 end
 
 module Rubyfb # :nodoc: all
@@ -331,6 +332,10 @@ module ActiveRecord
         @transaction = nil
         @blobs_disabled = 0
         @statements = {}
+      end
+
+      def self.visitor_for(pool) # :nodoc:
+        Arel::Visitors::RubyFB.new(pool)
       end
 
       ADAPTER_NAME = 'Rubyfb'.freeze
