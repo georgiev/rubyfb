@@ -1,7 +1,6 @@
 # Author: Ken Kunz <kennethkunz@gmail.com>
 require 'digest/sha1'
 require 'active_record/connection_adapters/abstract_adapter'
-require 'active_support/core_ext/kernel/requires'
 require 'rubyfb_options'
 
 if defined?(Arel) then
@@ -332,6 +331,7 @@ module ActiveRecord
         @transaction = nil
         @blobs_disabled = 0
         @statements = {}
+        @visitor = Arel::Visitors::RubyFB.new self if defined?(Arel::Visitors::RubyFB)
       end
 
       def self.visitor_for(pool) # :nodoc:
