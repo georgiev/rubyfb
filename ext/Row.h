@@ -48,7 +48,6 @@ typedef struct {
 
 /* Function prototypes. */
 void Init_Row(VALUE);
-void freeRow(void *);
 VALUE rb_row_new(VALUE, VALUE, VALUE);
 
 #endif // FIRERUBY_ROW_H

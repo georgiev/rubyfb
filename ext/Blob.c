@@ -100,13 +100,12 @@ static VALUE getBlobData(VALUE self) {
     Data_Get_Struct(self, BlobHandle, blob);
     if(blob->size > 0) {
       char *buffer = loadBlobData(blob);
-
       if(buffer != NULL) {
         data = rfbstr(connection, blob->charset, buffer, blob->size);
+        free(buffer);
+        rb_iv_set(self, "@data", data);
       }
-      free(buffer);
     }
-    rb_iv_set(self, "@data", data);
   }
 
   return(data);

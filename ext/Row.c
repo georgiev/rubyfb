@@ -58,6 +58,43 @@ static VALUE rowValuesAt(int, VALUE *, VALUE);
 /* Globals. */
 VALUE cRow;
 
+/**
+ * This function integrates with the Ruby garbage collector to insure that
+ * all resources associated with a Row object are marked during the mark phase
+ *
+ * @param  row  A pointer to the RowHandle object for the Row object.
+ *
+ */
+void rowGCMark(void *handle) {
+  if(handle != NULL) {
+    RowHandle *row = (RowHandle *)handle;
+    int i;
+    for(i = 0; i < row->size; i++) {
+      rb_gc_mark(row->columns[i].value);
+      rb_gc_mark(row->columns[i].type);
+      rb_gc_mark(row->columns[i].scale);
+    }
+  }
+}
+
+/**
+ * This function integrates with the Ruby garbage collector to insure that
+ * all resources associated with a Row object are released whenever the Row
+ * object is collected.
+ *
+ * @param  row  A pointer to the RowHandle object for the Row object.
+ *
+ */
+void freeRow(void *row) {
+  if(row != NULL) {
+    RowHandle *handle = (RowHandle *)row;
+
+    if(handle->columns != NULL) {
+      free(handle->columns);
+    }
+    free(handle);
+  }
+}
 
 /**
  * This function integrates with the Ruby memory allocation system to allocate
@@ -77,7 +114,7 @@ static VALUE allocateRow(VALUE klass) {
     handle->size    = 0;
     handle->number  = 0;
     handle->columns = NULL;
-    row             = Data_Wrap_Struct(klass, NULL, freeRow, handle);
+    row             = Data_Wrap_Struct(klass, rowGCMark, freeRow, handle);
   } else {
     /* Generate an exception. */
     rb_raise(rb_eNoMemError, "Memory allocation failure allocating a row.");
@@ -813,26 +850,6 @@ VALUE rowValuesAt(int size, VALUE *keys, VALUE self) {
   }
 
   return(result);
-}
-
-
-/**
- * This function integrates with the Ruby garbage collector to insure that
- * all resources associated with a Row object are released whenever the Row
- * object is collected.
- *
- * @param  row  A pointer to the RowHandle object for the Row object.
- *
- */
-void freeRow(void *row) {
-  if(row != NULL) {
-    RowHandle *handle = (RowHandle *)row;
-
-    if(handle->columns != NULL) {
-      free(handle->columns);
-    }
-    free(handle);
-  }
 }
 
 
