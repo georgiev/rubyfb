@@ -712,6 +712,15 @@ module Rubyfb
       #
       def close
       end
+
+      #
+      # This method returns the SQL execution plan for the statement
+      #
+      # ==== Exceptions
+      # FireRubyError::  Generated whenever a problem occurs obtaining the plan
+      #
+      def plan
+      end
    end
    
    
@@ -1509,6 +1518,7 @@ module Rubyfb
       #
       # This method is used to set the indicator for whether checksum values
       # should be ignored in performing a backup.
+
       #
       # ==== Parameters
       # setting::  True to ignore checksums, false otherwise.

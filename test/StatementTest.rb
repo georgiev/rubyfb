@@ -149,4 +149,14 @@ class StatementTest < Test::Unit::TestCase
          cxn.execute_immediate('DROP TABLE STRING_TEST')
       end
    end
+   
+  def test05
+    @database.connect(DB_USER_NAME, DB_PASSWORD) do |cxn|
+      cxn.execute_immediate('CREATE TABLE PLAN_TEST(TEXT VARCHAR(100) CHARACTER SET UTF8)')
+      s = cxn.create_statement('SELECT * FROM PLAN_TEST')
+      assert_equal("PLAN (PLAN_TEST NATURAL)", s.plan)
+      s.close
+      cxn.execute_immediate('DROP TABLE PLAN_TEST')
+    end
+  end
 end

@@ -45,6 +45,7 @@ static VALUE execAndCloseStatement(int, VALUE*, VALUE);
 static VALUE closeStatement(VALUE);
 static VALUE getStatementPrepared(VALUE);
 static VALUE prepareStatement(int, VALUE*, VALUE);
+static VALUE getStatementPlan(VALUE);
 
 VALUE execAndManageTransaction(VALUE, VALUE, VALUE);
 VALUE execAndManageStatement(VALUE, VALUE, VALUE);
@@ -688,6 +689,48 @@ static VALUE prepareStatement(int argc, VALUE *argv, VALUE self) {
 }
 
 /**
+ * This function provides the plan method for the Statement class.
+ *
+ * @param  self  A reference to the Statement object to call the method on.
+ *
+ * @return  Query plan
+ *
+ */
+VALUE getStatementPlan(VALUE self) {
+  StatementHandle *statement = getPreparedHandle(self);
+  ISC_STATUS status[ISC_STATUS_LENGTH];
+  unsigned int dataLength = 1024;
+  unsigned short retry = 1;
+  VALUE result = Qnil;
+  char  items[] = {isc_info_sql_get_plan};
+  char *buffer = ALLOC_N(char, dataLength);
+  while(retry == 1) {
+    retry = 0;
+    if(!isc_dsql_sql_info(status, &statement->handle, sizeof(items), items,
+                         dataLength, buffer)) {
+      switch(buffer[0]) {
+        case isc_info_truncated:
+          dataLength = dataLength + 1024;
+          buffer = REALLOC_N(buffer, char, dataLength);
+          retry = 1;
+          break;
+        case isc_info_sql_get_plan:
+          dataLength = isc_vax_integer(&buffer[1], 2);
+          result = rb_str_new(&buffer[3], dataLength);
+          rb_funcall(result, rb_intern("strip!"), 0);
+        default:
+          retry = 0;
+      }
+    }
+  }
+  free(buffer);
+  if (result == Qnil) {
+    rb_fireruby_raise(status, "Error retrieving query plan.");
+  }
+  return (result);
+}
+
+/**
  * This function provides a programmatic means of creating a Statement object.
  *
  * @param  connection   A reference to a Connection object that will be used by
@@ -797,6 +840,7 @@ void Init_Statement(VALUE module) {
   rb_define_method(cStatement, "parameter_count", getStatementParameterCount, 0);
   rb_define_method(cStatement, "prepare", prepareStatement, -1);
   rb_define_method(cStatement, "prepared?", getStatementPrepared, 0);
+  rb_define_method(cStatement, "plan", getStatementPlan, 0);
 
   rb_define_const(cStatement, "SELECT_STATEMENT",
                   INT2FIX(isc_info_sql_stmt_select));
