@@ -516,17 +516,30 @@ module ActiveRecord
           end
           s = cache || @connection.create_statement(sql)
           s.prepare(@transaction) unless s.prepared?
+          
           if Rubyfb::Statement::DDL_STATEMENT == s.type
             clear_cache!
           elsif cache.nil? && !binds.empty?
             @statements[sql] = cache = s
           end
-          if cache
+          if name == 'EXPLAIN'
+            return s.plan.tap do
+              s.close unless cache
+            end
+          elsif cache
             s.exec(binds, @transaction, &block)
           else
             s.exec_and_close(binds, @transaction, &block)
           end
         end
+      end
+
+      def supports_explain?
+        true
+      end
+
+      def explain(arel, binds = [])
+        exec_query(to_sql(arel), 'EXPLAIN', binds)
       end
 
       def exec_insert(sql, name, binds)
