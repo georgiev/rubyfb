@@ -534,14 +534,6 @@ module ActiveRecord
         end
       end
 
-      def supports_explain?
-        true
-      end
-
-      def explain(arel, binds = [])
-        exec_query(to_sql(arel), 'EXPLAIN', binds)
-      end
-
       def exec_insert(sql, name, binds)
         with_blobs_disabled do
           super
@@ -1097,6 +1089,14 @@ module ActiveRecord
     end
     
     class RubyfbAR31Adapter < RubyfbAdapter
+      def supports_explain?
+        true
+      end
+
+      def explain(arel, binds = [])
+        exec_query(to_sql(arel), 'EXPLAIN', binds)
+      end
+
     protected
       def log(sql, name, binds = nil) #:nodoc:
         super sql, name, binds
