@@ -957,7 +957,7 @@ module ActiveRecord
         end
 
         def change_column_type(table_name, column_name, type, options = {})
-          sql = "ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} TYPE #{type_to_sql(type, options[:limit])}"
+          sql = "ALTER TABLE #{quote_table_name(table_name)} ALTER COLUMN #{quote_column_name(column_name)} TYPE #{type_to_sql(type, options[:limit], options[:precision], options[:scale])}"
           exec_query(sql)
         rescue StatementInvalid
           raise unless non_existent_domain_error?
