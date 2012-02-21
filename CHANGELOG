@@ -1,3 +1,10 @@
+v0.6.3 ==
+Fix change_column() migration method
+Fix Segmentation fault in Row class (GC integration issues)
+Remove deprecated require in rubyfb_adapter.rb
+Fix Rails 3.2 "undefined method `accept' for nil:NilClass" - https://github.com/rails/rails/issues/4632
+Add Rails 3.2 explain() support
+
 v0.6.2 ==
 Update arel visitors
 Use round() when scaling fixed parameter values
