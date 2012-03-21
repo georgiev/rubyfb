@@ -1,3 +1,6 @@
+v0.6.4 ==
+Tyr to fix another Segmentation fault in Row class (GC integration issues)
+
 v0.6.3 ==
 Fix change_column() migration method
 Fix Segmentation fault in Row class (GC integration issues)
