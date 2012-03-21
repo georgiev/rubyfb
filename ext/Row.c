@@ -59,7 +59,7 @@ static VALUE rowValuesAt(int, VALUE *, VALUE);
 VALUE cRow;
 
 /**
- * This function integrates with the Ruby garbage collector to insure that
+ * This function integrates with the Ruby garbage collector to ensure that
  * all resources associated with a Row object are marked during the mark phase
  *
  * @param  row  A pointer to the RowHandle object for the Row object.
@@ -106,21 +106,15 @@ void freeRow(void *row) {
  *
  */
 static VALUE allocateRow(VALUE klass) {
-  VALUE row;
   RowHandle *handle = ALLOC(RowHandle);
-
-  if(handle != NULL) {
-    /* Initialise the row fields. */
-    handle->size    = 0;
-    handle->number  = 0;
-    handle->columns = NULL;
-    row             = Data_Wrap_Struct(klass, rowGCMark, freeRow, handle);
-  } else {
-    /* Generate an exception. */
+  if(handle == NULL) {
     rb_raise(rb_eNoMemError, "Memory allocation failure allocating a row.");
   }
+  handle->size    = 0;
+  handle->number  = 0;
+  handle->columns = NULL;
 
-  return(row);
+  return (Data_Wrap_Struct(klass, rowGCMark, freeRow, handle));
 }
 
 
@@ -865,6 +859,8 @@ VALUE rowValuesAt(int size, VALUE *keys, VALUE self) {
  */
 VALUE rb_row_new(VALUE results, VALUE data, VALUE number) {
   VALUE row = allocateRow(cRow);
+
+  RB_GC_GUARD(row);
 
   initializeRow(row, results, data, number);
 
