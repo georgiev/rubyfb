@@ -31,7 +31,6 @@
 #include "Transaction.h"
 #include "DataArea.h"
 #include "Row.h"
-#include "TypeMap.h"
 #include "ruby.h"
 
 /* Function prototypes. */
@@ -147,8 +146,7 @@ VALUE getResultSetRow(VALUE self) {
 
   Data_Get_Struct(self, ResultsHandle, hResults);
   if(hResults->fetched) {
-    VALUE array = toArray(self);
-    row = rb_row_new(self, array, INT2FIX(hResults->fetched));
+    row = rb_row_new(self, INT2FIX(hResults->fetched));
   }
   return (row);
 }

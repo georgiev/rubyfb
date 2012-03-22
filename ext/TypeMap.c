@@ -57,14 +57,16 @@ void populateDateField(VALUE, XSQLVAR *);
 void populateTimeField(VALUE, XSQLVAR *);
 void populateTimestampField(VALUE, XSQLVAR *);
 
+ID NEW_ID, TO_F_ID, ROUND_ID, ASTERISK_ID, CLASS_ID, TRANSACTION_ID, CONNECTION_ID, STATEMENT_ID, NAME_ID;
+
 long long sql_scale(VALUE value, XSQLVAR *field) {
-  value = rb_funcall(value, rb_intern("to_f"), 0);
+  value = rb_funcall(value, TO_F_ID, 0);
   if(field->sqlscale) {
     // this requires special care - decimal point shift can cause type overflow
     // the easyest way is to use ruby arithmetics (although it's not the fastes)
-    value = rb_funcall(value, rb_intern("*"), 1, LONG2NUM((long)pow(10, abs(field->sqlscale))));
+    value = rb_funcall(value, ASTERISK_ID, 1, LONG2NUM((long)pow(10, abs(field->sqlscale))));
   }
-  return NUM2LL(rb_funcall(value, rb_intern("round"), 0));
+  return NUM2LL(rb_funcall(value, ROUND_ID, 0));
 }
 
 VALUE sql_unscale(VALUE value, XSQLVAR *field) {
@@ -72,7 +74,7 @@ VALUE sql_unscale(VALUE value, XSQLVAR *field) {
     return value;
   }
   return rb_float_new(
-    NUM2DBL(rb_funcall(value, rb_intern("to_f"), 0)) / pow(10, abs(field->sqlscale))
+    NUM2DBL(rb_funcall(value, TO_F_ID, 0)) / pow(10, abs(field->sqlscale))
   );
 }
 
@@ -88,10 +90,10 @@ VALUE sql_unscale(VALUE value, XSQLVAR *field) {
  *          the field type referenced.
  *
  */
-VALUE toValue(XSQLVAR *entry,
+VALUE toColumnValue(XSQLVAR *entry,
               VALUE connection, 
               VALUE transaction) {
-  VALUE value  = rb_ary_new();
+  VALUE column, value = Qnil;
 
   /* Check for NULL values. */
   if(!((entry->sqltype & 1) && (*entry->sqlind < 0))) {
@@ -107,10 +109,6 @@ VALUE toValue(XSQLVAR *entry,
           working = Qnil;
 
     switch(type) {
-    case SQL_ARRAY:       /* Type: ARRAY */
-      /* TO BE DONE! */
-      break;
-
     case SQL_BLOB:        /* Type: BLOB */
       memset(column, 0, 256);
       memset(table, 0, 256);
@@ -119,8 +117,7 @@ VALUE toValue(XSQLVAR *entry,
       blob = openBlob(entry, column, table, connection,
                       transaction);
       working = Data_Wrap_Struct(cBlob, NULL, blobFree, blob);
-      rb_ary_push(value, initializeBlob(working, connection));
-      rb_ary_push(value, getColumnType(entry));
+      value = initializeBlob(working, connection);
       break;
 
     case SQL_TYPE_DATE:       /* Type: DATE */
@@ -130,41 +127,34 @@ VALUE toValue(XSQLVAR *entry,
       datetime.tm_min  = 0;
       datetime.tm_hour = 0;
       if(setting == Qtrue) {
-        rb_ary_push(value, createDate(&datetime));
+        value = createDate(&datetime);
       } else {
-        rb_ary_push(value, createSafeTime(&datetime));
+        value = createSafeTime(&datetime);
       }
-      rb_ary_push(value, getColumnType(entry));
       break;
 
     case SQL_DOUBLE:       /* Type: DOUBLE PRECISION, DECIMAL, NUMERIC */
-      rb_ary_push(value, rb_float_new(*((double *)entry->sqldata)));
-      rb_ary_push(value, getColumnType(entry));
+      value = rb_float_new(*((double *)entry->sqldata));
       break;
 
     case SQL_FLOAT:       /* Type: FLOAT */
-      rb_ary_push(value, rb_float_new(*((float *)entry->sqldata)));
-      rb_ary_push(value, getColumnType(entry));
+      value =  rb_float_new(*((float *)entry->sqldata));
       break;
 
     case SQL_INT64:       /* Type: DECIMAL, NUMERIC */
-      rb_ary_push(value, sql_unscale(LL2NUM(*((long long *)entry->sqldata)), entry));
-      rb_ary_push(value, getColumnType(entry));
+      value =  sql_unscale(LL2NUM(*((long long *)entry->sqldata)), entry);
       break;
 
     case SQL_LONG:       /* Type: INTEGER, DECIMAL, NUMERIC */
-      rb_ary_push(value, sql_unscale(LONG2NUM(*((int32_t *)entry->sqldata)), entry));
-      rb_ary_push(value, getColumnType(entry));
+      value = sql_unscale(LONG2NUM(*((int32_t *)entry->sqldata)), entry);
       break;
 
     case SQL_SHORT:       /* Type: SMALLINT, DECIMAL, NUMERIC */
-      rb_ary_push(value, sql_unscale(INT2NUM(*((short *)entry->sqldata)), entry));
-      rb_ary_push(value, getColumnType(entry));
+      value = sql_unscale(INT2NUM(*((short *)entry->sqldata)), entry);
       break;
 
     case SQL_TEXT:       /* Type: CHAR */
-      rb_ary_push(value, rfbstr(connection, entry->sqlsubtype, entry->sqldata, entry->sqllen));
-      rb_ary_push(value, getColumnType(entry));
+      value = rfbstr(connection, entry->sqlsubtype, entry->sqldata, entry->sqllen);
       break;
 
     case SQL_TYPE_TIME:       /* Type: TIME */
@@ -172,32 +162,25 @@ VALUE toValue(XSQLVAR *entry,
       datetime.tm_year = 70;
       datetime.tm_mon  = 0;
       datetime.tm_mday = 1;
-      rb_ary_push(value, createSafeTime(&datetime));
-      rb_ary_push(value, getColumnType(entry));
+      value = createSafeTime(&datetime);
       break;
 
     case SQL_TIMESTAMP:       /* Type: TIMESTAMP */
       isc_decode_timestamp((ISC_TIMESTAMP *)entry->sqldata, &datetime);
-      rb_ary_push(value, createSafeTime(&datetime));
-      rb_ary_push(value, getColumnType(entry));
+      value = createSafeTime(&datetime);
       break;
 
     case SQL_VARYING:
       memcpy(&length, entry->sqldata, 2);
-      rb_ary_push(value, rfbstr(connection, entry->sqlsubtype, &entry->sqldata[2], length));
-      rb_ary_push(value, getColumnType(entry));
+      value = rfbstr(connection, entry->sqlsubtype, &entry->sqldata[2], length);
       break;
-
-    default:
-      rb_ary_push(value, Qnil);
-      rb_ary_push(value, Qnil);
     }   /* End of switch. */
-  } else {
-    rb_ary_push(value, Qnil);
-    rb_ary_push(value, getColumnType(entry));
   }
 
-  return(value);
+  column = rb_funcall(rb_cObject, NEW_ID, 0);
+  rb_iv_set(column, "@value", value);
+  rb_iv_set(column, "@type", getColumnType(entry));
+  return(column);
 }
 
 
@@ -211,20 +194,20 @@ VALUE toValue(XSQLVAR *entry,
  * @return  A reference to the array containing the row data from the XSQLDA.
  *
  */
-VALUE toArray(VALUE results) {
-  VALUE array       = rb_ary_new(),
-        transaction = rb_funcall(results, rb_intern("transaction"), 0),
-        connection  = rb_funcall(results, rb_intern("connection"), 0);
+VALUE toColumnValuesArray(VALUE results) {
+  VALUE array, transaction, connection;
   XSQLVAR           *entry      = NULL;
   StatementHandle *hStatement = NULL;
   int i;
 
-  Data_Get_Struct(rb_funcall(results, rb_intern("statement"), 0), StatementHandle, hStatement);
+  Data_Get_Struct(rb_funcall(results, STATEMENT_ID, 0), StatementHandle, hStatement);
+  transaction = rb_funcall(results, TRANSACTION_ID, 0);
+  connection  = rb_funcall(results, CONNECTION_ID, 0);
+  array       = rb_ary_new2(hStatement->output->sqln);
+
   entry = hStatement->output->sqlvar;
   for(i = 0; i < hStatement->output->sqln; i++, entry++) {
-    VALUE value = toValue(entry, connection, transaction);
-
-    rb_ary_push(array, value);
+    rb_ary_store(array, i, toColumnValue(entry, connection, transaction));
   }
 
   return(array);
@@ -246,14 +229,12 @@ VALUE toArray(VALUE results) {
  *
  */
 void setParameters(XSQLDA *parameters, VALUE array, VALUE transaction, VALUE connection) {
-  VALUE value;
-  int index,
-      size;
+  long index,
+       size;
   XSQLVAR *parameter = NULL;
 
   /* Check that sufficient parameters have been provided. */
-  value     = rb_funcall(array, rb_intern("size"), 0);
-  size      = (TYPE(value) == T_FIXNUM ? FIX2INT(value) : NUM2INT(value));
+  size      = RARRAY_LEN(array);
   parameter = parameters->sqlvar;
   if(size != parameters->sqld) {
     rb_raise(rb_eException,
@@ -266,14 +247,14 @@ void setParameters(XSQLDA *parameters, VALUE array, VALUE transaction, VALUE con
   /* Populate the parameters from the array's contents. */
   for(index = 0; index < size; index++, parameter++) {
     int type = (parameter->sqltype & ~1);
+    VALUE value = rb_ary_entry(array, index);
 
-    value = rb_ary_entry(array, index);
     /* Check for nils to indicate null values. */
     if(value != Qnil) {
-      VALUE name = rb_funcall(value, rb_intern("class"), 0);
+      VALUE name = rb_funcall(value, CLASS_ID, 0);
 
       *parameter->sqlind = 0;
-      name = rb_funcall(name, rb_intern("name"), 0);
+      name = rb_funcall(name, NAME_ID, 0);
       switch(type) {
       case SQL_ARRAY:        /* Type: ARRAY */
         /* TO BE DONE! */
@@ -367,7 +348,7 @@ VALUE createDate(const struct tm *date) {
     arguments[2] = INT2FIX(date->tm_mday);
 
     /* Create the class instance. */
-    result = rb_funcall2(klass, rb_intern("new"), 3, arguments);
+    result = rb_funcall2(klass, NEW_ID, 3, arguments);
   }
 
 
@@ -412,7 +393,7 @@ VALUE createDateTime(VALUE dt) {
     arguments[6] = rb_funcall(rb_funcall(klass, rb_intern("now"), 0), rb_intern("offset"), 0);
 
     /* Create the class instance. */
-    result = rb_funcall2(klass, rb_intern("new"), 7, arguments);
+    result = rb_funcall2(klass, NEW_ID, 7, arguments);
   }
 
   return(result);
@@ -522,7 +503,7 @@ VALUE getModule(const char *name) {
   VALUE module = getConstant(name, Qnil);
 
   if(module != Qnil) {
-    VALUE type = rb_funcall(module, rb_intern("class"), 0);
+    VALUE type = rb_funcall(module, CLASS_ID, 0);
 
     if(type != rb_cModule) {
       module = Qnil;
@@ -545,7 +526,7 @@ VALUE getClass(const char *name) {
   VALUE klass = getConstant(name, Qnil);
 
   if(klass != Qnil) {
-    VALUE type = rb_funcall(klass, rb_intern("class"), 0);
+    VALUE type = rb_funcall(klass, CLASS_ID, 0);
 
     if(type != rb_cClass) {
       klass = Qnil;
@@ -570,7 +551,7 @@ VALUE getModuleInModule(const char *name, VALUE owner) {
   VALUE module = getConstant(name, owner);
 
   if(module != Qnil) {
-    VALUE type = rb_funcall(module, rb_intern("class"), 0);
+    VALUE type = rb_funcall(module, CLASS_ID, 0);
 
     if(type != rb_cModule) {
       module = Qnil;
@@ -595,7 +576,7 @@ VALUE getClassInModule(const char *name, VALUE owner) {
   VALUE klass = getConstant(name, owner);
 
   if(klass != Qnil) {
-    VALUE type = rb_funcall(klass, rb_intern("class"), 0);
+    VALUE type = rb_funcall(klass, CLASS_ID, 0);
 
     if(type != rb_cClass) {
       klass = Qnil;
@@ -617,7 +598,7 @@ VALUE getClassInModule(const char *name, VALUE owner) {
  */
 VALUE toDateTime(VALUE value) {
   VALUE result,
-        klass = rb_funcall(value, rb_intern("class"), 0),
+        klass = rb_funcall(value, CLASS_ID, 0),
         date_time_class = getClass("DateTime");
 
   if((klass == rb_cTime) || (klass == date_time_class)) {
@@ -813,7 +794,7 @@ void populateDoubleField(VALUE value, XSQLVAR *field) {
 
   if(TYPE(value) != T_FLOAT) {
     if(rb_obj_is_kind_of(value, rb_cNumeric) || TYPE(value) == T_STRING) {
-      actual = rb_funcall(value, rb_intern("to_f"), 0);
+      actual = rb_funcall(value, TO_F_ID, 0);
     } else {
       rb_fireruby_raise(NULL,
                         "Error converting input parameter to double.");
@@ -840,7 +821,7 @@ void populateFloatField(VALUE value, XSQLVAR *field) {
 
   if(TYPE(value) != T_FLOAT) {
     if(rb_obj_is_kind_of(value, rb_cNumeric) || TYPE(value) == T_STRING) {
-      actual = rb_funcall(value, rb_intern("to_f"), 0);
+      actual = rb_funcall(value, TO_F_ID, 0);
     } else {
       rb_fireruby_raise(NULL,
                         "Error converting input parameter to double.");
@@ -980,4 +961,16 @@ void populateTimestampField(VALUE value, XSQLVAR *field) {
   datetime.tm_sec  = FIX2INT(rb_ary_entry(value, 5));
   isc_encode_timestamp(&datetime, (ISC_TIMESTAMP *)field->sqldata);
   field->sqltype   = SQL_TIMESTAMP;
+}
+
+void Init_TypeMap() {
+  NEW_ID = rb_intern("new");
+  TO_F_ID = rb_intern("to_f");
+  ROUND_ID = rb_intern("round");
+  ASTERISK_ID = rb_intern("*");
+  CLASS_ID = rb_intern("class");
+  CONNECTION_ID = rb_intern("connection");
+  TRANSACTION_ID = rb_intern("transaction");
+  STATEMENT_ID = rb_intern("statement");
+  NAME_ID = rb_intern("name");
 }

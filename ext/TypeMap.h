@@ -40,6 +40,7 @@
    #endif
 
 /* Function prototypes. */
+void Init_TypeMap();
 VALUE toArray(VALUE);
 void setParameters(XSQLDA *, VALUE, VALUE, VALUE);
 VALUE getModule(const char *);

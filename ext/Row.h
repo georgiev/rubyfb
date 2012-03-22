@@ -31,23 +31,8 @@
       #define RUBY_H_INCLUDED
    #endif
 
-/* Type definitions. */
-typedef struct {
-  char name[32],
-       alias[32];
-  VALUE value,
-        type,
-        scale;
-} ColumnHandle;
-
-typedef struct {
-  unsigned int size,
-               number;
-  ColumnHandle *columns;
-} RowHandle;
-
 /* Function prototypes. */
 void Init_Row(VALUE);
-VALUE rb_row_new(VALUE, VALUE, VALUE);
+VALUE rb_row_new(VALUE, VALUE);
 
 #endif // FIRERUBY_ROW_H
