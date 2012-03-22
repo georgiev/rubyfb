@@ -122,10 +122,10 @@ class KeyTest < Test::Unit::TestCase
       assert(array.include?(['COL03', 3]))
       
       hash = data.to_hash
-      assert(hash.length == 3)
-      assert(hash['COL01'] == 1)
-      assert(hash['COL02'] == 'Two')
-      assert(hash['COL03'] == 3)
+      assert_equal(3, hash.length)
+      assert_equal(1, hash['COL01'])
+      assert_equal('Two', hash['COL02'])
+      assert_equal(3, hash['COL03'])
       
       array = data.values_at('COL10', 'COL02', 'COL03')
       assert(array.size == 3)

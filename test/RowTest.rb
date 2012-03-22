@@ -20,20 +20,6 @@ class RowTest < Test::Unit::TestCase
       @connection  = database.connect(DB_USER_NAME, DB_PASSWORD)
       @transaction = @connection.start_transaction
       @results     = @connection.execute('SELECT * FROM RDB$FIELDS', @transaction)
-      @empty       = [[0, SQLType::INTEGER], [0, SQLType::INTEGER],
-                      [0, SQLType::INTEGER], [0, SQLType::INTEGER],
-                      [0, SQLType::INTEGER], [0, SQLType::INTEGER],
-                      [0, SQLType::INTEGER], [0, SQLType::INTEGER],
-                      [0, SQLType::INTEGER], [0, SQLType::INTEGER],
-                      [0, SQLType::INTEGER], [0, SQLType::INTEGER],
-                      [0, SQLType::INTEGER], [0, SQLType::INTEGER],
-                      [0, SQLType::INTEGER], [0, SQLType::INTEGER],
-                      [0, SQLType::INTEGER], [0, SQLType::INTEGER],
-                      [0, SQLType::INTEGER], [0, SQLType::INTEGER],
-                      [0, SQLType::INTEGER], [0, SQLType::INTEGER],
-                      [0, SQLType::INTEGER], [0, SQLType::INTEGER],
-                      [0, SQLType::INTEGER], [0, SQLType::INTEGER],
-                      [0, SQLType::INTEGER], [0, SQLType::INTEGER]]
       
       @connection.start_transaction do |tx|
          tx.execute('create table rowtest (COL01 integer, COL02 varchar(10), '\
@@ -66,17 +52,6 @@ class RowTest < Test::Unit::TestCase
          Database.new(DB_FILE).drop(DB_USER_NAME, DB_PASSWORD)
       end
       puts "#{self.class.name} finished." if TEST_LOGGING
-   end
-   
-   def test01
-      row = Row.new(@results, @empty, 100)
-      
-      assert(row.column_count == 28)
-      assert(row.number == 100)
-      assert(row.column_name(0) == 'RDB$FIELD_NAME')
-      assert(row.column_alias(10) == 'RDB$FIELD_TYPE')
-      assert(row[0] == 0)
-      assert(row['RDB$FIELD_TYPE'] == 0)
    end
    
    def test02
@@ -213,5 +188,23 @@ class RowTest < Test::Unit::TestCase
       assert_equal(0, row.column_scale(2))
    ensure
       results.close if results
+   end
+   
+   def test05
+      @connection.start_transaction do |tx|
+         tx.execute('create table rowtest2 (COL01 varchar(5000), COL02 varchar(5000), '\
+                    'COL03 integer)')
+      end
+      1000.times do |i|
+        begin
+          st = @connection.create_statement("insert into rowtest2 values (?, ?, ?)")
+          st.exec(['a'*5000, 'b'*5000, i])
+        ensure
+          st.close
+        end
+      end
+      @connection.execute_immediate("select * from rowtest2") do |row|
+        puts "#{row}\n"
+      end
    end
 end
