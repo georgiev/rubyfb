@@ -32,6 +32,7 @@
 #include "DataArea.h"
 #include "Row.h"
 #include "ruby.h"
+#include "FireRuby.h"
 
 /* Function prototypes. */
 static VALUE allocateResultSet(VALUE);
@@ -57,7 +58,10 @@ static VALUE isResultSetExhausted(VALUE);
 /* Globals. */
 VALUE cResultSet;
 
-StatementHandle* getStatementHandle(VALUE self) {
+ID NEW_ID, SIZE_ID, AT_NAME_ID, AT_ALIAS_ID, AT_KEY_ID, AT_SCALE_ID, AT_COLUMNS_ID, AT_TYPE_ID,
+  AT_RELATION_ID, AT_STATEMENT_ID, AT_TRANSACTION_ID, AT_COLUMNS_ID;
+
+static StatementHandle* getStatementHandle(VALUE self) {
   StatementHandle *hStatement;
   Data_Get_Struct(getResultSetStatement(self), StatementHandle, hStatement);
   
@@ -84,6 +88,15 @@ void resultSetManageStatement(VALUE self) {
   ResultsHandle *hResults = NULL;
   Data_Get_Struct(self, ResultsHandle, hResults);
   hResults->manage_statement = 1;
+}
+
+/**
+ * @self - the result set object
+ * @return - columns metadata array
+*/
+
+VALUE getResultsColumns(VALUE self) {
+  return rb_ivar_get(self, AT_COLUMNS_ID);
 }
 
 /**
@@ -122,13 +135,40 @@ VALUE allocateResultSet(VALUE klass) {
  *
  */
 VALUE initializeResultSet(VALUE self, VALUE statement, VALUE transaction) {
+  int index;
   ResultsHandle *hResults = NULL;
-  Data_Get_Struct(self, ResultsHandle, hResults);
+  StatementHandle *hStatement;
+  XSQLVAR *var;
+  VALUE columns, column, name, alias, key_flag;
 
-  rb_iv_set(self, "@statement", statement);
-  rb_iv_set(self, "@transaction", transaction);
-  hResults->active = 1;
+  Data_Get_Struct(self, ResultsHandle, hResults);
+  rb_ivar_set(self, AT_STATEMENT_ID, statement);
+  rb_ivar_set(self, AT_TRANSACTION_ID, transaction);
   
+  hStatement = getStatementHandle(self);
+  var = hStatement->output->sqlvar;
+  columns = rb_ary_new2(hStatement->output->sqld);
+  rb_ivar_set(self, AT_COLUMNS_ID, columns);
+
+  key_flag = getFireRubySetting("ALIAS_KEYS");
+  for(index = 0; index < hStatement->output->sqld; index++, var++) {
+    column = rb_funcall(rb_cObject, NEW_ID, 0);
+    rb_ary_store(columns, index, column);
+    name = rb_str_new(var->sqlname, var->sqlname_length);
+    alias = rb_str_new(var->aliasname, var->aliasname_length);
+    rb_ivar_set(column, AT_NAME_ID, name);
+    rb_ivar_set(column, AT_ALIAS_ID, alias);
+    if(key_flag == Qtrue) {
+      rb_ivar_set(column, AT_KEY_ID, alias);
+    } else {
+      rb_ivar_set(column, AT_KEY_ID, name);
+    }
+    rb_ivar_set(column, AT_TYPE_ID, getColumnType(var));
+    rb_ivar_set(column, AT_SCALE_ID, INT2FIX(var->sqlscale));
+    rb_ivar_set(column, AT_RELATION_ID, rb_str_new(var->relname, var->relname_length));
+  }
+  
+  hResults->active = 1;
   return(self);
 }
 
@@ -275,7 +315,7 @@ VALUE getResultSetConnection(VALUE self) {
  *
  */
 VALUE getResultSetTransaction(VALUE self) {
-  return rb_iv_get(self, "@transaction");
+  return rb_ivar_get(self, AT_TRANSACTION_ID);
 }
 
 /**
@@ -289,7 +329,7 @@ VALUE getResultSetTransaction(VALUE self) {
  *
  */
 VALUE getResultSetStatement(VALUE self) {
-  return rb_iv_get(self, "@statement");
+  return rb_ivar_get(self, AT_STATEMENT_ID);
 }
 
 
@@ -331,7 +371,7 @@ VALUE getResultSetDialect(VALUE self) {
  *
  */
 VALUE getResultSetColumnCount(VALUE self) {
-  return(INT2NUM(getStatementHandle(self)->output->sqld));
+  return rb_funcall(getResultsColumns(self), SIZE_ID, 0);
 }
 
 
@@ -571,6 +611,19 @@ void resultSetFree(void *handle) {
  *
  */
 void Init_ResultSet(VALUE module) {
+  NEW_ID = rb_intern("new");
+  SIZE_ID = rb_intern("size");
+  AT_NAME_ID = rb_intern("@name");
+  AT_ALIAS_ID = rb_intern("@alias");
+  AT_KEY_ID = rb_intern("@key");
+  AT_SCALE_ID = rb_intern("@scale");
+  AT_COLUMNS_ID = rb_intern("@columns");
+  AT_TYPE_ID = rb_intern("@type");
+  AT_RELATION_ID = rb_intern("@relation");
+  AT_STATEMENT_ID = rb_intern("@statement");
+  AT_TRANSACTION_ID = rb_intern("@transaction");
+  AT_COLUMNS_ID = rb_intern("@columns");
+
   cResultSet = rb_define_class_under(module, "ResultSet", rb_cObject);
   rb_define_alloc_func(cResultSet, allocateResultSet);
   rb_include_module(cResultSet, rb_mEnumerable);

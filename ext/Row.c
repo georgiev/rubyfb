@@ -57,15 +57,16 @@ static VALUE rowValuesAt(int, VALUE *, VALUE);
 
 /* Globals. */
 VALUE cRow;
-ID EQL_ID, FETCH_ID, COLUMN_NAME_ID, COLUMN_ALIAS_ID, COLUMN_SCALE_ID,
-  AT_NAME_ID, AT_ALIAS_ID, AT_KEY_ID, AT_SCALE_ID, AT_COLUMNS_ID, AT_NUMBER_ID,
-  AT_VALUE_ID, AT_TYPE_ID, NEW_ID;
+ID EQL_ID, FETCH_ID, NEW_ID, 
+  AT_COLUMNS_ID, AT_NUMBER_ID,
+  AT_NAME_ID, AT_ALIAS_ID, AT_KEY_ID, AT_SCALE_ID, 
+  AT_VALUE_ID, AT_TYPE_ID, AT_COLUMN_ID;
 
-VALUE getColumns(VALUE self) {
+static VALUE getColumns(VALUE self) {
   return rb_ivar_get(self, AT_COLUMNS_ID);
 }
 
-VALUE checkRowOffset(VALUE columns, VALUE index) {
+static VALUE checkRowOffset(VALUE columns, VALUE index) {
   int offset = FIX2INT(index);
 
   /* Correct negative index values. */
@@ -75,32 +76,51 @@ VALUE checkRowOffset(VALUE columns, VALUE index) {
   return index;
 }
 
-VALUE rowScan(VALUE self, VALUE key, ID slot) {
+static VALUE metadataScan(VALUE self, VALUE key, ID slot) {
   long idx;
   VALUE columns = getColumns(self);
 
   for(idx=0; idx < RARRAY_LEN(columns); idx++) {
-    VALUE field = rb_ary_entry(columns, idx);
-    if(Qtrue == rb_funcall(rb_ivar_get(field, slot), EQL_ID, 1, key)) {
-      return(field);
+    VALUE column = rb_ary_entry(columns, idx),
+          meta_data = rb_ivar_get(column, AT_COLUMN_ID);
+    if(Qtrue == rb_funcall(rb_ivar_get(meta_data, slot), EQL_ID, 1, key)) {
+      return(column);
     }
   }
   return(Qnil);
 }
 
-VALUE rowCollect(VALUE self, ID slot) {
+static VALUE rowCollect(VALUE self, ID slot, short metadata_flag) {
   VALUE columns = getColumns(self);
   long idx, size = RARRAY_LEN(columns);
   VALUE result = rb_ary_new2(size);
   for(idx=0; idx < size; idx++) {
-    VALUE field = rb_ary_entry(columns, idx);
-    rb_ary_store(result, idx, rb_ivar_get(field, slot));
+    VALUE target = rb_ary_entry(columns, idx);
+    if(metadata_flag) {
+      target = rb_ivar_get(target, AT_COLUMN_ID);
+    }
+    rb_ary_store(result, idx, rb_ivar_get(target, slot));
   }
   return(result);
 }
 
-VALUE getField(VALUE columns, VALUE index) {
+static VALUE getColumn(VALUE columns, VALUE index) {
   return rb_funcall(columns, FETCH_ID, 1, index);
+}
+
+static VALUE getMetadata(VALUE columns, VALUE index) {
+  return rb_ivar_get(getColumn(columns, index), AT_COLUMN_ID);
+}
+
+static VALUE columnKey(VALUE column) {
+  return rb_ivar_get(rb_ivar_get(column, AT_COLUMN_ID), AT_KEY_ID);
+}
+
+static VALUE keyValuePair(VALUE column) {
+  VALUE result = rb_ary_new2(2);
+  rb_ary_store(result, 0, columnKey(column));
+  rb_ary_store(result, 1, rb_ivar_get(column, AT_VALUE_ID));
+  return(result);
 }
 
 /**
@@ -120,26 +140,8 @@ VALUE getField(VALUE columns, VALUE index) {
  *
  */
 static VALUE initializeRow(VALUE self, VALUE results, VALUE number) {
-  long idx;
-  VALUE key_flag = getFireRubySetting("ALIAS_KEYS"),
-        data = toFieldsArray(results);
   rb_ivar_set(self, AT_NUMBER_ID, number);
-  rb_ivar_set(self, AT_COLUMNS_ID, data);
-
-  for(idx=0; idx < RARRAY_LEN(data); idx++) {
-    VALUE index = INT2NUM(idx),
-          field = rb_ary_entry(data, idx),
-          name = rb_funcall(results, COLUMN_NAME_ID, 1, index),
-          alias = rb_funcall(results, COLUMN_ALIAS_ID, 1, index);
-    rb_ivar_set(field, AT_NAME_ID, name);
-    rb_ivar_set(field, AT_ALIAS_ID, alias);
-    rb_ivar_set(field, AT_SCALE_ID, rb_funcall(results, COLUMN_SCALE_ID, 1, index));
-    if(key_flag == Qtrue) {
-      rb_ivar_set(field, AT_KEY_ID, alias);
-    } else {
-      rb_ivar_set(field, AT_KEY_ID, name);
-    }
-  }
+  rb_ivar_set(self, AT_COLUMNS_ID, toRowColumns(results));
   return(self);
 }
 
@@ -181,7 +183,7 @@ static VALUE getRowNumber(VALUE self) {
  *
  */
 static VALUE getColumnName(VALUE self, VALUE index) {
-  return rb_ivar_get(getField(getColumns(self), index), AT_NAME_ID);
+  return rb_ivar_get(getMetadata(getColumns(self), index), AT_NAME_ID);
 }
 
 
@@ -196,7 +198,7 @@ static VALUE getColumnName(VALUE self, VALUE index) {
  *
  */
 static VALUE getColumnAlias(VALUE self, VALUE index) {
-  return rb_ivar_get(getField(getColumns(self), index), AT_ALIAS_ID);
+  return rb_ivar_get(getMetadata(getColumns(self), index), AT_ALIAS_ID);
 }
 
 
@@ -215,9 +217,9 @@ static VALUE getColumnValue(VALUE self, VALUE index) {
   VALUE fld;
 
   if(TYPE(index) == T_STRING) {
-    fld = rowScan(self, index, AT_KEY_ID);
+    fld = metadataScan(self, index, AT_KEY_ID);
   } else {
-    fld = getField(getColumns(self), index);
+    fld = getColumn(getColumns(self), index);
   }
   if(Qnil == fld) {
     return(Qnil);
@@ -243,12 +245,7 @@ VALUE eachColumn(VALUE self) {
     long i;
     VALUE columns = getColumns(self);
     for(i = 0; i < RARRAY_LEN(columns); i++) {
-      VALUE fld = rb_ary_entry(columns, i),
-                  parameters = rb_ary_new();
-      rb_ary_push(parameters, rb_ivar_get(fld, AT_KEY_ID));
-      rb_ary_push(parameters, rb_ivar_get(fld, AT_VALUE_ID));
-
-      result = rb_yield(parameters);
+      result = rb_yield(keyValuePair(rb_ary_entry(columns, i)));
     }
   }
 
@@ -274,7 +271,7 @@ VALUE eachColumnKey(VALUE self) {
     long i;
     VALUE columns = getColumns(self);
     for(i = 0; i < RARRAY_LEN(columns); i++) {
-      result = rb_yield(rb_ivar_get(rb_ary_entry(columns, i), AT_KEY_ID));
+      result = rb_yield(columnKey(rb_ary_entry(columns, i)));
     }
   }
 
@@ -356,7 +353,7 @@ VALUE fetchRowValue(int size, VALUE *parameters, VALUE self) {
  *
  */
 VALUE hasColumnKey(VALUE self, VALUE name) {
-  if(Qnil == rowScan(self, name, AT_KEY_ID)) {
+  if(Qnil == metadataScan(self, name, AT_KEY_ID)) {
     return Qfalse;
   }
   return Qtrue;
@@ -375,7 +372,7 @@ VALUE hasColumnKey(VALUE self, VALUE name) {
  *
  */
 VALUE hasColumnName(VALUE self, VALUE name) {
-  if(Qnil == rowScan(self, name, AT_NAME_ID)) {
+  if(Qnil == metadataScan(self, name, AT_NAME_ID)) {
     return Qfalse;
   }
   return Qtrue;
@@ -394,7 +391,7 @@ VALUE hasColumnName(VALUE self, VALUE name) {
  *
  */
 VALUE hasColumnAlias(VALUE self, VALUE name) {
-  if(Qnil == rowScan(self, name, AT_ALIAS_ID)) {
+  if(Qnil == metadataScan(self, name, AT_ALIAS_ID)) {
     return Qfalse;
   }
   return Qtrue;
@@ -432,7 +429,7 @@ VALUE hasColumnValue(VALUE self, VALUE value) {
  *
  */
 VALUE getColumnKeys(VALUE self) {
-  return rowCollect(self, AT_KEY_ID);
+  return rowCollect(self, AT_KEY_ID, 1);
 }
 
 
@@ -445,7 +442,7 @@ VALUE getColumnKeys(VALUE self) {
  *
  */
 VALUE getColumnNames(VALUE self) {
-  return rowCollect(self, AT_NAME_ID);
+  return rowCollect(self, AT_NAME_ID, 1);
 }
 
 
@@ -458,7 +455,7 @@ VALUE getColumnNames(VALUE self) {
  *
  */
 VALUE getColumnAliases(VALUE self) {
-  return rowCollect(self, AT_ALIAS_ID);
+  return rowCollect(self, AT_ALIAS_ID, 1);
 }
 
 
@@ -471,7 +468,7 @@ VALUE getColumnAliases(VALUE self) {
  *
  */
 VALUE getColumnValues(VALUE self) {
-  return rowCollect(self, AT_VALUE_ID);
+  return rowCollect(self, AT_VALUE_ID, 0);
 }
 
 
@@ -486,7 +483,7 @@ VALUE getColumnValues(VALUE self) {
  */
 VALUE getColumnBaseType(VALUE self, VALUE index) {
   VALUE columns = getColumns(self);
-  return rb_ivar_get(getField(columns, checkRowOffset(columns, index)), AT_TYPE_ID);
+  return rb_ivar_get(getMetadata(columns, checkRowOffset(columns, index)), AT_TYPE_ID);
 }
 
 /**
@@ -502,7 +499,7 @@ VALUE getColumnBaseType(VALUE self, VALUE index) {
  */
 static VALUE getColumnScale(VALUE self, VALUE index) {
   VALUE columns = getColumns(self);
-  return rb_ivar_get(getField(columns, checkRowOffset(columns, index)), AT_SCALE_ID);
+  return rb_ivar_get(getMetadata(columns, checkRowOffset(columns, index)), AT_SCALE_ID);
 }
 
 
@@ -525,10 +522,7 @@ VALUE selectRowEntries(VALUE self) {
   }
 
   for(i = 0; i < RARRAY_LEN(columns); i++) {
-    VALUE fld = rb_ary_entry(columns, i),
-                parameters = rb_ary_new();
-    rb_ary_push(parameters, rb_ivar_get(fld, AT_KEY_ID));
-    rb_ary_push(parameters, rb_ivar_get(fld, AT_VALUE_ID));
+    VALUE parameters = keyValuePair(rb_ary_entry(columns, i));
     if(rb_yield(parameters) == Qtrue) {
       rb_ary_push(result, parameters);
     }
@@ -552,11 +546,7 @@ VALUE rowToArray(VALUE self) {
         columns = getColumns(self);
 
   for(i = 0; i < RARRAY_LEN(columns); i++) {
-    VALUE fld = rb_ary_entry(columns, i),
-                parameters = rb_ary_new();
-    rb_ary_push(parameters, rb_ivar_get(fld, AT_KEY_ID));
-    rb_ary_push(parameters, rb_ivar_get(fld, AT_VALUE_ID));
-    rb_ary_push(result, parameters);
+    rb_ary_push(result, keyValuePair(rb_ary_entry(columns, i)));
   }
 
   return(result);
@@ -578,7 +568,7 @@ VALUE rowToHash(VALUE self) {
 
   for(i = 0; i < RARRAY_LEN(columns); i++) {
     VALUE fld = rb_ary_entry(columns, i);
-    rb_hash_aset(result, rb_ivar_get(fld, AT_KEY_ID), rb_ivar_get(fld, AT_VALUE_ID));
+    rb_hash_aset(result, columnKey(fld), rb_ivar_get(fld, AT_VALUE_ID));
   }
 
   return(result);
@@ -640,9 +630,6 @@ void Init_Row(VALUE module) {
   Init_TypeMap();
   EQL_ID = rb_intern("eql?");
   FETCH_ID = rb_intern("fetch");
-  COLUMN_NAME_ID = rb_intern("column_name");
-  COLUMN_ALIAS_ID = rb_intern("column_alias");
-  COLUMN_SCALE_ID = rb_intern("column_scale");
   AT_NAME_ID = rb_intern("@name");
   AT_ALIAS_ID = rb_intern("@alias");
   AT_KEY_ID = rb_intern("@key");
@@ -652,6 +639,7 @@ void Init_Row(VALUE module) {
   AT_VALUE_ID = rb_intern("@value");
   AT_TYPE_ID = rb_intern("@type");
   NEW_ID = rb_intern("new");
+  AT_COLUMN_ID = rb_intern("@column");
   
   cRow = rb_define_class_under(module, "Row", rb_cObject);
   rb_include_module(cRow, rb_mEnumerable);
