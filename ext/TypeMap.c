@@ -57,7 +57,8 @@ void populateDateField(VALUE, XSQLVAR *);
 void populateTimeField(VALUE, XSQLVAR *);
 void populateTimestampField(VALUE, XSQLVAR *);
 
-ID NEW_ID, TO_F_ID, ROUND_ID, ASTERISK_ID, CLASS_ID, TRANSACTION_ID, CONNECTION_ID, STATEMENT_ID, NAME_ID;
+ID NEW_ID, TO_F_ID, ROUND_ID, ASTERISK_ID, CLASS_ID, TRANSACTION_ID,
+  CONNECTION_ID, STATEMENT_ID, NAME_ID, AT_VALUE_ID, AT_TYPE_ID;
 
 long long sql_scale(VALUE value, XSQLVAR *field) {
   value = rb_funcall(value, TO_F_ID, 0);
@@ -90,7 +91,7 @@ VALUE sql_unscale(VALUE value, XSQLVAR *field) {
  *          the field type referenced.
  *
  */
-VALUE toColumnValue(XSQLVAR *entry,
+VALUE toField(XSQLVAR *entry,
               VALUE connection, 
               VALUE transaction) {
   VALUE column, value = Qnil;
@@ -178,8 +179,8 @@ VALUE toColumnValue(XSQLVAR *entry,
   }
 
   column = rb_funcall(rb_cObject, NEW_ID, 0);
-  rb_iv_set(column, "@value", value);
-  rb_iv_set(column, "@type", getColumnType(entry));
+  rb_ivar_set(column, AT_VALUE_ID, value);
+  rb_ivar_set(column, AT_TYPE_ID, getColumnType(entry));
   return(column);
 }
 
@@ -194,7 +195,7 @@ VALUE toColumnValue(XSQLVAR *entry,
  * @return  A reference to the array containing the row data from the XSQLDA.
  *
  */
-VALUE toColumnValuesArray(VALUE results) {
+VALUE toFieldsArray(VALUE results) {
   VALUE array, transaction, connection;
   XSQLVAR           *entry      = NULL;
   StatementHandle *hStatement = NULL;
@@ -207,7 +208,7 @@ VALUE toColumnValuesArray(VALUE results) {
 
   entry = hStatement->output->sqlvar;
   for(i = 0; i < hStatement->output->sqln; i++, entry++) {
-    rb_ary_store(array, i, toColumnValue(entry, connection, transaction));
+    rb_ary_store(array, i, toField(entry, connection, transaction));
   }
 
   return(array);
@@ -973,4 +974,6 @@ void Init_TypeMap() {
   TRANSACTION_ID = rb_intern("transaction");
   STATEMENT_ID = rb_intern("statement");
   NAME_ID = rb_intern("name");
+  AT_VALUE_ID = rb_intern("@value");
+  AT_TYPE_ID = rb_intern("@type");
 }
