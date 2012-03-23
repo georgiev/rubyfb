@@ -156,7 +156,7 @@ class RowTest < Test::Unit::TestCase
          results = @connection.execute_immediate('select * from all_types')
          row     = results.fetch
          
-         assert(row.get_base_type(0) == SQLType::BIGINT)
+         assert_equal(SQLType::BIGINT, row.get_base_type(0))
          assert(row.get_base_type(1) == SQLType::BLOB)
          assert(row.get_base_type(2) == SQLType::CHAR)
          assert(row.get_base_type(3) == SQLType::DATE)
