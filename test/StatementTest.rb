@@ -98,10 +98,10 @@ class StatementTest < Test::Unit::TestCase
       r.close
       
       total = 0
-      s.exec(["%"], @transactions[0]) do |row|
+      s.exec(["RDB$COLLATION%"], @transactions[0]) do |row|
          total += 1
       end
-      assert_equal(88, total)
+      assert_equal(2, total)
       s.close
    end
    

@@ -61,7 +61,7 @@ class RowTest < Test::Unit::TestCase
       
       count = 0
       data.each do |name, value|
-         assert(['ONE', 'TWO', 'THREE'].include?(name))
+         assert(['ONE', 'TWO', 'THREE'].include?(name), name)
          assert([1, 'Two', 3].include?(value))
          count += 1
       end
