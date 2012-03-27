@@ -39,7 +39,6 @@
 #include "Statement.h"
 #include "Transaction.h"
 #include "Restore.h"
-#include "Row.h"
 
 
 /**
@@ -202,12 +201,12 @@ void Init_rubyfb_lib(void) {
   Init_Database(module);
   Init_Connection(module);
   Init_Transaction(module);
+  Init_TypeMap(module);
   Init_Statement(module);
   Init_ResultSet(module);
   Init_Generator(module);
   Init_FireRubyException(module);
   Init_Blob(module);
-  Init_Row(module);
   Init_ServiceManager(module);
   Init_Backup(module);
   Init_AddUser(module);

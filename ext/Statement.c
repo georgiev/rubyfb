@@ -176,6 +176,10 @@ long fb_query_affected(StatementHandle *statement) {
   return (result);
 }
 
+VALUE getStatementMetadata(VALUE self) {
+  return rb_ivar_get(self, rb_intern("@metadata"));
+}
+
 /**
  * Prepare statement parsing arguments array
  *
@@ -205,7 +209,7 @@ void prepareInTransaction(VALUE self, VALUE transaction) {
   if(0 == hStatement->handle) {
     ConnectionHandle  *hConnection  = NULL;
     TransactionHandle *hTransaction = NULL;
-    VALUE sql = rb_iv_get(self, "@sql");
+    VALUE metadata, sql = rb_iv_get(self, "@sql");
     Data_Get_Struct(getStatementConnection(self), ConnectionHandle, hConnection);
     Data_Get_Struct(transaction, TransactionHandle, hTransaction);
 
@@ -214,12 +218,38 @@ void prepareInTransaction(VALUE self, VALUE transaction) {
             StringValuePtr(sql), &hStatement->handle,
             hStatement->dialect, &hStatement->type, &hStatement->inputs,
             &hStatement->outputs);
+
+    metadata = rb_ary_new2(hStatement->outputs);
+    rb_ivar_set(self, rb_intern("@metadata"), metadata);
+
     if(hStatement->outputs > 0) {
+      int index;
+      XSQLVAR *var;
+      VALUE column, name, alias, key_flag = getFireRubySetting("ALIAS_KEYS");
+
       /* Allocate the XSQLDA */
       hStatement->output = allocateOutXSQLDA(hStatement->outputs,
                                                &hStatement->handle,
                                                hStatement->dialect);
       prepareDataArea(hStatement->output);
+
+      var = hStatement->output->sqlvar;
+      for(index = 0; index < hStatement->output->sqld; index++, var++) {
+        column = rb_funcall(self, rb_intern("create_column_metadata"), 0);
+        rb_ary_store(metadata, index, column);
+        name = rb_str_new(var->sqlname, var->sqlname_length);
+        alias = rb_str_new(var->aliasname, var->aliasname_length);
+        rb_ivar_set(column, rb_intern("@name"), name);
+        rb_ivar_set(column, rb_intern("@alias"), alias);
+        if(key_flag == Qtrue) {
+          rb_ivar_set(column, rb_intern("@key"), alias);
+        } else {
+          rb_ivar_set(column, rb_intern("@key"), name);
+        }
+        rb_ivar_set(column, rb_intern("@type"), getColumnType(var));
+        rb_ivar_set(column, rb_intern("@scale"), INT2FIX(var->sqlscale));
+        rb_ivar_set(column, rb_intern("@relation"), rb_str_new(var->relname, var->relname_length));
+      }
     }
   }
 }

@@ -91,7 +91,7 @@ class RowTest < Test::Unit::TestCase
       end
       
       assert(data.has_key?('ONE'))
-      assert(data.has_key?('TEN') == false)
+      assert_equal(false, data.has_key?('TEN'))
       
       assert(data.has_column?('COL02'))
       assert(data.has_column?('COL22') == false)

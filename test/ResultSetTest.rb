@@ -73,7 +73,7 @@ class ResultSetTest < Test::Unit::TestCase
       assert(r.dialect == 3)
       
       assert(r.fetch != nil)
-      assert(r.fetch.class == Row)
+      assert_equal(Row, r.fetch.class)
       assert(r.fetch[0] == 30)
       assert(r.fetch[1] == 'Record Four.')
       r.fetch

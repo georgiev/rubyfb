@@ -52,7 +52,6 @@ short isActiveResultSet(VALUE);
 VALUE yieldResultsRows(VALUE);
 void resultSetManageTransaction(VALUE);
 void resultSetManageStatement(VALUE);
-VALUE getResultsColumns(VALUE);
 
 #endif /* FIRERUBY_RESULT_SET_H */
 

@@ -55,5 +55,6 @@ VALUE rb_statement_new(VALUE, VALUE);
 VALUE rb_execute_sql(VALUE, VALUE, VALUE, VALUE);
 void Init_Statement(VALUE);
 short isCursorStatement(StatementHandle*);
+VALUE getStatementMetadata(VALUE);
 
 #endif /* FIRERUBY_STATEMENT_H */
