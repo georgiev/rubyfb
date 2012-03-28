@@ -83,7 +83,7 @@ class ResultSetTest < Test::Unit::TestCase
       r = @connections[0].execute("SELECT * FROM TEST_TABLE ORDER BY TESTID", @transactions[0])
       assert_equal(Rubyfb::ResultSet, r.class)
       assert(r.column_count == 2)
-      assert(r.column_name(0) == 'TESTID')
+      assert_equal('TESTID', r.column_name(0))
       assert(r.column_name(1) == 'TESTINFO')
       assert(r.column_name(3) == nil)
       assert(r.column_name(-1) == nil)

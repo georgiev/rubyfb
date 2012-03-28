@@ -31,7 +31,6 @@
 #include "Blob.h"
 #include "Connection.h"
 #include "Transaction.h"
-#include "ResultSet.h"
 #include "Statement.h"
 #include "FireRuby.h"
 #include "rfbint.h"
@@ -192,15 +191,13 @@ VALUE toValue(XSQLVAR *entry,
  * @return  A reference to the array containing the row data from the XSQLDA.
  *
  */
-VALUE toValueArray(VALUE results) {
+VALUE toValueArray(VALUE statement, VALUE transaction) {
   int i;
   XSQLVAR           *entry      = NULL;
   StatementHandle *hStatement = NULL;
-  VALUE array, transaction, connection, statement;
+  VALUE array, connection;
 
-  statement = rb_funcall(results, STATEMENT_ID, 0);
-  transaction = rb_funcall(results, TRANSACTION_ID, 0);
-  connection  = rb_funcall(results, CONNECTION_ID, 0);
+  connection  = rb_funcall(statement, CONNECTION_ID, 0);
   Data_Get_Struct(statement, StatementHandle, hStatement);
   array       = rb_ary_new2(hStatement->output->sqln);
 

@@ -26,7 +26,6 @@
 /* Includes. */
 #include "Connection.h"
 #include "Database.h"
-#include "ResultSet.h"
 #include "Statement.h"
 #include "Transaction.h"
 #include "Common.h"

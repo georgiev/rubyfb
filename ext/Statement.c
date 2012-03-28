@@ -30,7 +30,6 @@
 #include "Transaction.h"
 #include "DataArea.h"
 #include "TypeMap.h"
-#include "ResultSet.h"
 
 /* Function prototypes. */
 static VALUE allocateStatement(VALUE);
@@ -47,20 +46,24 @@ static VALUE getStatementPrepared(VALUE);
 static VALUE prepareStatement(int, VALUE*, VALUE);
 static VALUE getStatementPlan(VALUE);
 
-VALUE execAndManageTransaction(VALUE, VALUE, VALUE);
-VALUE execAndManageStatement(VALUE, VALUE, VALUE);
-VALUE rescueLocalTransaction(VALUE, VALUE);
-VALUE execStatementFromArray(VALUE);
-VALUE rescueStatement(VALUE, VALUE);
-VALUE execInTransactionFromArray(VALUE);
-VALUE execInTransaction(VALUE, VALUE, VALUE);
-void prepareInTransaction(VALUE, VALUE);
-VALUE prepareFromArray(VALUE);
-void statementFree(void *);
-StatementHandle* getPreparedHandle(VALUE self);
+static VALUE execAndManageTransaction(VALUE, VALUE, VALUE);
+static VALUE execAndManageStatement(VALUE, VALUE, VALUE);
+static VALUE rescueLocalTransaction(VALUE, VALUE);
+static VALUE execStatementFromArray(VALUE);
+static VALUE rescueStatement(VALUE, VALUE);
+static VALUE execInTransactionFromArray(VALUE);
+static VALUE execInTransaction(VALUE, VALUE, VALUE);
+static void prepareInTransaction(VALUE, VALUE);
+static VALUE prepareFromArray(VALUE);
+static void statementFree(void *);
+static StatementHandle* getPreparedHandle(VALUE self);
 
 /* Globals. */
-VALUE cStatement;
+static VALUE cStatement, cResultSet;
+
+static const ISC_STATUS FETCH_MORE = 0;
+static const ISC_STATUS FETCH_COMPLETED = 100;
+static const ISC_STATUS FETCH_ONE = 101;
 
 /**
  * This function prepares a Firebird SQL statement for execution.
@@ -171,6 +174,16 @@ long fb_query_affected(StatementHandle *statement) {
     if(current == info) {
       result = temp[1];
       done      = 1;
+    }
+  }
+  return (result);
+}
+
+static short isActiveResultSet(VALUE object) {
+  short result = 0;
+  if ((Qtrue == rb_obj_is_kind_of(object, cResultSet))) {
+    if(Qtrue == rb_funcall(object, rb_intern("active?"), 0)) {
+      result = 1;
     }
   }
   return (result);
@@ -419,7 +432,7 @@ VALUE execAndManageTransaction(VALUE self, VALUE parameters, VALUE transaction) 
     
     result = rb_rescue(execInTransactionFromArray, args, rescueLocalTransaction, transaction);
     if(isActiveResultSet(result)) {
-      resultSetManageTransaction(result);
+      rb_ivar_set(result, rb_intern("@manage_transaction"), Qtrue);
     } else {
       rb_funcall(transaction, rb_intern("commit"), 0);
     }
@@ -452,7 +465,7 @@ VALUE execAndManageStatement(VALUE self, VALUE parameters, VALUE transaction) {
   rb_ary_push(args, transaction);
   result = rb_rescue(execStatementFromArray, args, rescueStatement, self);
   if(isActiveResultSet(result)) {
-    resultSetManageStatement(result);
+    rb_ivar_set(result, rb_intern("@manage_statement"), Qtrue);
   } else {
     closeStatement(self);
   }
@@ -524,6 +537,10 @@ short isCursorStatement(StatementHandle *hStatement) {
   }
 }
 
+static VALUE resultSetEach(VALUE resultSet) {
+  return rb_funcall(resultSet, rb_intern("each"), 0);
+}
+
 /**
  * Execute a statement within a transaction context
  *
@@ -584,9 +601,9 @@ VALUE execInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
     rb_fireruby_raise(status, "Error executing SQL statement.");
   }
   if (hStatement->output) {
-    result = rb_result_set_new(self, transaction);
+    result = rb_funcall(cResultSet, rb_intern("new"), 2, self, transaction);
     if(rb_block_given_p()) {
-      result = yieldResultsRows(result);
+      result = rb_iterate(resultSetEach, result, rb_yield, 0);
     }
   } else {
     result = INT2NUM(fb_query_affected(hStatement));
@@ -848,6 +865,54 @@ void statementFree(void *handle) {
   }
 }
 
+static VALUE fetch(VALUE self) {
+  StatementHandle   *hStatement;
+  ISC_STATUS        status[ISC_STATUS_LENGTH],
+                    fetch_result;
+
+  Data_Get_Struct(self, StatementHandle, hStatement);
+  if (hStatement->outputs == 0) {
+    return Qnil;
+  }
+
+  if (isCursorStatement(hStatement)) {
+    fetch_result = isc_dsql_fetch(status, &hStatement->handle, hStatement->dialect,
+                           hStatement->output);
+    if(fetch_result != FETCH_MORE && fetch_result != FETCH_COMPLETED) {
+      rb_fireruby_raise(status, "Error fetching query row.");
+    }
+  } else {
+    fetch_result = FETCH_ONE;
+  }
+  
+  return INT2FIX(fetch_result);
+}
+
+static VALUE closeCursor(VALUE self) {
+  StatementHandle   *hStatement;
+  ISC_STATUS        status[ISC_STATUS_LENGTH],
+                    close_result;
+
+  Data_Get_Struct(self, StatementHandle, hStatement);
+  if (hStatement->outputs == 0) {
+    rb_fireruby_raise(status, "Not a cursor statement.");
+  }
+  if(close_result = isc_dsql_free_statement(status, &hStatement->handle, DSQL_close)) {
+    rb_fireruby_raise(status, "Error closing cursor.");
+  }
+  return INT2FIX(close_result);
+}
+
+static VALUE currentRow(VALUE self, VALUE transaction) {
+  StatementHandle   *hStatement;
+  Data_Get_Struct(self, StatementHandle, hStatement);
+
+  if (hStatement->outputs == 0) {
+    rb_fireruby_raise(NULL, "Statement has no output.");
+  }
+  return toValueArray(self, transaction);
+}
+
 /**
  * This function initializes the Statement class within the Ruby environment.
  * The class is established under the module specified to the function.
@@ -856,7 +921,9 @@ void statementFree(void *handle) {
  *
  */
 void Init_Statement(VALUE module) {
+  cResultSet =  getClassInModule("ResultSet", module);
   cStatement = rb_define_class_under(module, "Statement", rb_cObject);
+  
   rb_define_alloc_func(cStatement, allocateStatement);
   rb_define_method(cStatement, "initialize", initializeStatement, 2);
   rb_define_method(cStatement, "initialize_copy", forbidObjectCopy, 1);
@@ -871,6 +938,9 @@ void Init_Statement(VALUE module) {
   rb_define_method(cStatement, "prepare", prepareStatement, -1);
   rb_define_method(cStatement, "prepared?", getStatementPrepared, 0);
   rb_define_method(cStatement, "plan", getStatementPlan, 0);
+  rb_define_method(cStatement, "fetch", fetch, 0);
+  rb_define_method(cStatement, "close_cursor", closeCursor, 0);
+  rb_define_method(cStatement, "current_row", currentRow, 1);
 
   rb_define_const(cStatement, "SELECT_STATEMENT",
                   INT2FIX(isc_info_sql_stmt_select));
@@ -900,4 +970,10 @@ void Init_Statement(VALUE module) {
                   INT2FIX(isc_info_sql_stmt_set_generator));
   rb_define_const(cStatement, "SAVE_POINT_STATEMENT",
                   INT2FIX(isc_info_sql_stmt_savepoint));
+  rb_define_const(cStatement, "FETCH_MORE",
+                  INT2FIX(FETCH_MORE));
+  rb_define_const(cStatement, "FETCH_COMPLETED",
+                  INT2FIX(FETCH_COMPLETED));
+  rb_define_const(cStatement, "FETCH_ONE",
+                  INT2FIX(FETCH_ONE));
 }

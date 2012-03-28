@@ -35,10 +35,6 @@
       #define RUBY_H_INCLUDED
    #endif
 
-   #ifndef FIRERUBY_DATABASE_H
-      #include "ResultSet.h"
-   #endif
-
 /* Function prototypes. */
 void Init_TypeMap(VALUE);
 VALUE toArray(VALUE);

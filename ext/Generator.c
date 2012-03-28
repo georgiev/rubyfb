@@ -26,7 +26,6 @@
 /* Includes. */
 #include "Generator.h"
 #include "Common.h"
-#include "ResultSet.h"
 #include "Statement.h"
 #include "Transaction.h"
 #include "DataArea.h"

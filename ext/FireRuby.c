@@ -34,7 +34,6 @@
 #include "FireRubyException.h"
 #include "Generator.h"
 #include "RemoveUser.h"
-#include "ResultSet.h"
 #include "ServiceManager.h"
 #include "Statement.h"
 #include "Transaction.h"
@@ -203,7 +202,6 @@ void Init_rubyfb_lib(void) {
   Init_Transaction(module);
   Init_TypeMap(module);
   Init_Statement(module);
-  Init_ResultSet(module);
   Init_Generator(module);
   Init_FireRubyException(module);
   Init_Blob(module);

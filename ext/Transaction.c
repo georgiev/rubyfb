@@ -27,7 +27,6 @@
 #include "Transaction.h"
 #include "Common.h"
 #include "Connection.h"
-#include "ResultSet.h"
 #include "Statement.h"
 
 /* Function prototypes. */
