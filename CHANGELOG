@@ -1,5 +1,6 @@
 v0.6.5 ==
 Row: pure ruby implementation
+ResultSet: pure ruby implementation
 
 v0.6.4 ==
 Tyr to fix another Segmentation fault in Row class (GC integration issues)
