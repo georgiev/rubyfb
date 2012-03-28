@@ -28,8 +28,6 @@ ext/RemoveUser.c
 ext/RemoveUser.h
 ext/Restore.c
 ext/Restore.h
-ext/ResultSet.c
-ext/ResultSet.h
 ext/ServiceManager.c
 ext/ServiceManager.h
 ext/Services.c
