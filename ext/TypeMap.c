@@ -56,18 +56,24 @@ void populateDateField(VALUE, XSQLVAR *);
 void populateTimeField(VALUE, XSQLVAR *);
 void populateTimestampField(VALUE, XSQLVAR *);
 
-static ID NEW_ID, TO_F_ID, ROUND_ID, ASTERISK_ID, CLASS_ID, NAME_ID;
+static ID 
+  RB_INTERN_NEW,
+  RB_INTERN_TO_F,
+  RB_INTERN_ROUND,
+  RB_INTERN_ASTERISK,
+  RB_INTERN_CLASS,
+  RB_INTERN_NAME;
   
 static VALUE cDate, cDateTime;
 
 long long sql_scale(VALUE value, XSQLVAR *field) {
-  value = rb_funcall(value, TO_F_ID, 0);
+  value = rb_funcall(value, RB_INTERN_TO_F, 0);
   if(field->sqlscale) {
     // this requires special care - decimal point shift can cause type overflow
     // the easyest way is to use ruby arithmetics (although it's not the fastes)
-    value = rb_funcall(value, ASTERISK_ID, 1, LONG2NUM((long)pow(10, abs(field->sqlscale))));
+    value = rb_funcall(value, RB_INTERN_ASTERISK, 1, LONG2NUM((long)pow(10, abs(field->sqlscale))));
   }
-  return NUM2LL(rb_funcall(value, ROUND_ID, 0));
+  return NUM2LL(rb_funcall(value, RB_INTERN_ROUND, 0));
 }
 
 VALUE sql_unscale(VALUE value, XSQLVAR *field) {
@@ -75,7 +81,7 @@ VALUE sql_unscale(VALUE value, XSQLVAR *field) {
     return value;
   }
   return rb_float_new(
-    NUM2DBL(rb_funcall(value, TO_F_ID, 0)) / pow(10, abs(field->sqlscale))
+    NUM2DBL(rb_funcall(value, RB_INTERN_TO_F, 0)) / pow(10, abs(field->sqlscale))
   );
 }
 
@@ -218,10 +224,10 @@ void setParameters(XSQLDA *parameters, VALUE array, VALUE transaction, VALUE con
 
     /* Check for nils to indicate null values. */
     if(value != Qnil) {
-      VALUE name = rb_funcall(value, CLASS_ID, 0);
+      VALUE name = rb_funcall(value, RB_INTERN_CLASS, 0);
 
       *parameter->sqlind = 0;
-      name = rb_funcall(name, NAME_ID, 0);
+      name = rb_funcall(name, RB_INTERN_NAME, 0);
       switch(type) {
       case SQL_ARRAY:        /* Type: ARRAY */
         /* TO BE DONE! */
@@ -294,7 +300,7 @@ void setParameters(XSQLDA *parameters, VALUE array, VALUE transaction, VALUE con
  *
  */
 VALUE createDate(const struct tm *date) {
-  return rb_funcall(cDate, NEW_ID, 3, INT2FIX(date->tm_year + 1900), INT2FIX(date->tm_mon + 1), INT2FIX(date->tm_mday));
+  return rb_funcall(cDate, RB_INTERN_NEW, 3, INT2FIX(date->tm_year + 1900), INT2FIX(date->tm_mon + 1), INT2FIX(date->tm_mday));
 }
 
 
@@ -310,7 +316,7 @@ VALUE createDateTime(VALUE dt) {
   struct tm *datetime;
   Data_Get_Struct(dt, struct tm, datetime);
 
-  return rb_funcall(cDateTime, NEW_ID, 7, 
+  return rb_funcall(cDateTime, RB_INTERN_NEW, 7, 
     INT2FIX(datetime->tm_year + 1900),
     INT2FIX(datetime->tm_mon + 1),
     INT2FIX(datetime->tm_mday),
@@ -376,7 +382,7 @@ VALUE createSafeTime(const struct tm *datetime) {
  */
 VALUE toDateTime(VALUE value) {
   VALUE result,
-        klass = rb_funcall(value, CLASS_ID, 0);
+        klass = rb_funcall(value, RB_INTERN_CLASS, 0);
 
   if((klass == rb_cTime) || (klass == cDateTime)) {
     VALUE data;
@@ -571,7 +577,7 @@ void populateDoubleField(VALUE value, XSQLVAR *field) {
 
   if(TYPE(value) != T_FLOAT) {
     if(rb_obj_is_kind_of(value, rb_cNumeric) || TYPE(value) == T_STRING) {
-      actual = rb_funcall(value, TO_F_ID, 0);
+      actual = rb_funcall(value, RB_INTERN_TO_F, 0);
     } else {
       rb_fireruby_raise(NULL,
                         "Error converting input parameter to double.");
@@ -598,7 +604,7 @@ void populateFloatField(VALUE value, XSQLVAR *field) {
 
   if(TYPE(value) != T_FLOAT) {
     if(rb_obj_is_kind_of(value, rb_cNumeric) || TYPE(value) == T_STRING) {
-      actual = rb_funcall(value, TO_F_ID, 0);
+      actual = rb_funcall(value, RB_INTERN_TO_F, 0);
     } else {
       rb_fireruby_raise(NULL,
                         "Error converting input parameter to double.");
@@ -740,12 +746,12 @@ void populateTimestampField(VALUE value, XSQLVAR *field) {
 }
 
 void Init_TypeMap(VALUE module) {
-  NEW_ID = rb_intern("new");
-  TO_F_ID = rb_intern("to_f");
-  ROUND_ID = rb_intern("round");
-  ASTERISK_ID = rb_intern("*");
-  CLASS_ID = rb_intern("class");
-  NAME_ID = rb_intern("name");
+  RB_INTERN_NEW = rb_intern("new");
+  RB_INTERN_TO_F = rb_intern("to_f");
+  RB_INTERN_ROUND = rb_intern("round");
+  RB_INTERN_ASTERISK = rb_intern("*");
+  RB_INTERN_CLASS = rb_intern("class");
+  RB_INTERN_NAME = rb_intern("name");
   
   cDate = getClass("Date");
   cDateTime = getClass("DateTime");
