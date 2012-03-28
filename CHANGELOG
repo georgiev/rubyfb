@@ -1,6 +1,7 @@
 v0.6.5 ==
 Row: pure ruby implementation
 ResultSet: pure ruby implementation
+Use static vars fo rb_intern caches - this should fix os x linkage issues - https://github.com/georgiev/rubyfb/issues/11
 
 v0.6.4 ==
 Tyr to fix another Segmentation fault in Row class (GC integration issues)
