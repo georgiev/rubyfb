@@ -61,6 +61,28 @@ static StatementHandle* getPreparedHandle(VALUE self);
 /* Globals. */
 static VALUE cStatement, cResultSet;
 
+static ID
+  RB_INTERN_CREATE_COLUMN_METADATA,
+  RB_INTERN_AT_NAME,
+  RB_INTERN_AT_ALIAS,
+  RB_INTERN_AT_KEY,
+  RB_INTERN_AT_TYPE,
+  RB_INTERN_AT_SCALE,
+  RB_INTERN_AT_RELATION,
+  RB_INTERN_AT_METADATA,
+  RB_INTERN_AT_MANAGE_STATEMENT,
+  RB_INTERN_AT_MANAGE_TRANSACTION,
+  RB_INTERN_ACTIVE,
+  RB_INTERN_EACH,
+  RB_INTERN_COMMIT,
+  RB_INTERN_ROLLBACK,
+  RB_INTERN_SIZE,
+  RB_INTERN_CLOSE,
+  RB_INTERN_TO_S,
+  RB_INTERN_OPEN,
+  RB_INTERN_STRIP,
+  RB_INTERN_NEW;
+
 static const ISC_STATUS FETCH_MORE = 0;
 static const ISC_STATUS FETCH_COMPLETED = 100;
 static const ISC_STATUS FETCH_ONE = 101;
@@ -182,7 +204,7 @@ long fb_query_affected(StatementHandle *statement) {
 static short isActiveResultSet(VALUE object) {
   short result = 0;
   if ((Qtrue == rb_obj_is_kind_of(object, cResultSet))) {
-    if(Qtrue == rb_funcall(object, rb_intern("active?"), 0)) {
+    if(Qtrue == rb_funcall(object, RB_INTERN_ACTIVE, 0)) {
       result = 1;
     }
   }
@@ -190,7 +212,7 @@ static short isActiveResultSet(VALUE object) {
 }
 
 VALUE getStatementMetadata(VALUE self) {
-  return rb_ivar_get(self, rb_intern("@metadata"));
+  return rb_ivar_get(self, RB_INTERN_AT_METADATA);
 }
 
 /**
@@ -233,7 +255,7 @@ void prepareInTransaction(VALUE self, VALUE transaction) {
             &hStatement->outputs);
 
     metadata = rb_ary_new2(hStatement->outputs);
-    rb_ivar_set(self, rb_intern("@metadata"), metadata);
+    rb_ivar_set(self, RB_INTERN_AT_METADATA, metadata);
 
     if(hStatement->outputs > 0) {
       int index;
@@ -248,20 +270,20 @@ void prepareInTransaction(VALUE self, VALUE transaction) {
 
       var = hStatement->output->sqlvar;
       for(index = 0; index < hStatement->output->sqld; index++, var++) {
-        column = rb_funcall(self, rb_intern("create_column_metadata"), 0);
+        column = rb_funcall(self, RB_INTERN_CREATE_COLUMN_METADATA, 0);
         rb_ary_store(metadata, index, column);
         name = rb_str_new(var->sqlname, var->sqlname_length);
         alias = rb_str_new(var->aliasname, var->aliasname_length);
-        rb_ivar_set(column, rb_intern("@name"), name);
-        rb_ivar_set(column, rb_intern("@alias"), alias);
+        rb_ivar_set(column, RB_INTERN_AT_NAME, name);
+        rb_ivar_set(column, RB_INTERN_AT_ALIAS, alias);
         if(key_flag == Qtrue) {
-          rb_ivar_set(column, rb_intern("@key"), alias);
+          rb_ivar_set(column, RB_INTERN_AT_KEY, alias);
         } else {
-          rb_ivar_set(column, rb_intern("@key"), name);
+          rb_ivar_set(column, RB_INTERN_AT_KEY, name);
         }
-        rb_ivar_set(column, rb_intern("@type"), getColumnType(var));
-        rb_ivar_set(column, rb_intern("@scale"), INT2FIX(var->sqlscale));
-        rb_ivar_set(column, rb_intern("@relation"), rb_str_new(var->relname, var->relname_length));
+        rb_ivar_set(column, RB_INTERN_AT_TYPE, getColumnType(var));
+        rb_ivar_set(column, RB_INTERN_AT_SCALE, INT2FIX(var->sqlscale));
+        rb_ivar_set(column, RB_INTERN_AT_RELATION, rb_str_new(var->relname, var->relname_length));
       }
     }
   }
@@ -311,12 +333,12 @@ VALUE initializeStatement(VALUE self, VALUE connection, VALUE sql) {
   StatementHandle *hStatement = NULL;
   short setting    = 0;
 
-  sql = rb_funcall(sql, rb_intern("to_s"), 0);
+  sql = rb_funcall(sql, RB_INTERN_TO_S, 0);
   
   /* Validate the inputs. */
   if(TYPE(connection) == T_DATA &&
      RDATA(connection)->dfree == (RUBY_DATA_FUNC)connectionFree) {
-    if(rb_funcall(connection, rb_intern("open?"), 0) == Qfalse) {
+    if(rb_funcall(connection, RB_INTERN_OPEN, 0) == Qfalse) {
       rb_fireruby_raise(NULL, "Closed connection specified for statement.");
     }
   } else {
@@ -432,9 +454,9 @@ VALUE execAndManageTransaction(VALUE self, VALUE parameters, VALUE transaction) 
     
     result = rb_rescue(execInTransactionFromArray, args, rescueLocalTransaction, transaction);
     if(isActiveResultSet(result)) {
-      rb_ivar_set(result, rb_intern("@manage_transaction"), Qtrue);
+      rb_ivar_set(result, RB_INTERN_AT_MANAGE_TRANSACTION, Qtrue);
     } else {
-      rb_funcall(transaction, rb_intern("commit"), 0);
+      rb_funcall(transaction, RB_INTERN_COMMIT, 0);
     }
   } else {
     result = execInTransaction(self, transaction, parameters);
@@ -465,7 +487,7 @@ VALUE execAndManageStatement(VALUE self, VALUE parameters, VALUE transaction) {
   rb_ary_push(args, transaction);
   result = rb_rescue(execStatementFromArray, args, rescueStatement, self);
   if(isActiveResultSet(result)) {
-    rb_ivar_set(result, rb_intern("@manage_statement"), Qtrue);
+    rb_ivar_set(result, RB_INTERN_AT_MANAGE_STATEMENT, Qtrue);
   } else {
     closeStatement(self);
   }
@@ -483,7 +505,7 @@ VALUE execAndManageStatement(VALUE self, VALUE parameters, VALUE transaction) {
  *
  */
 VALUE rescueLocalTransaction(VALUE transaction, VALUE error) {
-  rb_funcall(transaction, rb_intern("rollback"), 0);
+  rb_funcall(transaction, RB_INTERN_ROLLBACK, 0);
   rb_exc_raise(error);
   return(Qnil);
 }
@@ -499,7 +521,7 @@ VALUE rescueLocalTransaction(VALUE transaction, VALUE error) {
  *
  */
 VALUE rescueStatement(VALUE statement, VALUE error) {
-  rb_funcall(statement, rb_intern("close"), 0);
+  rb_funcall(statement, RB_INTERN_CLOSE, 0);
   rb_exc_raise(error);
   return(Qnil);
 }
@@ -538,7 +560,7 @@ short isCursorStatement(StatementHandle *hStatement) {
 }
 
 static VALUE resultSetEach(VALUE resultSet) {
-  return rb_funcall(resultSet, rb_intern("each"), 0);
+  return rb_funcall(resultSet, RB_INTERN_EACH, 0);
 }
 
 /**
@@ -573,7 +595,7 @@ VALUE execInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
                         "Empty parameter list specified for statement.");
     }
 
-    value = rb_funcall(parameters, rb_intern("size"), 0);
+    value = rb_funcall(parameters, RB_INTERN_SIZE, 0);
     size  = TYPE(value) == T_FIXNUM ? FIX2INT(value) : NUM2INT(value);
     if(size < hStatement->inputs) {
       rb_fireruby_raise(NULL,
@@ -601,7 +623,7 @@ VALUE execInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
     rb_fireruby_raise(status, "Error executing SQL statement.");
   }
   if (hStatement->output) {
-    result = rb_funcall(cResultSet, rb_intern("new"), 2, self, transaction);
+    result = rb_funcall(cResultSet, RB_INTERN_NEW, 2, self, transaction);
     if(rb_block_given_p()) {
       result = rb_iterate(resultSetEach, result, rb_yield, 0);
     }
@@ -764,7 +786,7 @@ VALUE getStatementPlan(VALUE self) {
         case isc_info_sql_get_plan:
           dataLength = isc_vax_integer(&buffer[1], 2);
           result = rb_str_new(&buffer[3], dataLength);
-          rb_funcall(result, rb_intern("strip!"), 0);
+          rb_funcall(result, RB_INTERN_STRIP, 0);
         default:
           retry = 0;
       }
@@ -845,7 +867,7 @@ StatementHandle* getPreparedHandle(VALUE self) {
     rb_ary_push(args, transaction);
     
     rb_rescue(prepareFromArray, args, rescueLocalTransaction, transaction);
-    rb_funcall(transaction, rb_intern("commit"), 0);
+    rb_funcall(transaction, RB_INTERN_COMMIT, 0);
   }
   return (hStatement);
 }
@@ -904,13 +926,23 @@ static VALUE closeCursor(VALUE self) {
 }
 
 static VALUE currentRow(VALUE self, VALUE transaction) {
-  StatementHandle   *hStatement;
-  Data_Get_Struct(self, StatementHandle, hStatement);
+  int i;
+  XSQLVAR *entry;
+  StatementHandle *hStatement;
+  VALUE array, connection;
 
+  Data_Get_Struct(self, StatementHandle, hStatement);
   if (hStatement->outputs == 0) {
     rb_fireruby_raise(NULL, "Statement has no output.");
   }
-  return toValueArray(self, transaction);
+
+  connection  = getStatementConnection(self);
+  array       = rb_ary_new2(hStatement->output->sqln);
+  entry       = hStatement->output->sqlvar;
+  for(i = 0; i < hStatement->output->sqln; i++, entry++) {
+    rb_ary_store(array, i, toValue(entry, connection, transaction));
+  }
+  return(array);
 }
 
 /**
@@ -921,6 +953,27 @@ static VALUE currentRow(VALUE self, VALUE transaction) {
  *
  */
 void Init_Statement(VALUE module) {
+  RB_INTERN_CREATE_COLUMN_METADATA = rb_intern("create_column_metadata");
+  RB_INTERN_AT_NAME = rb_intern("@name");
+  RB_INTERN_AT_ALIAS = rb_intern("@alias");
+  RB_INTERN_AT_KEY = rb_intern("@key");
+  RB_INTERN_AT_TYPE = rb_intern("@type");
+  RB_INTERN_AT_SCALE = rb_intern("@scale");
+  RB_INTERN_AT_RELATION = rb_intern("@relation");
+  RB_INTERN_AT_METADATA = rb_intern("@metadata");
+  RB_INTERN_AT_MANAGE_STATEMENT = rb_intern("@manage_statement");
+  RB_INTERN_AT_MANAGE_TRANSACTION = rb_intern("@manage_transaction");
+  RB_INTERN_ACTIVE = rb_intern("active?");
+  RB_INTERN_EACH = rb_intern("each");
+  RB_INTERN_COMMIT = rb_intern("commit");
+  RB_INTERN_ROLLBACK = rb_intern("rollback");
+  RB_INTERN_SIZE = rb_intern("size");
+  RB_INTERN_CLOSE = rb_intern("close");
+  RB_INTERN_NEW = rb_intern("new");
+  RB_INTERN_TO_S = rb_intern("to_s");
+  RB_INTERN_OPEN = rb_intern("open?");
+  RB_INTERN_STRIP = rb_intern("strip!");
+
   cResultSet =  getClassInModule("ResultSet", module);
   cStatement = rb_define_class_under(module, "Statement", rb_cObject);
   

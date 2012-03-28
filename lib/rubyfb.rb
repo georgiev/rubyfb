@@ -1,3 +1,4 @@
+require 'date'
 require 'rubyfb_options'
 require 'result_set'
 require 'rubyfb_lib'

@@ -28,6 +28,7 @@
 #include <time.h>
 #include <math.h>
 #include <limits.h>
+#include "Common.h"
 #include "Blob.h"
 #include "Connection.h"
 #include "Transaction.h"
@@ -41,7 +42,6 @@ VALUE createDate(const struct tm *);
 VALUE createDateTime(VALUE dt);
 VALUE createTime(VALUE dt);
 VALUE createSafeTime(const struct tm*);
-VALUE getConstant(const char *, VALUE);
 VALUE toDateTime(VALUE);
 VALUE rescueConvert(VALUE, VALUE);
 void storeBlob(VALUE, XSQLVAR *, ConnectionHandle *, TransactionHandle *);
@@ -56,8 +56,9 @@ void populateDateField(VALUE, XSQLVAR *);
 void populateTimeField(VALUE, XSQLVAR *);
 void populateTimestampField(VALUE, XSQLVAR *);
 
-static ID NEW_ID, TO_F_ID, ROUND_ID, ASTERISK_ID, CLASS_ID, TRANSACTION_ID,
-  CONNECTION_ID, STATEMENT_ID, NAME_ID;
+static ID NEW_ID, TO_F_ID, ROUND_ID, ASTERISK_ID, CLASS_ID, NAME_ID;
+  
+static VALUE cDate, cDateTime;
 
 long long sql_scale(VALUE value, XSQLVAR *field) {
   value = rb_funcall(value, TO_F_ID, 0);
@@ -105,8 +106,7 @@ VALUE toValue(XSQLVAR *entry,
     short length;
     double actual;
     BlobHandle *blob   = NULL;
-    VALUE setting = getFireRubySetting("DATE_AS_DATE"),
-          working = Qnil;
+    VALUE working = Qnil;
 
     switch(type) {
     case SQL_BLOB:        /* Type: BLOB */
@@ -126,7 +126,7 @@ VALUE toValue(XSQLVAR *entry,
       datetime.tm_sec  = 0;
       datetime.tm_min  = 0;
       datetime.tm_hour = 0;
-      if(setting == Qtrue) {
+      if(getFireRubySetting("DATE_AS_DATE") == Qtrue) {
         value = createDate(&datetime);
       } else {
         value = createSafeTime(&datetime);
@@ -178,35 +178,6 @@ VALUE toValue(XSQLVAR *entry,
   }
 
   return(value);
-}
-
-
-/**
- * This function attempts to convert the data contents of a XSQLDA to a Ruby
- * array of values.
- *
- * @param  results  A reference to the ResultSet object to extract the data row
- *                  from.
- *
- * @return  A reference to the array containing the row data from the XSQLDA.
- *
- */
-VALUE toValueArray(VALUE statement, VALUE transaction) {
-  int i;
-  XSQLVAR           *entry      = NULL;
-  StatementHandle *hStatement = NULL;
-  VALUE array, connection;
-
-  connection  = rb_funcall(statement, CONNECTION_ID, 0);
-  Data_Get_Struct(statement, StatementHandle, hStatement);
-  array       = rb_ary_new2(hStatement->output->sqln);
-
-  entry = hStatement->output->sqlvar;
-  for(i = 0; i < hStatement->output->sqln; i++, entry++) {
-    rb_ary_store(array, i, toValue(entry, connection, transaction));
-  }
-
-  return(array);
 }
 
 
@@ -323,32 +294,7 @@ void setParameters(XSQLDA *parameters, VALUE array, VALUE transaction, VALUE con
  *
  */
 VALUE createDate(const struct tm *date) {
-  VALUE result = Qnil,
-        klass  = Qnil;
-
-  klass = getClass("Date");
-
-  /* Check if we need to require date. */
-  if(klass == Qnil) {
-    rb_require("date");
-    klass = getClass("Date");
-  }
-
-  /* Check that we got the Date class. */
-  if(klass != Qnil) {
-    VALUE arguments[3];
-
-    /* Prepare the arguments. */
-    arguments[0] = INT2FIX(date->tm_year + 1900);
-    arguments[1] = INT2FIX(date->tm_mon + 1);
-    arguments[2] = INT2FIX(date->tm_mday);
-
-    /* Create the class instance. */
-    result = rb_funcall2(klass, NEW_ID, 3, arguments);
-  }
-
-
-  return(result);
+  return rb_funcall(cDate, NEW_ID, 3, INT2FIX(date->tm_year + 1900), INT2FIX(date->tm_mon + 1), INT2FIX(date->tm_mday));
 }
 
 
@@ -361,38 +307,18 @@ VALUE createDate(const struct tm *date) {
  *
  */
 VALUE createDateTime(VALUE dt) {
-  VALUE result = Qnil,
-        klass  = Qnil;
-
   struct tm *datetime;
   Data_Get_Struct(dt, struct tm, datetime);
 
-  klass = getClass("DateTime");
-
-  /* Check if we need to require date. */
-  if(klass == Qnil) {
-    rb_require("date");
-    klass = getClass("DateTime");
-  }
-
-  /* Check that we got the DateTime class. */
-  if(klass != Qnil) {
-    VALUE arguments[7];
-
-    /* Prepare the arguments. */
-    arguments[0] = INT2FIX(datetime->tm_year + 1900);
-    arguments[1] = INT2FIX(datetime->tm_mon + 1);
-    arguments[2] = INT2FIX(datetime->tm_mday);
-    arguments[3] = INT2FIX(datetime->tm_hour);
-    arguments[4] = INT2FIX(datetime->tm_min);
-    arguments[5] = INT2FIX(datetime->tm_sec);
-    arguments[6] = rb_funcall(rb_funcall(klass, rb_intern("now"), 0), rb_intern("offset"), 0);
-
-    /* Create the class instance. */
-    result = rb_funcall2(klass, NEW_ID, 7, arguments);
-  }
-
-  return(result);
+  return rb_funcall(cDateTime, NEW_ID, 7, 
+    INT2FIX(datetime->tm_year + 1900),
+    INT2FIX(datetime->tm_mon + 1),
+    INT2FIX(datetime->tm_mday),
+    INT2FIX(datetime->tm_hour),
+    INT2FIX(datetime->tm_min),
+    INT2FIX(datetime->tm_sec),
+    rb_funcall(rb_funcall(cDateTime, rb_intern("now"), 0), rb_intern("offset"), 0)
+  );
 }
 
 
@@ -405,34 +331,22 @@ VALUE createDateTime(VALUE dt) {
  *
  */
 VALUE createTime(VALUE dt) {
-  VALUE result = Qnil,
-        klass  = Qnil;
-
   struct tm *datetime;
   Data_Get_Struct(dt, struct tm, datetime);
 
-  klass = getClass("Time");
+  /*fprintf(stderr, "%d-%d-%d %d:%d:%d\n", datetime->tm_year + 1900,
+          datetime->tm_mon + 1, datetime->tm_mday, datetime->tm_hour,
+          datetime->tm_min, datetime->tm_sec);*/
 
-  /* Check that we got the Time class. */
-  if(klass != Qnil) {
-    VALUE arguments[6];
-
-    /* Prepare the arguments. */
-    /*fprintf(stderr, "%d-%d-%d %d:%d:%d\n", datetime->tm_year + 1900,
-            datetime->tm_mon + 1, datetime->tm_mday, datetime->tm_hour,
-            datetime->tm_min, datetime->tm_sec);*/
-    arguments[0] = INT2FIX(datetime->tm_year + 1900);
-    arguments[1] = INT2FIX(datetime->tm_mon + 1);
-    arguments[2] = INT2FIX(datetime->tm_mday);
-    arguments[3] = INT2FIX(datetime->tm_hour);
-    arguments[4] = INT2FIX(datetime->tm_min);
-    arguments[5] = INT2FIX(datetime->tm_sec);
-
-    /* Create the class instance. */
-    result = rb_funcall2(klass, rb_intern("local"), 6, arguments);
-  }
-
-  return(result);
+  /* Create the class instance. */
+  return rb_funcall(rb_cTime, rb_intern("local"), 6, 
+    INT2FIX(datetime->tm_year + 1900),
+    INT2FIX(datetime->tm_mon + 1),
+    INT2FIX(datetime->tm_mday),
+    INT2FIX(datetime->tm_hour),
+    INT2FIX(datetime->tm_min),
+    INT2FIX(datetime->tm_sec)
+  );
 }
 
 /**
@@ -452,138 +366,6 @@ VALUE createSafeTime(const struct tm *datetime) {
 }
 
 /**
- * This method fetches a Ruby constant definition. If the module specified to
- * the function is nil then the top level is assume
- *
- * @param  name    The name of the constant to be retrieved.
- * @param  module  A reference to the Ruby module that should contain the
- *                 constant.
- *
- * @return  A Ruby VALUE representing the constant.
- *
- */
-VALUE getConstant(const char *name, VALUE module) {
-  VALUE owner = module,
-        constants,
-        exists,
-        entry = Qnil,
-        symbol = ID2SYM(rb_intern(name));
-
-  /* Check that we've got somewhere to look. */
-  if(owner == Qnil) {
-    owner = rb_cModule;
-  }
-
-  constants = rb_funcall(owner, rb_intern("constants"), 0),
-  exists = rb_funcall(constants, rb_intern("include?"), 1, symbol);
-  if(exists == Qfalse) {
-    /* 1.8 style lookup */
-    exists = rb_funcall(constants, rb_intern("include?"), 1, rb_str_new2(name));
-  }
-  if(exists != Qfalse) {
-    entry = rb_funcall(owner, rb_intern("const_get"), 1, symbol);
-  }
-  return(entry);
-}
-
-
-/**
- * This method fetches a Ruby module definition object based on a class name.
- * The method is assumed to have been defined at the top level.
- *
- * @return  A Ruby VALUE representing the Module requested, or nil if the
- *          module could not be located.
- *
- */
-VALUE getModule(const char *name) {
-  VALUE module = getConstant(name, Qnil);
-
-  if(module != Qnil) {
-    VALUE type = rb_funcall(module, CLASS_ID, 0);
-
-    if(type != rb_cModule) {
-      module = Qnil;
-    }
-  }
-
-  return(module);
-}
-
-
-/**
- * This method fetches a Ruby class definition object based on a class name.
- * The class is assumed to have been defined at the top level.
- *
- * @return  A Ruby VALUE representing the requested class, or nil if the class
- *          could not be found.
- *
- */
-VALUE getClass(const char *name) {
-  VALUE klass = getConstant(name, Qnil);
-
-  if(klass != Qnil) {
-    VALUE type = rb_funcall(klass, CLASS_ID, 0);
-
-    if(type != rb_cClass) {
-      klass = Qnil;
-    }
-  }
-
-  return(klass);
-}
-
-
-/**
- * This method fetches a module from a specified module.
- *
- * @param  name   The name of the class to fetch.
- * @param  owner  The module to search for the module in.
- *
- * @return  A Ruby VALUE representing the requested module, or nil if it could
- *          not be located.
- *
- */
-VALUE getModuleInModule(const char *name, VALUE owner) {
-  VALUE module = getConstant(name, owner);
-
-  if(module != Qnil) {
-    VALUE type = rb_funcall(module, CLASS_ID, 0);
-
-    if(type != rb_cModule) {
-      module = Qnil;
-    }
-  }
-
-  return(module);
-}
-
-
-/**
- * This function fetches a class from a specified module.
- *
- * @param  name   The name of the class to be retrieved.
- * @param  owner  The module to search for the class in.
- *
- * @return  A Ruby VALUE representing the requested module, or nil if it could
- *          not be located.
- *
- */
-VALUE getClassInModule(const char *name, VALUE owner) {
-  VALUE klass = getConstant(name, owner);
-
-  if(klass != Qnil) {
-    VALUE type = rb_funcall(klass, CLASS_ID, 0);
-
-    if(type != rb_cClass) {
-      klass = Qnil;
-    }
-  }
-
-  return(klass);
-}
-
-
-/**
  * This function attempts to convert a VALUE to a series of date/time values.
  *
  * @param  value  A reference to the value to be converted.
@@ -594,13 +376,12 @@ VALUE getClassInModule(const char *name, VALUE owner) {
  */
 VALUE toDateTime(VALUE value) {
   VALUE result,
-        klass = rb_funcall(value, CLASS_ID, 0),
-        date_time_class = getClass("DateTime");
+        klass = rb_funcall(value, CLASS_ID, 0);
 
-  if((klass == rb_cTime) || (klass == date_time_class)) {
+  if((klass == rb_cTime) || (klass == cDateTime)) {
     VALUE data;
 
-    if (klass == date_time_class) {
+    if (klass == cDateTime) {
       value = rb_funcall(value, rb_intern("to_time"), 0);
     }
     result = rb_ary_new();
@@ -613,7 +394,7 @@ VALUE toDateTime(VALUE value) {
     rb_ary_push(result, rb_funcall(value, rb_intern("hour"), 0));
     rb_ary_push(result, rb_funcall(value, rb_intern("min"), 0));
     rb_ary_push(result, rb_funcall(value, rb_intern("sec"), 0));
-  } else if(klass == getClass("Date")) {
+  } else if(klass == cDate) {
     VALUE data;
 
     result = rb_ary_new();
@@ -931,7 +712,6 @@ void populateTimeField(VALUE value, XSQLVAR *field) {
   field->sqltype   = SQL_TYPE_TIME;
 }
 
-
 /**
  * This method populates a date output field.
  *
@@ -965,8 +745,8 @@ void Init_TypeMap(VALUE module) {
   ROUND_ID = rb_intern("round");
   ASTERISK_ID = rb_intern("*");
   CLASS_ID = rb_intern("class");
-  CONNECTION_ID = rb_intern("connection");
-  TRANSACTION_ID = rb_intern("transaction");
-  STATEMENT_ID = rb_intern("statement");
   NAME_ID = rb_intern("name");
+  
+  cDate = getClass("Date");
+  cDateTime = getClass("DateTime");
 }

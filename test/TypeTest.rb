@@ -77,7 +77,7 @@ class TypeTest < Test::Unit::TestCase
          assert(row[1].instance_of?(Float))
          assert(row[2].instance_of?(Float))
          assert(row[3].instance_of?(Float))
-         assert(row[4].instance_of?(Time))
+         assert(row[4].instance_of?(Time), "Time expected but #{row[4].class.name} found")
          assert(row[5].instance_of?(Time))
          assert(row[6].instance_of?(String))
          assert(row[7].instance_of?(Time))

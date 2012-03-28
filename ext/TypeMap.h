@@ -37,11 +37,7 @@
 
 /* Function prototypes. */
 void Init_TypeMap(VALUE);
-VALUE toArray(VALUE);
+VALUE toValue(XSQLVAR *, VALUE, VALUE);
 void setParameters(XSQLDA *, VALUE, VALUE, VALUE);
-VALUE getModule(const char *);
-VALUE getClass(const char *);
-VALUE getClassInModule(const char *, VALUE);
-VALUE getModuleInModule(const char *, VALUE);
 
 #endif /* FIRERUBY_TYPE_MAP_H */

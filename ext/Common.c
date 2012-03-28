@@ -51,3 +51,77 @@ VALUE forbidObjectCopy(VALUE copy, VALUE original) {
 
   return(Qnil);
 }
+
+/**
+ * This method fetches a Ruby constant definition. If the module specified to
+ * the function is nil then the top level is assume
+ *
+ * @param  name    The name of the constant to be retrieved.
+ * @param  module  A reference to the Ruby module that should contain the
+ *                 constant.
+ *
+ * @return  A Ruby VALUE representing the constant.
+ *
+ */
+static VALUE getConstant(const char *name, VALUE module) {
+  VALUE owner = module,
+        constants,
+        exists,
+        entry = Qnil,
+        symbol = ID2SYM(rb_intern(name));
+
+  /* Check that we've got somewhere to look. */
+  if(owner == Qnil) {
+    owner = rb_cModule;
+  }
+
+  constants = rb_funcall(owner, rb_intern("constants"), 0),
+  exists = rb_funcall(constants, rb_intern("include?"), 1, symbol);
+  if(exists == Qfalse) {
+    /* 1.8 style lookup */
+    exists = rb_funcall(constants, rb_intern("include?"), 1, rb_str_new2(name));
+  }
+  if(exists != Qfalse) {
+    entry = rb_funcall(owner, rb_intern("const_get"), 1, symbol);
+  }
+  return(entry);
+}
+
+
+/**
+ * This method fetches a Ruby class definition object based on a class name.
+ * The class is assumed to have been defined at the top level.
+ *
+ * @return  A Ruby VALUE representing the requested class, or nil if the class
+ *          could not be found.
+ *
+ */
+VALUE getClass(const char *name) {
+  return getClassInModule(name, Qnil);
+}
+
+
+/**
+ * This function fetches a class from a specified module.
+ *
+ * @param  name   The name of the class to be retrieved.
+ * @param  owner  The module to search for the class in.
+ *
+ * @return  A Ruby VALUE representing the requested module, or nil if it could
+ *          not be located.
+ *
+ */
+VALUE getClassInModule(const char *name, VALUE owner) {
+  VALUE klass = getConstant(name, owner);
+
+  if(klass != Qnil) {
+    VALUE type = rb_funcall(klass, rb_intern("class"), 0);
+
+    if(type != rb_cClass) {
+      klass = Qnil;
+    }
+  }
+
+  return(klass);
+}
+
