@@ -285,6 +285,7 @@ void prepareInTransaction(VALUE self, VALUE transaction) {
         rb_ivar_set(column, RB_INTERN_AT_SCALE, INT2FIX(var->sqlscale));
         rb_ivar_set(column, RB_INTERN_AT_RELATION, rb_str_new(var->relname, var->relname_length));
       }
+      rb_obj_freeze(metadata);
     }
   }
 }
