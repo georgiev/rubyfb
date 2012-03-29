@@ -73,9 +73,11 @@ class ResultSetTest < Test::Unit::TestCase
       assert(r.sql == "SELECT * FROM TEST_TABLE ORDER BY TESTID")
       assert(r.dialect == 3)
       
-      assert(r.fetch != nil)
+      first_row = r.fetch
+      assert(first_row != nil)
+      assert_equal(1, first_row.number)
       assert_equal(Row, r.fetch.class)
-      assert(r.fetch[0] == 30)
+      assert_equal(30, r.fetch[0])
       assert(r.fetch[1] == 'Record Four.')
       r.fetch
       assert(r.fetch == nil)
