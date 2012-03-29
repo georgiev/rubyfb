@@ -1,3 +1,8 @@
+v0.6.7 ==
+Add test to ensure row numbering scheme
+Fix row numbering
+Minor AR adapter improvement
+
 v0.6.6 ==
 Include Enumerable in Row And ResultSet
 Update tests
