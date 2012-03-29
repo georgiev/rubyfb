@@ -918,25 +918,26 @@ module ActiveRecord
         end
 
         def select_raw(sql, name = nil, binds = [])
-          fields = []
-          rows = []
-          exec_query(sql, name, binds) do |row|
-            array_row = []
-            row.each do |column, value|
-              fields << fb_to_ar_case(column) if row.number == 1
-              case value
-                when Rubyfb::Blob
-                  temp = value.to_s
-                  value.close
-                  value = temp
-                when Time, DateTime
-                  value = create_time_with_default_timezone(value)
+          fields = rows = []
+          exec_result = exec_query(sql, name, binds)
+          if exec_result.instance_of?(Rubyfb::ResultSet)
+            fields = exec_result.statement.metadata.collect{ |m| fb_to_ar_case(m.key) }
+            exec_result.each do |row|
+              rows << row.values.collect do |value|
+                case value
+                  when Rubyfb::Blob
+                    value.to_s.tap do
+                      value.close
+                    end
+                  when Time, DateTime
+                    create_time_with_default_timezone(value)
+                  else
+                    value
+                end
               end
-              array_row << value
             end
-            rows << array_row
           end
-          return fields, rows 
+          return fields, rows
         end
 
         def index_metadata(table_name, pk, name = nil)
