@@ -28,11 +28,13 @@ module Rubyfb
       row = nil
       case statement.fetch
         when Statement::FETCH_MORE
-          row = Row.new(statement.metadata, statement.current_row(transaction), ++@row_count)
+          @row_count += 1
+          row = Row.new(statement.metadata, statement.current_row(transaction), @row_count)
         when Statement::FETCH_COMPLETED
           close
         when Statement::FETCH_ONE
-          row = Row.new(statement.metadata, statement.current_row(transaction), @row_count=1)
+          @row_count = 1
+          row = Row.new(statement.metadata, statement.current_row(transaction), @row_count)
           close
         else
           raise FireRubyException.new("Error fetching query row.");
