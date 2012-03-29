@@ -1,5 +1,6 @@
 module Rubyfb
   class ResultSet
+    include Enumerable
     attr_reader :statement, :transaction, :row_count
     
     def initialize(statement, transaction)

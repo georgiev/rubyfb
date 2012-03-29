@@ -58,6 +58,9 @@ class RowTest < Test::Unit::TestCase
       sql  = 'select COL01 one, COL02 two, COL03 three from rowtest'
       rows = @connection.execute_immediate(sql)
       data = rows.fetch
+      assert_equal(Rubyfb::Row, data.class)
+      assert(data.kind_of?(Enumerable), "Row should be Enumerable")
+
       
       count = 0
       data.each do |name, value|

@@ -66,6 +66,7 @@ class ResultSetTest < Test::Unit::TestCase
    def test01
       r = @connections[0].execute("SELECT * FROM TEST_TABLE ORDER BY TESTID", @transactions[0])
       assert_equal(Rubyfb::ResultSet, r.class)
+      assert(r.kind_of?(Enumerable), "ResultSet should be Enumerable")
       
       assert(r.connection == @connections[0])
       assert(r.transaction == @transactions[0])

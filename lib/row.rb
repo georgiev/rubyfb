@@ -1,5 +1,6 @@
 module Rubyfb
   class Row
+    include Enumerable
     attr_reader :number
     
     def initialize(metadata, data, row_number)
