@@ -1,3 +1,7 @@
+v0.6.6 ==
+Include Enumerable in Row And ResultSet
+Update tests
+
 v0.6.5 ==
 Row: pure ruby implementation
 ResultSet: pure ruby implementation
