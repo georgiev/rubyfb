@@ -1,4 +1,7 @@
 v0.6.7 ==
+Namespaced requires in reubyfb.rb
+
+v0.6.7 ==
 Add test to ensure row numbering scheme
 Fix row numbering
 Minor AR adapter improvement
