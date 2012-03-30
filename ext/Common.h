@@ -34,6 +34,5 @@
 /* Function prototypes. */
 VALUE forbidObjectCopy(VALUE, VALUE);
 VALUE getClass(const char *);
-VALUE getClassInModule(const char *, VALUE);
 
 #endif /* FIRERUBY_COMMON_H */

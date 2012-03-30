@@ -59,10 +59,12 @@ static void statementFree(void *);
 static StatementHandle* getPreparedHandle(VALUE self);
 
 /* Globals. */
-static VALUE cStatement, cResultSet;
+static VALUE cStatement;
 
 static ID
   RB_INTERN_CREATE_COLUMN_METADATA,
+  RB_INTERN_CREATE_RESULT_SET,
+  RB_INTERN_IS_ACTIVE_RESULT_SET,
   RB_INTERN_AT_NAME,
   RB_INTERN_AT_ALIAS,
   RB_INTERN_AT_KEY,
@@ -196,16 +198,6 @@ long fb_query_affected(StatementHandle *statement) {
     if(current == info) {
       result = temp[1];
       done      = 1;
-    }
-  }
-  return (result);
-}
-
-static short isActiveResultSet(VALUE object) {
-  short result = 0;
-  if ((Qtrue == rb_obj_is_kind_of(object, cResultSet))) {
-    if(Qtrue == rb_funcall(object, RB_INTERN_ACTIVE, 0)) {
-      result = 1;
     }
   }
   return (result);
@@ -454,7 +446,7 @@ VALUE execAndManageTransaction(VALUE self, VALUE parameters, VALUE transaction) 
     rb_ary_push(args, parameters);
     
     result = rb_rescue(execInTransactionFromArray, args, rescueLocalTransaction, transaction);
-    if(isActiveResultSet(result)) {
+    if(Qtrue == rb_funcall(self, RB_INTERN_IS_ACTIVE_RESULT_SET, 1, result)) {
       rb_ivar_set(result, RB_INTERN_AT_MANAGE_TRANSACTION, Qtrue);
     } else {
       rb_funcall(transaction, RB_INTERN_COMMIT, 0);
@@ -487,7 +479,7 @@ VALUE execAndManageStatement(VALUE self, VALUE parameters, VALUE transaction) {
   rb_ary_push(args, parameters);
   rb_ary_push(args, transaction);
   result = rb_rescue(execStatementFromArray, args, rescueStatement, self);
-  if(isActiveResultSet(result)) {
+  if(Qtrue == rb_funcall(self, RB_INTERN_IS_ACTIVE_RESULT_SET, 1, result)) {
     rb_ivar_set(result, RB_INTERN_AT_MANAGE_STATEMENT, Qtrue);
   } else {
     closeStatement(self);
@@ -624,7 +616,7 @@ VALUE execInTransaction(VALUE self, VALUE transaction, VALUE parameters) {
     rb_fireruby_raise(status, "Error executing SQL statement.");
   }
   if (hStatement->output) {
-    result = rb_funcall(cResultSet, RB_INTERN_NEW, 2, self, transaction);
+    result = rb_funcall(self, RB_INTERN_CREATE_RESULT_SET, 1, transaction);
     if(rb_block_given_p()) {
       result = rb_iterate(resultSetEach, result, rb_yield, 0);
     }
@@ -955,6 +947,8 @@ static VALUE currentRow(VALUE self, VALUE transaction) {
  */
 void Init_Statement(VALUE module) {
   RB_INTERN_CREATE_COLUMN_METADATA = rb_intern("create_column_metadata");
+  RB_INTERN_CREATE_RESULT_SET = rb_intern("create_result_set");
+  RB_INTERN_IS_ACTIVE_RESULT_SET = rb_intern("is_active_result_set");
   RB_INTERN_AT_NAME = rb_intern("@name");
   RB_INTERN_AT_ALIAS = rb_intern("@alias");
   RB_INTERN_AT_KEY = rb_intern("@key");
@@ -975,9 +969,7 @@ void Init_Statement(VALUE module) {
   RB_INTERN_OPEN = rb_intern("open?");
   RB_INTERN_STRIP = rb_intern("strip!");
 
-  cResultSet =  getClassInModule("ResultSet", module);
   cStatement = rb_define_class_under(module, "Statement", rb_cObject);
-  
   rb_define_alloc_func(cStatement, allocateStatement);
   rb_define_method(cStatement, "initialize", initializeStatement, 2);
   rb_define_method(cStatement, "initialize_copy", forbidObjectCopy, 1);

@@ -89,19 +89,6 @@ static VALUE getConstant(const char *name, VALUE module) {
 
 
 /**
- * This method fetches a Ruby class definition object based on a class name.
- * The class is assumed to have been defined at the top level.
- *
- * @return  A Ruby VALUE representing the requested class, or nil if the class
- *          could not be found.
- *
- */
-VALUE getClass(const char *name) {
-  return getClassInModule(name, Qnil);
-}
-
-
-/**
  * This function fetches a class from a specified module.
  *
  * @param  name   The name of the class to be retrieved.
@@ -111,7 +98,7 @@ VALUE getClass(const char *name) {
  *          not be located.
  *
  */
-VALUE getClassInModule(const char *name, VALUE owner) {
+static VALUE getClassInModule(const char *name, VALUE owner) {
   VALUE klass = getConstant(name, owner);
 
   if(klass != Qnil) {
@@ -123,5 +110,17 @@ VALUE getClassInModule(const char *name, VALUE owner) {
   }
 
   return(klass);
+}
+
+/**
+ * This method fetches a Ruby class definition object based on a class name.
+ * The class is assumed to have been defined at the top level.
+ *
+ * @return  A Ruby VALUE representing the requested class, or nil if the class
+ *          could not be found.
+ *
+ */
+VALUE getClass(const char *name) {
+  return getClassInModule(name, Qnil);
 }
 

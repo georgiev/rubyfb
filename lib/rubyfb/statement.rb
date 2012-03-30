@@ -13,5 +13,9 @@ module Rubyfb
     def create_result_set(transaction)
       ResultSet.new(self, transaction)
     end
+    
+    def is_active_result_set(object)
+      object.kind_of?(ResultSet) && object.active?
+    end
   end
 end
