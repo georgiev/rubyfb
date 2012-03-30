@@ -1,7 +1,7 @@
 require 'echoe'
 e = Echoe.new('rubyfb', '0.6.8') do |p|
   p.description    = "Firebird SQL access library"
-  p.url            = "http://rubyforge.org/projects/rubyfb"
+  p.url            = "https://github.com/georgiev/rubyfb"
   p.author         = "George Georgiev"
   p.email          = "georgiev@heatbs.com"
   p.rdoc_pattern   = ["{examples,ext,lib}/*.rb", "CHANGELOG", "README", "LICENSE"]
