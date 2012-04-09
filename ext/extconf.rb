@@ -26,7 +26,7 @@ elsif RUBY_PLATFORM.include?("mingw32")
 elsif RUBY_PLATFORM.include?("linux")
    $LDFLAGS = $LDFLAGS + " -lfbclient -lpthread"
    $CFLAGS  = $CFLAGS + " -DOS_UNIX"
-elsif  RUBY_PLATFORM.include?("freebsd")
+elsif RUBY_PLATFORM.include?("freebsd")
    $LDFLAGS = $LDFLAGS + " -lfbclient -lpthread"
    $CFLAGS  = $CFLAGS + " -DOS_UNIX"
    firebird_include = "/usr/local/include"
