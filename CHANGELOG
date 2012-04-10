@@ -1,5 +1,6 @@
-v0.6.7 ==
-Namespaced requires in reubyfb.rb
+v0.6.8 ==
+Namespaced requires in rubyfb.rb
+Add freebsd platform
 
 v0.6.7 ==
 Add test to ensure row numbering scheme
