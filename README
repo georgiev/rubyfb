@@ -77,6 +77,10 @@ installed to the default location (i.e. /usr/local/lib). In this case you can
 use the sudo command to make the installation like this...
 
    sudo gem install rubyfb
+
+On Ubuntu and Debian systems you will need the Firebird development headers 
+
+  sudo apt-get install firebird2.5-dev 
    
 === Ruby on Rails usage
 
